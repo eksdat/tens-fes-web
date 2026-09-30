@@ -1,0 +1,1 @@
+comunicação com o Supabase (login, pacientes, sessões)
