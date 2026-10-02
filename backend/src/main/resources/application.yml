@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: tens-fes-api
+  datasource:
+    # Supabase: usar a connection string do "Session pooler" (IPv4). Valores vêm do ambiente, nunca do repositório.
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  mvc:
+    problemdetails:
+      enabled: true
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
