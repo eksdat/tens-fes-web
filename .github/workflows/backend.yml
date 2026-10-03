@@ -1,0 +1,48 @@
+# Roda os testes do backend toda vez que alguém abre ou atualiza um Pull Request.
+# Se algum teste falhar, o PR fica com um X vermelho e não deve ser aprovado.
+name: Backend
+
+on:
+  pull_request:
+    branches: [homologacao, main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  push:
+    branches: [homologacao, main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+
+jobs:
+  testes:
+    name: Build e testes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      # Os testes sobem um PostgreSQL em Docker (Testcontainers)
+      - name: Rodar os testes
+        run: |
+          chmod +x mvnw
+          ./mvnw -B test
+
+      - name: Guardar o relatório se algum teste falhar
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-testes
+          path: backend/target/surefire-reports/
