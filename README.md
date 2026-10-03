@@ -1,4 +1,4 @@
-# TENS + FES
+# Fisiotech
 
 Plataforma web educacional e clínica de eletroestimulação (TENS, NMES, FES).
 
@@ -8,3 +8,5 @@ Plataforma web educacional e clínica de eletroestimulação (TENS, NMES, FES).
 | `backend/` | Java 25 + Spring Boot 4 + PostgreSQL (Supabase) | [backend/README.md](backend/README.md) |
 
 Cada README explica stack, como rodar, arquitetura, UML, regras de acesso, testes e o fluxo de branches (`feature/*` → `homologacao` → `main`).
+
+Política de segurança (banco, Supabase Auth, backend, frontend, IA, LGPD): [SEGURANCA.md](SEGURANCA.md). Todo PR que mexe em autenticação, autorização, paciente ou upload passa por ela.

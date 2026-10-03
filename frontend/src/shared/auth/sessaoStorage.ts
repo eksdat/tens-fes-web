@@ -6,7 +6,7 @@ export type Sessao = {
   perfil: Perfil
 }
 
-const CHAVE = 'tensfes.sessao'
+const CHAVE = 'fisiotech.sessao'
 
 export function lerSessaoSalva(): Sessao | null {
   const salvo = localStorage.getItem(CHAVE)
