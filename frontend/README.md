@@ -1,6 +1,6 @@
-# TENS + FES — Frontend (Web)
+# Fisiotech — Frontend (Web)
 
-SPA da plataforma educacional e clínica de eletroestimulação **TENS + FES**. Este repositório tem duas pastas:
+SPA da plataforma educacional e clínica de eletroestimulação **Fisiotech** (TENS, NMES e FES). Este repositório tem duas pastas:
 
 - `frontend/` (este documento): React 19 + TypeScript + Vite.
 - `backend/`: API em Java 25 + Spring Boot. Veja `../backend/README.md`.
@@ -213,7 +213,7 @@ Crie a pasta da feature quando a primeira tela dela for feita. Não deixe pasta 
 
 1. `LoginPage` valida com Zod e chama `POST /api/v1/auth/login`.
 2. A resposta esperada é `{ token, nome, perfil }` (tipo `Sessao`).
-3. `entrar()` salva a sessão no `localStorage` (chave `tensfes.sessao`) e no contexto.
+3. `entrar()` salva a sessão no `localStorage` (chave `fisiotech.sessao`) e no contexto.
 4. `client.ts` envia `Authorization: Bearer <token>` em toda requisição.
 5. Resposta **401**: limpa a sessão e manda para `/login`.
 6. Resposta **403**: perfil sem permissão. A tela mostra mensagem; não desloga.
@@ -278,20 +278,22 @@ O frontend consome estas entidades pela API, sempre como DTO. Nunca recria regra
 ```mermaid
 classDiagram
     class Usuario {
-        +Long id
+        +UUID id
         +String nome
-        +String email
         +Perfil perfil
-    }
-    class DadosEstudante {
-        +String curso
+        +boolean revisor
+        +boolean ativo
         +String instituicao
-        +String periodo
-    }
-    class DadosProfissional {
-        +String categoria
+        +Integer periodo
+        +Categoria categoria
         +String registro
         +String uf
+    }
+    class Categoria {
+        <<enumeration>>
+        FISIOTERAPEUTA
+        TERAPEUTA_OCUPACIONAL
+        OUTRA
     }
     class Perfil {
         <<enumeration>>
@@ -462,8 +464,7 @@ classDiagram
     }
 
     Usuario --> Perfil
-    Usuario "1" -- "0..1" DadosEstudante
-    Usuario "1" -- "0..1" DadosProfissional
+    Usuario --> Categoria
     Usuario "1 responsavel" -- "*" Paciente
     Paciente "1" *-- "*" Avaliacao
     Paciente "1" *-- "*" Sessao
@@ -656,15 +657,16 @@ Sem linha de coautoria nem assinatura de ferramenta.
 | Ambiente | Branch | Onde |
 |---|---|---|
 | Preview | qualquer PR | Vercel (automático) |
-| Homologação | `homologacao` | Vercel |
 | Produção | `main` | Vercel |
+
+Só existe o ambiente de produção. A branch `homologacao` é etapa de revisão no git, sem deploy próprio. Previews da Vercel por PR não fazem login (endereço fora das Redirect URLs).
 
 Configuração na Vercel:
 
 - *Root Directory*: `frontend`
 - *Build Command*: `npm run build`
 - *Output Directory*: `dist`
-- Variável `VITE_API_URL` apontando para o backend do mesmo ambiente.
+- Variável `VITE_API_URL` apontando para o backend de produção.
 - Rewrite de SPA: toda rota para `/index.html` (senão `/login` dá 404 ao recarregar). Criar `vercel.json` com `{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}` no primeiro deploy.
 
 CI (GitHub Actions) roda `npm ci`, `npm run lint`, `npm test` e `npm run build` em todo PR. *(Workflow ainda não criado.)*

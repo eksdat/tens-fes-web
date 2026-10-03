@@ -1,8 +1,13 @@
 spring:
   application:
-    name: tens-fes-api
+    name: fisiotech-api
+  main:
+    log-startup-info: false
+  config:
+    import: optional:file:.env[.properties]
   datasource:
-    # Supabase: usar a connection string do "Session pooler" (IPv4). Valores vêm do ambiente, nunca do repositório.
+    hikari:
+      maximum-pool-size: 3
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
@@ -12,13 +17,30 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
-  mvc:
-    problemdetails:
-      enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SUPABASE_URL}/auth/v1
+          jwk-set-uri: ${SUPABASE_URL}/auth/v1/.well-known/jwks.json
+          jws-algorithms: ES256
+          audiences: authenticated
 
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+logging:
+  pattern:
+    console: "%clr(%d{HH:mm:ss}){faint} %clr(%5p) %clr(%-24.24logger{0}){cyan} %m%n%wEx"
+  level:
+    root: WARN
+    br.unibh: INFO
+    org.flywaydb.core.internal.command.DbMigrate: INFO
+    org.hibernate.orm.connections.pooling: WARN
+    org.springdoc.core.events: ERROR
 
 management:
   endpoints:

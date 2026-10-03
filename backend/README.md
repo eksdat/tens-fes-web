@@ -1,6 +1,6 @@
-# TENS + FES — Backend (API)
+# Fisiotech — Backend (API)
 
-API REST da plataforma educacional e clínica de eletroestimulação **TENS + FES**. Este repositório tem duas pastas:
+API REST da plataforma educacional e clínica de eletroestimulação **Fisiotech** (TENS, NMES e FES). Este repositório tem duas pastas:
 
 - `backend/` (este documento): API em Java 25 + Spring Boot.
 - `frontend/`: SPA em React + TypeScript. Veja `../frontend/README.md`.
@@ -102,19 +102,13 @@ cd backend
 copy .env.example .env      # preencha com os dados do Supabase (seção 5)
 ```
 
-O Spring **não** lê o arquivo `.env` sozinho. Carregue as variáveis antes de subir:
+O `application.yml` importa o `backend/.env` (`spring.config.import: optional:file:.env[.properties]`). Basta rodar a partir da pasta `backend/`:
 
 ```powershell
-# PowerShell: carrega o .env na sessão atual
-Get-Content .env | Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object {
-    $nome, $valor = $_ -split '=', 2
-    Set-Item "env:$nome" $valor
-}
-
 .\mvnw.cmd spring-boot:run
 ```
 
-No IntelliJ, outra opção: *Run Configuration › Environment variables* com os mesmos valores.
+O caminho é relativo à pasta de onde o comando roda. Rodando de outra pasta (ou no IntelliJ com outro *Working directory*), o `.env` não é lido e a aplicação falha com `'url' must start with "jdbc"`. Variáveis de ambiente do sistema têm prioridade sobre o `.env`.
 
 Confira se subiu:
 
@@ -126,7 +120,7 @@ Confira se subiu:
 
 ### Rodar sem Supabase (banco local em Docker)
 
-A classe de teste `TestTensFesApiApplication` sobe a API com um PostgreSQL 17 em container. Ela não precisa de `.env`:
+A classe de teste `TestFisiotechApiApplication` sobe a API com um PostgreSQL 17 em container. Ela não precisa de `.env`:
 
 ```powershell
 .\mvnw.cmd spring-boot:test-run
@@ -171,9 +165,12 @@ Como pegar a conexão:
 - Ficam em `src/main/resources/db/migration/`.
 - Nome: `V<n>__<descricao>.sql`. Ex.: `V1__usuarios.sql`, `V2__pacientes.sql`.
 - Rodam sozinhas ao subir a aplicação.
-- **Nunca** edite uma migration que já foi aplicada em homologação ou produção. Crie uma nova.
+- **Nunca** edite uma migration que já foi aplicada em produção. Crie uma nova.
 - `spring.jpa.hibernate.ddl-auto=validate`: o Hibernate **não** cria tabela. Ele só confere se a entidade bate com o schema. Se não bater, a aplicação não sobe. Isso é proposital.
 - Nunca altere o schema pelo painel do Supabase. Toda mudança passa por migration.
+- O Supabase cria a function `public.rls_auto_enable`, que liga o RLS em toda tabela nova. Por causa dela o Flyway vê o schema como "não vazio" e falha com `Found non-empty schema(s) "public" but no schema history table`. Por isso o `application.yml` usa `baseline-on-migrate: true` com `baseline-version: 0`: o histórico começa na versão 0 e a `V1` continua sendo aplicada. Não suba `baseline-version` para 1, senão a `V1` é pulada.
+- O RLS ligado não afeta o backend: o usuário `postgres` é dono das tabelas e passa pelo RLS. Ele bloqueia o acesso pela Data API do Supabase, que é o que queremos.
+- As migrations usam os papéis `anon` e `authenticated`, que só existem no Supabase. Num PostgreSQL comum a `V1` falha com `role "anon" does not exist`. Os testes criam esses papéis antes das migrations (`src/test/resources/papeis-supabase.sql`, carregado em `TestcontainersConfiguration`). Fora do Supabase, crie os dois papéis antes de subir a API.
 
 ---
 
@@ -184,8 +181,8 @@ Como pegar a conexão:
 | `.\mvnw.cmd spring-boot:run` | Sobe a API em `:8080` usando o Supabase |
 | `.\mvnw.cmd spring-boot:test-run` | Sobe a API com PostgreSQL em Docker |
 | `.\mvnw.cmd test` | Roda todos os testes (precisa de Docker) |
-| `.\mvnw.cmd -DskipTests package` | Gera `target/tens-fes-api-0.0.1-SNAPSHOT.jar` |
-| `java -jar target/tens-fes-api-0.0.1-SNAPSHOT.jar` | Roda o jar gerado |
+| `.\mvnw.cmd -DskipTests package` | Gera `target/fisiotech-api-0.0.1-SNAPSHOT.jar` |
+| `java -jar target/fisiotech-api-0.0.1-SNAPSHOT.jar` | Roda o jar gerado |
 
 ---
 
@@ -221,7 +218,7 @@ Regras de desenho:
 
 - **A entidade nunca sai do backend.** Sempre DTO.
 - **Não criar `IXService`** com uma implementação só. O Mockito mocka a classe concreta. Interface só existe com mais de uma implementação real ou quando o teste precisa de um fake. Caso atual: `LlmClient`.
-- Erro sai como `ProblemDetail` (`spring.mvc.problemdetails.enabled=true`). Exceções de negócio ganham um `@RestControllerAdvice` em `shared/` quando a primeira existir.
+- Erro sai como `ProblemDetail` (`shared/GlobalExceptionHandler`). Exceções de domínio estendem `ErrorResponseException` e já levam o status: `RecursoNaoEncontradoException` (404), `ConflitoException` (409). Erro de validação traz `erros: { campo: mensagem }`.
 - Rotas da API: prefixo `/api/v1`. Ex.: `POST /api/v1/pacientes/{id}/sessoes`.
 
 ### Segurança (`config/SecurityConfig.java`)
@@ -244,11 +241,18 @@ backend/
 ├── .env.example                   # modelo das variáveis (copie para .env)
 └── src/
     ├── main/
-    │   ├── java/br/unibh/tensfes/
-    │   │   ├── TensFesApiApplication.java
-    │   │   ├── config/        # SecurityConfig, CORS, OpenAPI
-    │   │   ├── shared/        # tratamento global de erro, exceções, auditoria
-    │   │   ├── auth/          # login, cadastro, JWT, Usuario, Perfil, redefinição de senha
+    │   ├── java/br/unibh/fisiotech/
+    │   │   ├── FisiotechApiApplication.java
+    │   │   ├── config/                  # SecurityConfig (JWT, CORS), ResumoInicializacao
+    │   │   ├── shared/exception/        # GlobalExceptionHandler, ConflitoException, RecursoNaoEncontradoException
+    │   │   ├── usuario/                 # cadastro e perfil (identidade fica no Supabase Auth)
+    │   │   │   ├── controller/          # UsuarioController (/api/v1/usuarios/me)
+    │   │   │   ├── service/             # UsuarioService
+    │   │   │   ├── repository/          # UsuarioRepository
+    │   │   │   ├── entity/              # Usuario
+    │   │   │   ├── dto/                 # CadastroRequest, UsuarioResponse
+    │   │   │   ├── enums/               # Perfil, Categoria, Uf
+    │   │   │   └── security/            # PerfilJwtConverter (JWT -> papéis)
     │   │   ├── paciente/      # Paciente, Avaliacao
     │   │   ├── sessao/        # Sessao, ParametroAplicado, EletrodoAplicado
     │   │   ├── conteudo/      # Conteudo, Material, Anexo, Referencia, fluxo editorial
@@ -261,13 +265,15 @@ backend/
     │   └── resources/
     │       ├── application.yml
     │       └── db/migration/  # V1__*.sql, V2__*.sql ...
-    └── test/java/br/unibh/tensfes/
-        ├── TensFesApiApplicationTests.java    # sobe o contexto com Postgres em container
+    └── test/java/br/unibh/fisiotech/
+        ├── FisiotechApiApplicationTests.java    # sobe o contexto com Postgres em container
         ├── TestcontainersConfiguration.java   # container PostgreSQL 17
-        └── TestTensFesApiApplication.java     # roda a API local com o container
+        └── TestFisiotechApiApplication.java     # roda a API local com o container
 ```
 
-Cada pacote de feature tem um `package-info.java` que descreve a responsabilidade dele. Dentro da feature, os arquivos ficam juntos: `SessaoController`, `SessaoService`, `SessaoRepository`, `Sessao`, `SessaoRequest`, `SessaoResponse`, `SessaoMapper`. Não crie subpastas `controller/`, `service/` até a feature passar de uns 10 arquivos.
+Toda feature segue o mesmo padrão de subpastas: `controller/`, `service/`, `repository/`, `entity/`, `dto/`, `enums/` e, quando houver, `security/` ou `mapper/`. Crie só a subpasta que tiver classe. As features da árvore sem subpastas (`paciente/`, `sessao/`...) ainda não existem no código.
+
+Consequência do padrão: o que uma camada usa de outra precisa ser `public` (ex.: `Usuario.definirDadosEstudante`). Mutação sensível que só teste usa (ex.: `revisor`, `ativo`) não ganha setter; o teste usa `ReflectionTestUtils`.
 
 ---
 
@@ -287,10 +293,28 @@ Regras obrigatórias no backend:
 2. Todo acesso a paciente, avaliação ou sessão confere `paciente.responsavel.id == usuarioLogado.id`. Se falhar, responde **404**, não 403. Assim não revela que o registro existe. O ponto único dessa verificação é `PacienteService.buscarDoResponsavel`.
 3. Paciente não é usuário: sem login, sem conta.
 4. Registro profissional digitado (CREFITO etc.) **não** gera selo de "verificado".
-5. O autor não aprova o próprio material.
+5. Só usuário com `revisor = true` (PROFISSIONAL) aprova material, e nunca o próprio. `revisor` não muda por endpoint: liga-se no banco para pessoas conhecidas (docente).
 6. `Anexo`: só PDF e imagem, até 10 MB.
-7. Token de redefinição de senha: guarda só o hash, uso único, expira em 30 minutos. "Esqueci a senha" responde a mesma mensagem exista ou não a conta.
+7. Senha, e-mail, redefinição de senha e MFA ficam no Supabase Auth. Nossa tabela `usuario` não guarda e-mail nem senha. Perfil nunca no `user_metadata`. Regras de campo e validações em [SEGURANCA.md](../SEGURANCA.md) e no "Cadastro" abaixo.
 8. Até as políticas LGPD estarem definidas: **somente dados fictícios**.
+
+### Cadastro (tabela `usuario`, migration `V2__usuario.sql`)
+
+Dois perfis: `ESTUDANTE` e `PROFISSIONAL`. Paciente não é usuário. Docente é `PROFISSIONAL` com `revisor = true`. Uma tabela só, com colunas opcionais por perfil; o banco exige os campos de cada perfil por `CHECK`.
+
+| Campo | Perfil | Regra |
+|---|---|---|
+| `nome` | ambos | 2 a 120 caracteres |
+| `instituicao` | estudante | Texto. A tela oferece lista (UniBH, PUC Minas, UFMG, Unifenas...) e "Outra" com campo livre |
+| `periodo` | estudante | 1 a 12 |
+| `categoria` | profissional | `FISIOTERAPEUTA`, `TERAPEUTA_OCUPACIONAL`, `OUTRA` |
+| `registro` | profissional | Formato: `123456-F` (fisioterapeuta), `123456-TO` (terapeuta ocupacional); livre até 20 para `OUTRA`. Sem consulta ao CREFITO, sem selo de "verificado" |
+| `uf` | profissional | Uma das 27 siglas |
+
+- O curso não é guardado: o sistema é só para Fisioterapia.
+- Troca ESTUDANTE → PROFISSIONAL: os dados de estudante continuam gravados como histórico. O inverso não existe.
+- Anti-spam no texto livre (`nome`, `instituicao`, `registro`): `trim`, tamanho máximo, sem URL (`http`, `www.`), sem caractere de controle; só letras, números, espaço e `. - ' ( ) /`. Validado no DTO (`@Pattern`, `@Size`).
+- Anti-spam no cadastro: confirmação de e-mail obrigatória e limite de cadastros por IP no Supabase Auth; CAPTCHA (Cloudflare Turnstile, gratuito) no formulário de cadastro, configurado em *Authentication › Attack Protection*.
 
 ---
 
@@ -299,22 +323,22 @@ Regras obrigatórias no backend:
 ```mermaid
 classDiagram
     class Usuario {
-        +Long id
+        +UUID id
         +String nome
-        +String email
-        +String senhaHash
         +Perfil perfil
-        +LocalDateTime criadoEm
-    }
-    class DadosEstudante {
-        +String curso
+        +boolean revisor
+        +boolean ativo
         +String instituicao
-        +String periodo
-    }
-    class DadosProfissional {
-        +String categoria
+        +Integer periodo
+        +Categoria categoria
         +String registro
         +String uf
+    }
+    class Categoria {
+        <<enumeration>>
+        FISIOTERAPEUTA
+        TERAPEUTA_OCUPACIONAL
+        OUTRA
     }
     class Perfil {
         <<enumeration>>
@@ -483,15 +507,9 @@ classDiagram
         +String tipo
         +Long tamanhoBytes
     }
-    class TokenRedefinicaoSenha {
-        +String tokenHash
-        +LocalDateTime expiraEm
-        +boolean usado
-    }
 
     Usuario --> Perfil
-    Usuario "1" -- "0..1" DadosEstudante
-    Usuario "1" -- "0..1" DadosProfissional
+    Usuario --> Categoria
     Usuario "1 responsavel" -- "*" Paciente
     Paciente "1" *-- "*" Avaliacao
     Paciente "1" *-- "*" Sessao
@@ -515,7 +533,6 @@ classDiagram
     Material --> EstadoEditorial
     Material "1" *-- "*" Anexo
     CasoClinico "1" *-- "*" Anexo
-    Usuario "1" *-- "*" TokenRedefinicaoSenha
 ```
 
 Notas que o diagrama não mostra:
@@ -699,7 +716,7 @@ Regras:
 - Nome do teste descreve o comportamento: `deveResponder404QuandoPacienteEDeOutroProfissional`.
 - Um comportamento por teste. Sem `if`/`for` no teste.
 - Sem dependência de ordem, relógio real ou rede externa. LLM sempre por fake de `LlmClient`.
-- Testes de integração **precisam do Docker rodando**. Sem Docker, `TensFesApiApplicationTests` falha ao subir o container.
+- Testes de integração **precisam do Docker rodando**. Sem Docker, `FisiotechApiApplicationTests` falha ao subir o container.
 
 ---
 
@@ -757,10 +774,11 @@ Sem linha de coautoria nem assinatura de ferramenta.
 
 | Ambiente | Branch | Onde |
 |---|---|---|
-| Homologação | `homologacao` | Render (serviço de homologação) |
 | Produção | `main` | Render |
 
-- Build: `./mvnw -DskipTests package`. Start: `java -jar target/tens-fes-api-0.0.1-SNAPSHOT.jar`.
+Só existe o ambiente de produção. A branch `homologacao` é etapa de revisão e integração no git, não um ambiente publicado.
+
+- Build: `./mvnw -DskipTests package`. Start: `java -jar target/fisiotech-api-0.0.1-SNAPSHOT.jar`.
 - Variáveis da seção 4 no painel do Render.
 - `CORS_ALLOWED_ORIGINS` com a URL do frontend na Vercel.
 - CI (GitHub Actions) roda `./mvnw test` em todo PR. *(Workflow ainda não criado.)*
@@ -769,21 +787,23 @@ Sem linha de coautoria nem assinatura de ferramenta.
 
 ## 18. Estado atual e pendências
 
-Pronto nesta base:
+Pronto:
 
-- Projeto Spring Boot 4.1.1 / Java 25 gerado, compilando (`mvnw package` ok).
-- Pacotes por feature criados (vazios, com `package-info.java`).
-- `SecurityConfig` stateless com CORS.
-- `application.yml` lendo conexão do ambiente; Flyway e `ddl-auto=validate`.
+- Spring Boot 4.1.1 / Java 25 com Lombok; build e testes unitários ok.
+- Pacotes `config`, `shared/exception` e `usuario` (camadas em subpastas). Os demais pacotes da árvore nascem com a primeira classe de cada feature.
+- Validação do JWT do Supabase (ES256, JWKS, emissor, `aud`) e conversão do perfil do banco em papéis.
+- `GET`/`POST /api/v1/usuarios/me` com validação por perfil, erros por campo e 409 em cadastro duplicado.
+- Migrations `V1__seguranca_base.sql` (revoga `anon`/`authenticated`) e `V2__usuario.sql`, aplicadas no Supabase.
+- Tratamento global de erros em `ProblemDetail`.
+- Log de inicialização enxuto (banner Fisiotech e resumo) e senha fora do log.
 - springdoc (Swagger UI) e Actuator.
-- Testcontainers configurado com PostgreSQL 17.
+- 32 testes: unitários e de integração com PostgreSQL 17 em container (Testcontainers), cobrindo cadastro, 404/409, 403 sem perfil ou inativo e os `CHECK` do banco.
 
 Pendente:
 
-- Filtro JWT, login e cadastro (`auth/`).
-- Primeira migration (`V1__usuarios.sql`).
+- Frontend do cadastro e login (Supabase Auth + `/api/v1/usuarios/me`).
+- Deploy (Firebase Hosting + Cloud Run ou Render) e workflow do GitHub Actions.
+- Limite de requisições na API.
 - Envers, Spring AI e pgvector (entram com as features).
-- `@RestControllerAdvice` para exceções de negócio.
-- Workflow do GitHub Actions.
 - Políticas LGPD (retenção, backup, incidentes, exportação). Até lá, só dados fictícios.
 - Aparelho de referência e manual. Provedor de LLM e limite de custo.
