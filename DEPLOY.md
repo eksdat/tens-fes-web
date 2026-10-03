@@ -67,27 +67,29 @@ Intervalo de 14 min, não 15: o Render dorme aos 15 min. Das 22h às 7h a API do
 
 ## 3. Frontend no Firebase Hosting
 
-`firebase.json` (raiz) publica `frontend/dist`, devolve `index.html` para toda rota (SPA) e define os cabeçalhos de segurança (CSP, HSTS, `nosniff`). O `predeploy` roda `npm run build`.
+`frontend/firebase.json` publica `frontend/dist`, devolve `index.html` para toda rota (SPA) e define os cabeçalhos de segurança (CSP, HSTS, `nosniff`). O `predeploy` roda `npm run build`. Todos os comandos `firebase` rodam **dentro da pasta `frontend/`**.
 
 ### Primeira vez
 
-1. Console do Firebase › projeto › **Hosting** › **Vamos começar**. Isso cria o site (endereço `<site>.web.app`).
-2. Instalar a CLI e entrar: `npm install -g firebase-tools` e `firebase login`.
-3. Na raiz do repositório: `firebase use --add`, escolher o projeto e o alias `default`. O comando cria `.firebaserc` (ID do projeto, não é segredo; pode ir no commit).
-4. Criar `frontend/.env.production.local` (ignorado pelo git, nunca no commit):
+1. **Criar o site no console.** Firebase › projeto › **Hosting** › **Vamos começar**. O assistente mostra 3 passos (instalar a CLI, inicializar, implantar); aqui eles são informativos. Clique em **Próxima** até o fim e em **Continuar para o console**. O resultado é o site padrão, com endereço `<id-do-projeto>.web.app`, que aparece em *Hosting › Domínios*.
+   - **Não rode `firebase init`**: ele gera outro `firebase.json` e pergunta coisas que já estão configuradas.
+   - O **ID do projeto** fica em *Configurações do projeto* (engrenagem) › *Geral*.
+2. **Instalar a CLI e entrar** (uma vez por máquina): `npm install -g firebase-tools` e `firebase login`.
+3. **Ligar a pasta ao projeto.** Em `frontend/`: `firebase use --add`, escolher o projeto e o alias `default`. Cria `frontend/.firebaserc` (só o ID do projeto, não é segredo; pode ir no commit).
+4. **Criar `frontend/.env.production.local`** (ignorado pelo git, nunca no commit):
    ```
    VITE_API_URL=https://<serviço>.onrender.com
    VITE_SUPABASE_URL=https://<project-ref>.supabase.co
    VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
    ```
-5. `firebase deploy --only hosting`.
+5. **Publicar.** Em `frontend/`: `firebase deploy --only hosting`. No fim, a CLI mostra o *Hosting URL*.
 
 ### Depois do primeiro deploy (nesta ordem)
 
 | Onde | O quê |
 |---|---|
 | Render › Environment | `CORS_ALLOWED_ORIGINS` = `https://<site>.web.app,https://<site>.firebaseapp.com`; salvar (o Render reinicia) |
-| `firebase.json` | se a URL do Render mudar, ajustar o `connect-src` da CSP |
+| `frontend/firebase.json` | se a URL do Render mudar, ajustar o `connect-src` da CSP |
 | Supabase › Authentication › URL Configuration | **Site URL** = `https://<site>.web.app`; **Redirect URLs** = `http://localhost:5173/**`, `https://<site>.web.app/**`, `https://<site>.firebaseapp.com/**`. Nunca `*` |
 | Google Cloud › OAuth › Origens JavaScript | `http://localhost:5173`, `https://<site>.web.app`. A URI de redirecionamento não muda (callback do Supabase) |
 

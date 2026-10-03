@@ -138,7 +138,7 @@ Regras:
 - O `supabase-js` guarda a sessão no `localStorage`. Isso exige zero XSS:
   - proibido `dangerouslySetInnerHTML` sem sanitizar (DOMPurify);
   - Markdown de conteúdo renderizado sem HTML cru;
-  - **Content-Security-Policy** no `firebase.json` (já aplicada): `default-src 'self'`, `script-src 'self'` (sem inline e sem `unsafe-eval`), `connect-src` só para a API e `*.supabase.co`, `frame-ancestors 'none'`. Também HSTS, `nosniff` e `Referrer-Policy`. Ao incluir o CAPTCHA, liberar `challenges.cloudflare.com` (DEPLOY.md).
+  - **Content-Security-Policy** no `frontend/firebase.json` (já aplicada): `default-src 'self'`, `script-src 'self'` (sem inline e sem `unsafe-eval`), `connect-src` só para a API e `*.supabase.co`, `frame-ancestors 'none'`. Também HSTS, `nosniff` e `Referrer-Policy`. Ao incluir o CAPTCHA, liberar `challenges.cloudflare.com` (DEPLOY.md).
 - Esconder telas por perfil é conforto. A segurança é a seção 4.
 - Mensagem de erro nunca mostra detalhe técnico.
 
