@@ -53,7 +53,7 @@ Documentos de origem (fora deste repositório, pasta `docs/` do projeto): `Proto
 | Observabilidade | Spring Boot Actuator | `/actuator/health` |
 | Testes | JUnit 5, Mockito, Testcontainers (PostgreSQL 17) | Integração com banco real |
 | Build | Maven (wrapper `mvnw`) | Ninguém precisa instalar Maven |
-| Deploy | Render | CI no GitHub Actions em todo PR |
+| Deploy | Render (Docker, plano grátis) | CI no GitHub Actions em todo PR. Guia em [DEPLOY.md](../DEPLOY.md) |
 
 Itens *(a adicionar)* entram junto com a feature que os usa. Não adicione dependência sem uso.
 
@@ -115,7 +115,7 @@ Confira se subiu:
 | URL | Esperado |
 |---|---|
 | http://localhost:8080/actuator/health | `{"status":"UP"}` |
-| http://localhost:8080/swagger-ui.html | Swagger UI |
+| http://localhost:8080/swagger-ui.html | Swagger UI (só com `SWAGGER_ENABLED=true` no `.env`) |
 | http://localhost:8080/v3/api-docs | Contrato OpenAPI em JSON |
 
 ### Rodar sem Supabase (banco local em Docker)
@@ -140,6 +140,7 @@ Todas ficam em `.env` (local) ou no painel do Render (produção). O arquivo `.e
 | `DB_USERNAME` | sim | `postgres.<project-ref>` | Usuário do pooler |
 | `DB_PASSWORD` | sim | — | Senha do banco |
 | `CORS_ALLOWED_ORIGINS` | não | `http://localhost:5173` | Origens do frontend, separadas por vírgula |
+| `SWAGGER_ENABLED` | não | `true` | Liga o Swagger (`/swagger-ui.html`, `/v3/api-docs`). **Só em desenvolvimento**: sem a variável, a documentação não existe (padrão de produção) |
 
 O mapeamento está em `src/main/resources/application.yml`.
 
@@ -192,7 +193,7 @@ Visão do sistema inteiro:
 
 ```mermaid
 flowchart LR
-    U[Navegador<br/>computador ou celular] --> F[Frontend React<br/>Vercel]
+    U[Navegador<br/>computador ou celular] --> F[Frontend React<br/>Firebase Hosting]
     F -- HTTPS + JWT<br/>/api/v1/** --> B[Backend Spring Boot<br/>Render]
     B -- JDBC + SSL --> D[(PostgreSQL<br/>Supabase)]
     B --> L[Provedor de LLM]
@@ -224,11 +225,11 @@ Regras de desenho:
 ### Segurança (`config/SecurityConfig.java`)
 
 - API **stateless**: sem sessão HTTP, então sem CSRF.
-- Liberados sem login: `/actuator/health`, `/swagger-ui/**`, `/v3/api-docs/**`.
+- Liberados sem login: `/actuator/health/**`. O Swagger (`/swagger-ui/**`, `/v3/api-docs/**`) também passa pela segurança, mas só existe com `SWAGGER_ENABLED=true`.
 - Todo o resto exige autenticação.
 - `@EnableMethodSecurity` ativa `@PreAuthorize` nos controllers.
 - CORS liberado só para `/api/**` e para as origens de `CORS_ALLOWED_ORIGINS`.
-- O filtro JWT ainda não existe. Entra no card "Fazer login e sair".
+- O JWT é validado pelo resource server do Spring (chaves públicas do Supabase); o perfil vem do banco (`PerfilJwtConverter`).
 
 ---
 
@@ -772,16 +773,19 @@ Sem linha de coautoria nem assinatura de ferramenta.
 
 ## 17. Deploy
 
-| Ambiente | Branch | Onde |
-|---|---|---|
-| Produção | `main` | Render |
+Só existe o ambiente de produção: backend no **Render** (Docker, plano grátis, região Oregon), frontend no Firebase Hosting, banco e login no Supabase. A branch `homologacao` é etapa de revisão no git, sem ambiente publicado.
 
-Só existe o ambiente de produção. A branch `homologacao` é etapa de revisão e integração no git, não um ambiente publicado.
+Passo a passo, variáveis, o ping do cron-job.org (`*/14 7-21 * * *`) e a conferência pós-deploy ficam em **[DEPLOY.md](../DEPLOY.md)**.
 
-- Build: `./mvnw -DskipTests package`. Start: `java -jar target/fisiotech-api-0.0.1-SNAPSHOT.jar`.
-- Variáveis da seção 4 no painel do Render.
-- `CORS_ALLOWED_ORIGINS` com a URL do frontend na Vercel.
-- CI (GitHub Actions) roda `./mvnw test` em todo PR. *(Workflow ainda não criado.)*
+O que vale lembrar do backend:
+
+- `backend/Dockerfile` (duas etapas, Java 25, JVM limitada a 70% dos 512 MB) e `render.yaml` na raiz.
+- A porta vem de `PORT` (`server.port: ${PORT:8080}`).
+- Health check do Render: `/actuator/health/liveness`. O ping usa `/actuator/health`.
+- Plano grátis tem 0,1 CPU: a API leva cerca de 3 min para subir e dorme após 15 min sem requisição.
+- Swagger desligado em produção (não definir `SWAGGER_ENABLED`).
+- `CORS_ALLOWED_ORIGINS` com as URLs do frontend no Firebase.
+- CI: `.github/workflows/backend.yml` roda `./mvnw test` em todo PR para `homologacao` e `main`. O Render só publica depois que o CI passa (*Auto-Deploy: After CI Checks Pass*).
 
 ---
 
@@ -789,21 +793,22 @@ Só existe o ambiente de produção. A branch `homologacao` é etapa de revisão
 
 Pronto:
 
-- Spring Boot 4.1.1 / Java 25 com Lombok; build e testes unitários ok.
+- Spring Boot 4.1.1 / Java 25 com Lombok; build e testes ok.
 - Pacotes `config`, `shared/exception` e `usuario` (camadas em subpastas). Os demais pacotes da árvore nascem com a primeira classe de cada feature.
 - Validação do JWT do Supabase (ES256, JWKS, emissor, `aud`) e conversão do perfil do banco em papéis.
 - `GET`/`POST /api/v1/usuarios/me` com validação por perfil, erros por campo e 409 em cadastro duplicado.
 - Migrations `V1__seguranca_base.sql` (revoga `anon`/`authenticated`) e `V2__usuario.sql`, aplicadas no Supabase.
 - Tratamento global de erros em `ProblemDetail`.
 - Log de inicialização enxuto (banner Fisiotech e resumo) e senha fora do log.
-- springdoc (Swagger UI) e Actuator.
-- 32 testes: unitários e de integração com PostgreSQL 17 em container (Testcontainers), cobrindo cadastro, 404/409, 403 sem perfil ou inativo e os `CHECK` do banco.
+- Swagger desligado por padrão; liga com `SWAGGER_ENABLED=true` no `.env`.
+- 34 testes: unitários e de integração com PostgreSQL 17 em container (Testcontainers), cobrindo cadastro, 404/409, 403 sem perfil ou inativo, os `CHECK` do banco e o Swagger desligado.
+- Em produção no Render (Docker), com CI e ping de manutenção.
 
 Pendente:
 
 - Frontend do cadastro e login (Supabase Auth + `/api/v1/usuarios/me`).
-- Deploy (Firebase Hosting + Cloud Run ou Render) e workflow do GitHub Actions.
 - Limite de requisições na API.
+- Domínio próprio e deploy automático do frontend (DEPLOY.md, seção 5).
 - Envers, Spring AI e pgvector (entram com as features).
 - Políticas LGPD (retenção, backup, incidentes, exportação). Até lá, só dados fictícios.
 - Aparelho de referência e manual. Provedor de LLM e limite de custo.
