@@ -30,11 +30,16 @@ class ResumoInicializacao {
         log.info("""
                 Fisiotech API pronta
                   API ....... {}
-                  Swagger ... {}/swagger-ui.html
+                  Swagger ... {}
                   Banco ..... {} (schema v{})
                   Auth ...... {}""",
-                url, url, hostDoBanco(), versao == null ? "-" : versao.getVersion(),
+                url, swagger(url), hostDoBanco(), versao == null ? "-" : versao.getVersion(),
                 env.getProperty("spring.security.oauth2.resourceserver.jwt.issuer-uri"));
+    }
+
+    private String swagger(String url) {
+        return env.getProperty("springdoc.swagger-ui.enabled", Boolean.class, false)
+                ? url + "/swagger-ui.html" : "desligado";
     }
 
     private String hostDoBanco() {
