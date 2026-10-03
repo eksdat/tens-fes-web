@@ -1,1 +1,0 @@
-SQL das tabelas e das regras de acesso
