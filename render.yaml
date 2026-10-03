@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: fisiotech-api
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /actuator/health/liveness
+    buildFilter:
+      paths:
+        - backend/**
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

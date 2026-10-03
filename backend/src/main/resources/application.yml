@@ -28,6 +28,10 @@ spring:
           jws-algorithms: ES256
           audiences: authenticated
 
+server:
+  # O Render define PORT; localmente fica 8080.
+  port: ${PORT:8080}
+
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
