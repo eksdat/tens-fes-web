@@ -655,8 +655,10 @@ Sem linha de coautoria nem assinatura de ferramenta.
 Frontend no **Firebase Hosting** (plano Spark). Só existe o ambiente de produção; a branch `homologacao` é etapa de revisão no git.
 
 - `frontend/firebase.json`: publica `dist`, devolve `index.html` para toda rota (SPA), define a CSP e os demais cabeçalhos de segurança e roda `npm run build` antes do deploy.
+- `frontend/.firebaserc` (no repositório) liga a pasta ao projeto Firebase.
 - Build de produção lê `frontend/.env.production.local` (API, Supabase). Nunca no commit.
 - Deploy manual: `firebase deploy --only hosting`. Passo a passo e conferência em **[DEPLOY.md](../DEPLOY.md)**.
+- **Não rodar `firebase init`**: ele regrava o `firebase.json` e apaga a CSP, os cabeçalhos, o `predeploy` e o cache (`git restore frontend/firebase.json` desfaz). Armadilhas em [DEPLOY.md](../DEPLOY.md), seção 3.
 - CORS: o backend (Render) precisa listar a URL do site em `CORS_ALLOWED_ORIGINS`.
 - CSP estrita (`script-src 'self'`): ao incluir o CAPTCHA (Turnstile) ou uma biblioteca que injete estilo, ajustar o `frontend/firebase.json`.
 - CI de frontend (GitHub Actions): ainda não criado.

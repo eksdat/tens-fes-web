@@ -63,7 +63,7 @@ Configurar em *Authentication*:
 | Senha mínima | 10 caracteres, com letras e números |
 | Proteção contra senha vazada | Ligar quando o plano permitir |
 | Site URL | URL do frontend em produção |
-| Redirect URLs | Só `http://localhost:5173/**` e a URL de produção. Nunca `*` |
+| Redirect URLs | Só `http://localhost:5173/**` e as URLs do site (`https://fisiotech-3b4ad.web.app/**` e `https://fisiotech-3b4ad.firebaseapp.com/**`). Nunca `*` |
 | SMTP | Gmail do projeto com senha de app (sem domínio próprio, pode cair em spam). Antes de abrir para a turma: domínio próprio autenticado (DKIM, SPF, DMARC). Templates e avisos de segurança em [supabase/README.md](supabase/README.md) |
 | Rotação de refresh token | Ligada (padrão) |
 | Expiração do access token | 3600 s (padrão) |

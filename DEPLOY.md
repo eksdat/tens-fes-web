@@ -18,6 +18,12 @@ flowchart LR
 | Banco e login | Supabase | Free | `us-east-1` | não |
 | Ping | cron-job.org | grátis | — | não |
 
+| Endereço | Valor |
+|---|---|
+| Site | `https://fisiotech-3b4ad.web.app` (também `https://fisiotech-3b4ad.firebaseapp.com`) |
+| API | `https://fisiotech-8a3v.onrender.com` |
+| Projeto Firebase | `fisiotech-3b4ad` (`frontend/.firebaserc`) |
+
 **Região:** Render em Oregon e Supabase em Virgínia. Cada consulta ao banco leva cerca de 70 ms a mais. A região de um serviço do Render não muda depois de criado; aceito enquanto só houver dados fictícios.
 
 ---
@@ -67,31 +73,45 @@ Intervalo de 14 min, não 15: o Render dorme aos 15 min. Das 22h às 7h a API do
 
 ## 3. Frontend no Firebase Hosting
 
-`frontend/firebase.json` publica `frontend/dist`, devolve `index.html` para toda rota (SPA) e define os cabeçalhos de segurança (CSP, HSTS, `nosniff`). O `predeploy` roda `npm run build`. Todos os comandos `firebase` rodam **dentro da pasta `frontend/`**.
+`frontend/firebase.json` publica `frontend/dist`, devolve `index.html` para toda rota (SPA) e define os cabeçalhos de segurança (CSP, HSTS, `nosniff`). O `predeploy` roda `npm run build`. `frontend/.firebaserc` (no repositório) liga a pasta ao projeto. Todos os comandos `firebase` rodam **dentro de `frontend/`**.
 
-### Primeira vez
+**Cache:** o HTML (qualquer rota, inclusive `/` e `/login`) sai com `no-cache`; `/assets/**` sai `immutable` por 1 ano (o nome do arquivo tem hash). Sem isso, depois de um deploy o navegador pode manter um `index.html` antigo apontando para arquivos que não existem mais, e o usuário vê tela branca.
 
-1. **Criar o site no console.** Firebase › projeto › **Hosting** › **Vamos começar**. O assistente mostra 3 passos (instalar a CLI, inicializar, implantar); aqui eles são informativos. Clique em **Próxima** até o fim e em **Continuar para o console**. O resultado é o site padrão, com endereço `<id-do-projeto>.web.app`, que aparece em *Hosting › Domínios*.
-   - **Não rode `firebase init`**: ele gera outro `firebase.json` e pergunta coisas que já estão configuradas.
-   - O **ID do projeto** fica em *Configurações do projeto* (engrenagem) › *Geral*.
-2. **Instalar a CLI e entrar** (uma vez por máquina): `npm install -g firebase-tools` e `firebase login`.
-3. **Ligar a pasta ao projeto.** Em `frontend/`: `firebase use --add`, escolher o projeto e o alias `default`. Cria `frontend/.firebaserc` (só o ID do projeto, não é segredo; pode ir no commit).
-4. **Criar `frontend/.env.production.local`** (ignorado pelo git, nunca no commit):
+### Publicar (quem já tem acesso ao projeto)
+
+1. Ter acesso: no console do Firebase › *Configurações do projeto* › *Usuários e permissões*, papel **Editor** para a conta de quem publica.
+2. Instalar a CLI e entrar (uma vez por máquina): `npm install -g firebase-tools` e `firebase login`. Responder "No" à telemetria e ao Gemini.
+3. Criar `frontend/.env.production.local` (ignorado pelo git, nunca no commit), copiando o `frontend/.env` e trocando só a API:
+   ```powershell
+   (Get-Content .env) -replace '^VITE_API_URL=.*','VITE_API_URL=https://<serviço>.onrender.com' | Set-Content .env.production.local
    ```
-   VITE_API_URL=https://<serviço>.onrender.com
-   VITE_SUPABASE_URL=https://<project-ref>.supabase.co
-   VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-   ```
-5. **Publicar.** Em `frontend/`: `firebase deploy --only hosting`. No fim, a CLI mostra o *Hosting URL*.
+   O arquivo fica com `VITE_API_URL`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`.
+4. Em `frontend/`: `firebase deploy --only hosting`. No fim, a CLI mostra o *Hosting URL*.
 
-### Depois do primeiro deploy (nesta ordem)
+### Como o projeto foi criado (histórico)
+
+1. Console do Firebase › projeto › **Hosting** › **Vamos começar** › *Próxima* até o fim › **Continuar para o console**. Cria o site `<id-do-projeto>.web.app`. Não instalar o SDK do Firebase nem copiar o `firebaseConfig`: o login é do Supabase.
+2. Em `frontend/`: `firebase use --add`, escolher o projeto e o alias `default`. Gera o `.firebaserc` (só o ID do projeto, não é segredo).
+
+### Depois do primeiro deploy (feito em 2026-10-03)
 
 | Onde | O quê |
 |---|---|
-| Render › Environment | `CORS_ALLOWED_ORIGINS` = `https://<site>.web.app,https://<site>.firebaseapp.com`; salvar (o Render reinicia) |
+| Render › Environment | `CORS_ALLOWED_ORIGINS` = `https://fisiotech-3b4ad.web.app,https://fisiotech-3b4ad.firebaseapp.com` (o Render reinicia) |
 | `frontend/firebase.json` | se a URL do Render mudar, ajustar o `connect-src` da CSP |
-| Supabase › Authentication › URL Configuration | **Site URL** = `https://<site>.web.app`; **Redirect URLs** = `http://localhost:5173/**`, `https://<site>.web.app/**`, `https://<site>.firebaseapp.com/**`. Nunca `*` |
-| Google Cloud › OAuth › Origens JavaScript | `http://localhost:5173`, `https://<site>.web.app`. A URI de redirecionamento não muda (callback do Supabase) |
+| Supabase › Authentication › URL Configuration | **Site URL** = `https://fisiotech-3b4ad.web.app`; **Redirect URLs** = `http://localhost:5173/**`, `https://fisiotech-3b4ad.web.app/**`, `https://fisiotech-3b4ad.firebaseapp.com/**`. Nunca `*` |
+| Google Cloud › OAuth › Origens JavaScript | `http://localhost:5173`, `https://fisiotech-3b4ad.web.app`. A URI de redirecionamento não muda (callback do Supabase) |
+
+### Armadilhas
+
+| Sintoma | Causa | Correção |
+|---|---|---|
+| `firebase use must be run from a Firebase project directory` | comando rodado fora de `frontend/`, onde está o `firebase.json` | `cd frontend` |
+| O `firebase.json` perdeu CSP, cabeçalhos, `predeploy` e cache | o `firebase init` regrava o arquivo (e o assistente do console sugere rodá-lo) | `git restore frontend/firebase.json`. **Não rodar `firebase init` de novo**: o projeto já está configurado |
+| `.firebaserc` com dois projetos ou alias repetido | `firebase init` e `firebase use --add` acrescentam alias | deixar só `"default"` com o ID do projeto |
+| Tela branca logo depois de um deploy | HTML em cache apontando para arquivos antigos | já tratado: HTML `no-cache` |
+| `403` em chamada à API a partir do site | URL do site ausente em `CORS_ALLOWED_ORIGINS` | acrescentar no Render |
+| Login por e-mail ou Google não volta ao site | URL ausente nas Redirect URLs do Supabase | acrescentar na tabela acima |
 
 ### CSP: quando mudar
 
@@ -99,17 +119,19 @@ A política é estrita (`script-src 'self'`, sem inline). Mudanças esperadas:
 
 - **CAPTCHA (Cloudflare Turnstile):** acrescentar `https://challenges.cloudflare.com` em `script-src` e criar `frame-src` para o mesmo endereço.
 - **Biblioteca de UI que injete `<style>`** (Radix, por exemplo): se o console do navegador acusar bloqueio, ajustar `style-src`.
-
 ## 4. Conferência depois do deploy
 
 ```
-GET  https://<serviço>.onrender.com/actuator/health          200
-GET  https://<serviço>.onrender.com/api/v1/usuarios/me       401 (sem token)
-GET  https://<serviço>.onrender.com/v3/api-docs              404 (Swagger desligado)
-GET  https://<site>.web.app/qualquer/rota                    200 (SPA)
+GET  <API>/actuator/health                                   200
+GET  <API>/api/v1/usuarios/me                                401 (sem token)
+GET  <API>/v3/api-docs                                       404 (Swagger desligado)
+GET  <SITE>/qualquer/rota                                     200 (SPA)
+GET  <SITE>/  (cabeçalho Cache-Control)                       no-cache
+OPTIONS <API>/api/v1/usuarios/me, Origin: <SITE>              200 (CORS)
+OPTIONS <API>/api/v1/usuarios/me, Origin: site desconhecido   403
 ```
 
-No navegador, em `https://<site>.web.app`: o console não deve mostrar erro de CORS nem de CSP.
+`<API>` e `<SITE>` são os endereços da tabela do início. No navegador, em `<SITE>`: o console não deve mostrar erro de CORS nem de CSP.
 
 ## 5. Pendências de deploy
 
