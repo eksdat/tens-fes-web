@@ -115,7 +115,7 @@ Confira se subiu:
 | URL | Esperado |
 |---|---|
 | http://localhost:8080/actuator/health | `{"status":"UP"}` |
-| http://localhost:8080/swagger-ui.html | Swagger UI |
+| http://localhost:8080/swagger-ui.html | Swagger UI (só com `SWAGGER_ENABLED=true` no `.env`) |
 | http://localhost:8080/v3/api-docs | Contrato OpenAPI em JSON |
 
 ### Rodar sem Supabase (banco local em Docker)
@@ -140,6 +140,7 @@ Todas ficam em `.env` (local) ou no painel do Render (produção). O arquivo `.e
 | `DB_USERNAME` | sim | `postgres.<project-ref>` | Usuário do pooler |
 | `DB_PASSWORD` | sim | — | Senha do banco |
 | `CORS_ALLOWED_ORIGINS` | não | `http://localhost:5173` | Origens do frontend, separadas por vírgula |
+| `SWAGGER_ENABLED` | não | `true` | Liga o Swagger (`/swagger-ui.html`, `/v3/api-docs`). **Só em desenvolvimento**: sem a variável, a documentação não existe (padrão de produção) |
 
 O mapeamento está em `src/main/resources/application.yml`.
 
@@ -224,7 +225,7 @@ Regras de desenho:
 ### Segurança (`config/SecurityConfig.java`)
 
 - API **stateless**: sem sessão HTTP, então sem CSRF.
-- Liberados sem login: `/actuator/health`, `/swagger-ui/**`, `/v3/api-docs/**`.
+- Liberados sem login: `/actuator/health/**`. O Swagger (`/swagger-ui/**`, `/v3/api-docs/**`) também passa pela segurança, mas só existe com `SWAGGER_ENABLED=true`.
 - Todo o resto exige autenticação.
 - `@EnableMethodSecurity` ativa `@PreAuthorize` nos controllers.
 - CORS liberado só para `/api/**` e para as origens de `CORS_ALLOWED_ORIGINS`.

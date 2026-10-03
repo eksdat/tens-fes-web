@@ -28,6 +28,13 @@ spring:
           jws-algorithms: ES256
           audiences: authenticated
 
+springdoc:
+  # Documentação da API desligada por padrão (produção). Localmente: SWAGGER_ENABLED=true no .env.
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+
 server:
   # O Render define PORT; localmente fica 8080.
   port: ${PORT:8080}

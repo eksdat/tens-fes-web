@@ -118,6 +118,7 @@ Regras:
 ### Rede
 
 - CORS só para as origens de `CORS_ALLOWED_ORIGINS`. Nunca `*`.
+- **Swagger desligado por padrão.** `/swagger-ui.html` e `/v3/api-docs` só existem com `SWAGGER_ENABLED=true`, usado apenas no `.env` de desenvolvimento. Em produção (Render) a variável não é definida. `SwaggerIntegracaoTest` garante 404.
 - HTTPS obrigatório em produção (Render já termina TLS).
 - Cabeçalhos padrão do Spring Security ligados (HSTS, `X-Content-Type-Options`, `X-Frame-Options`).
 - Limite de requisições por usuário nos endpoints de IA e upload (pendente: Bucket4j).
