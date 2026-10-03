@@ -32,7 +32,7 @@ import br.unibh.fisiotech.TestcontainersConfiguration;
  * Fluxo completo com PostgreSQL real (Testcontainers): Flyway, segurança, conversor de perfil e banco.
  * Só o {@link JwtDecoder} é simulado, para não depender do Supabase: o token é o próprio {@code sub}.
  */
-@SpringBootTest(properties = "SUPABASE_URL=https://teste.supabase.co")
+@SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 class UsuarioIntegracaoTest {
