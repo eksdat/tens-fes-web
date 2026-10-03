@@ -48,7 +48,7 @@ Documentos de origem (fora deste repositório, pasta `docs/` do projeto): `Proto
 | Tipos da API | `openapi-typescript` | Gerados do contrato do backend |
 | Lint | oxlint com plugin `jsx-a11y` | Lint rápido + regras de acessibilidade |
 | Testes | Vitest + Testing Library + jsdom; `vitest-axe`; Playwright *(a adicionar)* | Unitário, componente, a11y, e2e |
-| Deploy | Vercel | Preview por PR |
+| Deploy | Firebase Hosting (Spark) | Guia em [DEPLOY.md](../DEPLOY.md) |
 
 > A doc de arquitetura cita ESLint + `eslint-plugin-jsx-a11y`. O template atual do Vite traz **oxlint**, que tem o mesmo conjunto de regras `jsx-a11y`. Ficamos com o oxlint para não manter dois linters.
 
@@ -92,7 +92,7 @@ Abra http://localhost:5173.
 
 ## 4. Variáveis de ambiente
 
-Ficam em `.env` (local) ou no painel da Vercel. O `.env` está no `.gitignore`.
+Ficam em `.env` (local) e em `.env.production.local` (build de produção, ver [DEPLOY.md](../DEPLOY.md)). Os dois estão no `.gitignore`.
 
 | Variável | Obrigatória | Exemplo | Uso |
 |---|---|---|---|
@@ -122,7 +122,7 @@ Visão do sistema inteiro:
 
 ```mermaid
 flowchart LR
-    U[Navegador<br/>computador ou celular] --> F[Frontend React<br/>Vercel]
+    U[Navegador<br/>computador ou celular] --> F[Frontend React<br/>Firebase Hosting]
     F -- HTTPS + JWT<br/>/api/v1/** --> B[Backend Spring Boot<br/>Render]
     B -- JDBC + SSL --> D[(PostgreSQL<br/>Supabase)]
     B --> L[Provedor de LLM]
@@ -211,22 +211,20 @@ Crie a pasta da feature quando a primeira tela dela for feita. Não deixe pasta 
 
 ## 8. Autenticação no frontend
 
-1. `LoginPage` valida com Zod e chama `POST /api/v1/auth/login`.
-2. A resposta esperada é `{ token, nome, perfil }` (tipo `Sessao`).
-3. `entrar()` salva a sessão no `localStorage` (chave `fisiotech.sessao`) e no contexto.
-4. `client.ts` envia `Authorization: Bearer <token>` em toda requisição.
-5. Resposta **401**: limpa a sessão e manda para `/login`.
-6. Resposta **403**: perfil sem permissão. A tela mostra mensagem; não desloga.
-7. Resposta **404** em paciente: pode ser paciente de outro profissional. A tela mostra "não encontrado"; nunca "sem permissão".
-8. `sair()` limpa a sessão.
+> **Em transição.** O código atual ainda usa a sessão própria (`localStorage` + `POST /auth/login`), que não existe no backend. O card "Login, autenticação e verificação de e-mail (telas)" troca tudo pelo Supabase Auth, como descrito abaixo.
 
-`ProtectedRoute` decide só a navegação:
+Alvo:
 
-- Sem sessão: vai para `/login`.
-- Com `perfil` exigido e perfil diferente: vai para `/`.
+1. O cliente `@supabase/supabase-js` usa só `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`, e **só** em `supabase.auth.*`. Nunca `from()`, `rpc()`, `storage` ou `realtime`.
+2. Cadastro: `signUp` guarda a etapa 2 em `options.data`; o Supabase envia o e-mail de confirmação.
+3. O link abre `/auth/callback`. Se `GET /api/v1/usuarios/me` responder **404**, a tela envia a etapa 2 em `POST /api/v1/usuarios/me`.
+4. `client.ts` envia `Authorization: Bearer <access_token>` da sessão do Supabase (renovada pelo SDK).
+5. O perfil vem de `GET /api/v1/usuarios/me` (TanStack Query), nunca do token nem do `localStorage`.
+6. Resposta **401**: encerra a sessão e leva ao login. **403**: perfil sem permissão (mensagem, sem deslogar). **404** em paciente: "não encontrado", nunca "sem permissão".
+
+`ProtectedRoute` decide só a navegação, em 3 estados: sem sessão (login), logado sem cadastro completo (completar cadastro) e logado com perfil (rotas do perfil).
 
 ---
-
 ## 9. Perfis e regras de acesso
 
 | Área | Estudante | Profissional |
@@ -654,25 +652,16 @@ Sem linha de coautoria nem assinatura de ferramenta.
 
 ## 17. Deploy
 
-| Ambiente | Branch | Onde |
-|---|---|---|
-| Preview | qualquer PR | Vercel (automático) |
-| Produção | `main` | Vercel |
+Frontend no **Firebase Hosting** (plano Spark). Só existe o ambiente de produção; a branch `homologacao` é etapa de revisão no git.
 
-Só existe o ambiente de produção. A branch `homologacao` é etapa de revisão no git, sem deploy próprio. Previews da Vercel por PR não fazem login (endereço fora das Redirect URLs).
-
-Configuração na Vercel:
-
-- *Root Directory*: `frontend`
-- *Build Command*: `npm run build`
-- *Output Directory*: `dist`
-- Variável `VITE_API_URL` apontando para o backend de produção.
-- Rewrite de SPA: toda rota para `/index.html` (senão `/login` dá 404 ao recarregar). Criar `vercel.json` com `{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}` no primeiro deploy.
-
-CI (GitHub Actions) roda `npm ci`, `npm run lint`, `npm test` e `npm run build` em todo PR. *(Workflow ainda não criado.)*
+- `firebase.json` (raiz): publica `frontend/dist`, devolve `index.html` para toda rota (SPA), define a CSP e os demais cabeçalhos de segurança e roda `npm run build` antes do deploy.
+- Build de produção lê `frontend/.env.production.local` (API, Supabase). Nunca no commit.
+- Deploy manual: `firebase deploy --only hosting`. Passo a passo e conferência em **[DEPLOY.md](../DEPLOY.md)**.
+- CORS: o backend (Render) precisa listar a URL do site em `CORS_ALLOWED_ORIGINS`.
+- CSP estrita (`script-src 'self'`): ao incluir o CAPTCHA (Turnstile) ou uma biblioteca que injete estilo, ajustar o `firebase.json`.
+- CI de frontend (GitHub Actions): ainda não criado.
 
 ---
-
 ## 18. Estado atual e pendências
 
 Pronto nesta base:
@@ -686,10 +675,10 @@ Pronto nesta base:
 
 Pendente:
 
-- Endpoint de login no backend.
+- Troca da sessão própria pelo Supabase Auth (card de login, autenticação e verificação).
 - Componentes `shared/ui` sobre Radix.
 - Demais telas do mapa (seção 10).
 - `vitest-axe` em uso nos testes (instalado, sem teste ainda).
 - `openapi-typescript`: hoje roda por `npx` no script `api:types`, porque a versão 7.13 pede TypeScript 5 e o projeto usa 6. Instalar como dependência quando sair versão compatível.
-- Playwright, react-three-fiber, `vercel.json`, workflow de CI.
+- Playwright, react-three-fiber, workflow de CI e deploy automático no Firebase.
 - Bundle passa de 500 kB: dividir rotas com `lazy()` quando houver mais telas.

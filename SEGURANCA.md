@@ -119,7 +119,7 @@ Regras:
 
 - CORS só para as origens de `CORS_ALLOWED_ORIGINS`. Nunca `*`.
 - **Swagger desligado por padrão.** `/swagger-ui.html` e `/v3/api-docs` só existem com `SWAGGER_ENABLED=true`, usado apenas no `.env` de desenvolvimento. Em produção (Render) a variável não é definida. `SwaggerIntegracaoTest` garante 404.
-- HTTPS obrigatório em produção (Render já termina TLS).
+- HTTPS obrigatório em produção (Render e Firebase Hosting terminam o TLS).
 - Cabeçalhos padrão do Spring Security ligados (HSTS, `X-Content-Type-Options`, `X-Frame-Options`).
 - Limite de requisições por usuário nos endpoints de IA e upload (pendente: Bucket4j).
 
@@ -138,7 +138,7 @@ Regras:
 - O `supabase-js` guarda a sessão no `localStorage`. Isso exige zero XSS:
   - proibido `dangerouslySetInnerHTML` sem sanitizar (DOMPurify);
   - Markdown de conteúdo renderizado sem HTML cru;
-  - **Content-Security-Policy** no `vercel.json`: `default-src 'self'`; `connect-src` só para a API e para `https://<ref>.supabase.co`; sem `unsafe-eval`.
+  - **Content-Security-Policy** no `firebase.json` (já aplicada): `default-src 'self'`, `script-src 'self'` (sem inline e sem `unsafe-eval`), `connect-src` só para a API e `*.supabase.co`, `frame-ancestors 'none'`. Também HSTS, `nosniff` e `Referrer-Policy`. Ao incluir o CAPTCHA, liberar `challenges.cloudflare.com` (DEPLOY.md).
 - Esconder telas por perfil é conforto. A segurança é a seção 4.
 - Mensagem de erro nunca mostra detalhe técnico.
 
@@ -207,7 +207,7 @@ Bloqueia o uso com pacientes reais até estar escrito e aprovado:
 | Configuração da seção 3 | Painel do Supabase |
 | Resource server + conversor de perfil | `backend/config/` |
 | Papel próprio no banco para a aplicação | Antes de dado real |
-| CSP e `vercel.json` | `frontend/` |
+| Domínio próprio e DKIM/SPF/DMARC do e-mail | DEPLOY.md, seção 5 |
 | Rate limit (IA, upload) | `backend/` |
-| Dependabot e CI | `.github/` |
+| Dependabot e CI do frontend | `.github/` (o CI do backend já existe) |
 | Itens LGPD | Seção 9 |
