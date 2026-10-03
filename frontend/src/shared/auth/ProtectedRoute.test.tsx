@@ -5,7 +5,7 @@ import type { Sessao } from './sessaoStorage'
 import { ProtectedRoute } from './ProtectedRoute'
 
 function renderizarEm(rota: string, sessao: Sessao | null) {
-  if (sessao) localStorage.setItem('tensfes.sessao', JSON.stringify(sessao))
+  if (sessao) localStorage.setItem('fisiotech.sessao', JSON.stringify(sessao))
   render(
     <AuthProvider>
       <MemoryRouter initialEntries={[rota]}>
