@@ -12,6 +12,8 @@ export default defineConfig({
       VITE_API_URL: 'http://localhost:8080',
       VITE_SUPABASE_URL: 'http://localhost:54321',
       VITE_SUPABASE_PUBLISHABLE_KEY: 'chave-de-teste',
+      // Vazia de propósito: o .env de quem desenvolve pode ter a chave real e ligar o CAPTCHA em todos os testes.
+      VITE_TURNSTILE_SITE_KEY: '',
     },
   },
 })
