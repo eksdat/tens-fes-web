@@ -43,7 +43,9 @@ Documentos de origem (fora deste repositório, pasta `docs/` do projeto): `Proto
 | Rotas | React Router 7 (`react-router`) | Rotas protegidas por perfil |
 | Dados remotos | TanStack Query + axios | Cache, loading e erro sem código repetido |
 | Formulários | React Hook Form + Zod 4 | Validação declarativa; mensagens acessíveis |
-| Componentes base | Radix UI (`radix-ui`) | Foco, teclado e ARIA corretos por padrão |
+| Login e sessão | `@supabase/supabase-js` (só `supabase.auth.*`) | Identidade no Supabase Auth; dados sempre pela API |
+| Visual | CSS próprio com tokens (`src/styles`) e fontes auto-hospedadas (`@fontsource`: Big Shoulders Display, Ubuntu, Ubuntu Mono) | Identidade do protótipo; sem Google Fonts, por causa da CSP e da LGPD |
+| Componentes base | Radix UI (`radix-ui`) *(a usar em diálogos, menus e seletores)* | Foco, teclado e ARIA corretos por padrão |
 | Aparelho 3D | react-three-fiber *(a adicionar)* | Modelo 3D com lista textual equivalente |
 | Tipos da API | `openapi-typescript` | Gerados do contrato do backend |
 | Lint | oxlint com plugin `jsx-a11y` | Lint rápido + regras de acessibilidade |
@@ -78,27 +80,30 @@ git switch homologacao
 cd frontend
 
 npm install
-copy .env.example .env      # ajuste VITE_API_URL se o backend não estiver em :8080
 npm run dev
 ```
 
-Abra http://localhost:5173.
+Abra http://localhost:5173. `npm run dev` já aponta para o **backend e o Supabase locais** (`.env.development`, valores públicos). Suba os dois antes, como em "Rodar com o Supabase local" no [README do backend](../backend/README.md): `npx supabase start` na raiz e o backend com o perfil `local`. O e-mail de confirmação do cadastro sai pelo SMTP configurado em `supabase/.env` (ou cai no Mailpit, http://127.0.0.1:54324, se o SMTP estiver desligado).
+
+Para usar a nuvem no `npm run dev`, crie `.env.development.local` (ignorado pelo git) com `VITE_API_URL`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` reais (modelo em `.env.example`).
 
 - Sem login, qualquer rota protegida redireciona para `/login`.
-- O login chama `POST {VITE_API_URL}/api/v1/auth/login`. Esse endpoint ainda não existe no backend. Até lá, o login responde erro.
 - O backend precisa liberar a origem `http://localhost:5173` em `CORS_ALLOWED_ORIGINS` (já é o padrão).
 
 ---
 
 ## 4. Variáveis de ambiente
 
-Ficam em `.env` (local) e em `.env.production.local` (build de produção, ver [DEPLOY.md](../DEPLOY.md)). Os dois estão no `.gitignore`.
+`npm run dev` lê `.env.development` (versionado, só valores locais públicos) e `.env.development.local` (sobrescreve, ignorado pelo git). O build de produção lê `.env.production.local` (ignorado; ver [DEPLOY.md](../DEPLOY.md)). O `.env.example` é o modelo para a nuvem.
 
 | Variável | Obrigatória | Exemplo | Uso |
 |---|---|---|---|
 | `VITE_API_URL` | sim | `http://localhost:8080` | URL base do backend, sem `/api/v1` |
+| `VITE_SUPABASE_URL` | sim | `http://127.0.0.1:54321` | URL do Supabase (local no `dev`) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | sim | `sb_publishable_...` | Chave publicável. Nunca a secret/service_role |
+| `VITE_TURNSTILE_SITE_KEY` | não | `0x4AAAA...` | Site Key do CAPTCHA (Cloudflare Turnstile). Vazia: sem CAPTCHA. No `npm run dev` vai a chave de teste, que sempre aprova |
 
-Toda variável com prefixo `VITE_` vai para o bundle e **fica pública** no navegador. Nunca coloque segredo aqui. Não há chave do Supabase no frontend, e não deve haver.
+Toda variável com prefixo `VITE_` vai para o bundle e **fica pública** no navegador. Nunca coloque segredo aqui. A chave publicável do Supabase é pública por desenho; a secret/service_role nunca entra no frontend.
 
 ---
 
@@ -152,7 +157,7 @@ flowchart TB
     Comp --> UI[shared/ui<br/>sobre Radix]
     Hook --> Client[shared/api/client.ts<br/>axios + JWT]
     Client --> API[(Backend /api/v1)]
-    Client -.lê token.-> Storage[shared/auth/sessaoStorage.ts]
+    Client -.lê token.-> Sessao[supabase.auth<br/>sessão do Supabase]
 ```
 
 ---
@@ -161,32 +166,42 @@ flowchart TB
 
 ```text
 frontend/
-├── index.html                 # lang="pt-BR"
+├── index.html                 # lang="pt-BR", theme-color, favicon
 ├── package.json
-├── vite.config.ts             # plugin React + config do Vitest
+├── vite.config.ts             # plugin React + config do Vitest (variáveis VITE_* de teste)
+├── firebase.json, .firebaserc # Firebase Hosting (ver DEPLOY.md)
 ├── .oxlintrc.json             # lint, com jsx-a11y
 ├── .env.example
-├── public/                    # arquivos servidos como estão (favicon)
+├── public/
+│   └── favicon.svg            # folha da marca com pulso
 └── src/
-    ├── main.tsx               # monta Providers + RouterProvider
-    ├── index.css              # estilo global mínimo, foco visível
+    ├── main.tsx               # fontes, estilos, Providers + RouterProvider
+    ├── vite-env.d.ts          # tipos das variáveis VITE_* e dos módulos @fontsource
+    ├── styles/
+    │   ├── tokens.css         # cores, espaço, cantos, fontes (somente tema claro)
+    │   ├── base.css           # reset mínimo, foco visível, reduced motion
+    │   └── ui.css             # componentes (classes tf-*) e layout das telas de autenticação
     ├── app/
     │   ├── providers.tsx      # QueryClientProvider + AuthProvider
-    │   └── router.tsx         # todas as rotas; ProtectedRoute por perfil
+    │   └── router.tsx         # todas as rotas
     ├── shared/
     │   ├── api/
-    │   │   ├── client.ts      # axios: baseURL, Bearer token, 401 → /login
+    │   │   ├── supabase.ts    # cliente do Supabase (só auth)
+    │   │   ├── client.ts      # axios: baseURL, Bearer do Supabase, 401 → encerra a sessão
     │   │   └── schema.d.ts    # GERADO por `npm run api:types` — não editar
     │   ├── auth/
-    │   │   ├── sessaoStorage.ts   # tipos Perfil/Sessao; ler/salvar/limpar no localStorage
-    │   │   ├── AuthContext.tsx    # AuthProvider: estado da sessão, entrar(), sair()
+    │   │   ├── contexto.ts        # AuthContext (tipo e contexto)
+    │   │   ├── AuthContext.tsx    # AuthProvider: reflete onAuthStateChange
     │   │   ├── useAuth.ts         # hook de acesso ao contexto
-    │   │   ├── ProtectedRoute.tsx # exige login e, opcionalmente, um perfil
-    │   │   └── ProtectedRoute.test.tsx
-    │   └── ui/                # Button, Field, Dialog, Toast sobre Radix (a criar)
+    │   │   └── armazenamento.ts   # "Manter conectado": localStorage ou sessionStorage
+    │   └── ui/                # Marca, Botao, BotaoLink, Campo, CampoSenha, Alerta, AuthLayout, FolhasDecorativas, Icones, TelaCarregando
     ├── features/
-    │   ├── auth/              # LoginPage (+ Cadastro, EsqueciSenha, NovaSenha a criar)
-    │   ├── inicio/            # InicioPage
+    │   ├── auth/              # LoginPage, CadastroPage (2 etapas + verificação), CompletarCadastroPage, EsqueciSenhaPage,
+    │   │                      # NovaSenhaPage, AuthCallbackPage, ProtectedRoute, schemas, RequisitosSenha,
+    │   │                      # TermosDeUsoPage, PoliticaPrivacidadePage (textos preliminares)
+    │   ├── mfa/               # AtivarMfaPage, VerificarMfaPage, useNivelMfa (AAL da sessão), CampoCodigo
+    │   ├── usuario/           # useUsuarioAtual (GET /usuarios/me)
+    │   ├── inicio/            # InicioPage (provisória)
     │   ├── perfil/            # a criar
     │   ├── modulos/           # TENS e FES, aba Segurança (a criar)
     │   ├── dicionario/        # a criar
@@ -201,30 +216,41 @@ frontend/
     │       ├── components/
     │       └── schemas.ts     # Zod
     └── test/
-        └── setup.ts           # jest-dom, cleanup e limpeza do localStorage
+        ├── setup.ts           # jest-dom, vitest-axe e limpeza do armazenamento
+        └── vitest-axe.d.ts    # tipo do matcher toHaveNoViolations
 e2e/                           # Playwright (a criar)
 ```
 
 Crie a pasta da feature quando a primeira tela dela for feita. Não deixe pasta vazia.
 
+### Identidade visual
+
+O protótipo (design system de referência) é só uma referência visual: cores, tipografia, cartões e campos. Fluxos e regras seguem este projeto. Pontos que valem lembrar:
+
+- **Só tema claro.** O tema escuro do design system não foi adotado; `color-scheme: light` fixo.
+- **Fonte de verdade dos tokens:** o `tokens.json` do design system, não o `tokens.css` gerado dele (que está desatualizado). Os valores estão em `src/styles/tokens.css`.
+- **Fontes auto-hospedadas** (só o subconjunto latino): a CSP do `firebase.json` não permite Google Fonts.
+- **Contraste e foco:** borda de 2 px, sombra rígida sem desfoque, foco de 3 px, alvos de toque de no mínimo 44 px, campos com 16 px ou mais (o iOS não dá zoom).
+- **Responsivo, mobile primeiro:** uma coluna até 880 px; duas colunas (painel verde e cartão) a partir daí; cartão com borda e sombra a partir de 720 px.
+
 ---
 
 ## 8. Autenticação no frontend
 
-> **Em transição.** O código atual ainda usa a sessão própria (`localStorage` + `POST /auth/login`), que não existe no backend. O card "Login, autenticação e verificação de e-mail (telas)" troca tudo pelo Supabase Auth, como descrito abaixo.
+1. O cliente `@supabase/supabase-js` (`shared/api/supabase.ts`) usa só `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`, e **só** em `supabase.auth.*`. Nunca `from()`, `rpc()`, `storage` ou `realtime`.
+2. **Login:** `signInWithPassword`. Credencial errada mostra "E-mail ou senha incorretos." (sem dizer qual). E-mail não confirmado oferece reenviar o link (`auth.resend`).
+3. **"Manter conectado":** marcado, a sessão fica no `localStorage`; desmarcado (padrão), no `sessionStorage` (some ao fechar a aba). Ver `shared/auth/armazenamento.ts`.
+4. **Esqueci a senha:** `resetPasswordForEmail`, com a mesma mensagem exista ou não a conta. O link abre `/nova-senha`, que usa a sessão temporária de recuperação (`updateUser`).
+5. **Link de confirmação do e-mail** abre `/auth/callback`: o supabase-js abre a sessão e a rota protegida decide o resto.
+6. `client.ts` envia `Authorization: Bearer <access_token>` da sessão atual (renovada pelo SDK).
+7. O **perfil** vem de `GET /api/v1/usuarios/me` (`useUsuarioAtual`, TanStack Query), nunca do token nem do `localStorage`.
+8. **401** da API: encerra a sessão, e a rota protegida leva ao login. **403**: perfil sem permissão (mensagem, sem deslogar). **404** em paciente: "não encontrado", nunca "sem permissão".
+9. Se a API não responde (por exemplo, o servidor do plano grátis ainda subindo, cerca de 3 min), a rota protegida mostra "Não foi possível carregar seus dados" com "Tentar de novo".
 
-Alvo:
-
-1. O cliente `@supabase/supabase-js` usa só `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`, e **só** em `supabase.auth.*`. Nunca `from()`, `rpc()`, `storage` ou `realtime`.
-2. Cadastro: `signUp` guarda a etapa 2 em `options.data`; o Supabase envia o e-mail de confirmação.
-3. O link abre `/auth/callback`. Se `GET /api/v1/usuarios/me` responder **404**, a tela envia a etapa 2 em `POST /api/v1/usuarios/me`.
-4. `client.ts` envia `Authorization: Bearer <access_token>` da sessão do Supabase (renovada pelo SDK).
-5. O perfil vem de `GET /api/v1/usuarios/me` (TanStack Query), nunca do token nem do `localStorage`.
-6. Resposta **401**: encerra a sessão e leva ao login. **403**: perfil sem permissão (mensagem, sem deslogar). **404** em paciente: "não encontrado", nunca "sem permissão".
-
-`ProtectedRoute` decide só a navegação, em 3 estados: sem sessão (login), logado sem cadastro completo (completar cadastro) e logado com perfil (rotas do perfil).
+`ProtectedRoute` decide só a navegação, em 3 estados: sem sessão (`/login`), logado sem cadastro completo (`/completar-cadastro`) e logado com perfil (rotas do perfil).
 
 ---
+
 ## 9. Perfis e regras de acesso
 
 | Área | Estudante | Profissional |
@@ -250,8 +276,12 @@ Regras que o frontend precisa respeitar:
 
 | Rota | Perfil | Página | Observações |
 |---|---|---|---|
-| `/login`, `/cadastro` | público | `LoginPage`, `CadastroPage` | Cadastro em etapas: dados comuns, depois perfil |
-| `/esqueci-senha`, `/nova-senha` | público | `EsqueciSenhaPage`, `NovaSenhaPage` | Mesma mensagem exista ou não a conta |
+| `/login`, `/cadastro` | público | `LoginPage`, `CadastroPage` | Cadastro em etapas: dados comuns, depois perfil. Os dois têm "Continuar com o Google" (`BotaoGoogle`): quem entra assim e não tem cadastro cai em `/completar-cadastro` com o nome sugerido |
+| `/mfa/verificar` | logado com autenticador | `VerificarMfaPage` | Código de 6 dígitos depois da senha; a sessão sobe para `aal2` |
+| `/mfa/ativar` | logado | `AtivarMfaPage` | QR code e chave manual, confirma com o primeiro código. Obrigatória para PROFISSIONAL (`ProtectedRoute` redireciona) |
+| `/completar-cadastro` | logado sem perfil | `CompletarCadastroPage` | Envia sozinha os dados guardados no e-mail; senão mostra o formulário |
+| `/termos`, `/privacidade` | público | `TermosDeUsoPage`, `PoliticaPrivacidadePage` | Abrem em outra aba a partir do cadastro; texto preliminar |
+| `/esqueci-senha`, `/nova-senha` | público | `EsqueciSenhaPage`, `NovaSenhaPage` | Mesma mensagem exista ou não a conta. Em `/nova-senha`, quem tem autenticador digita o código antes (o Supabase só troca a senha em sessão `aal2`); senha igual à atual é recusada pela API (`same_password`) |
 | `/` | ambos | `InicioPage` | Atalhos conforme o perfil |
 | `/tens/*`, `/fes/*` | ambos | `ModuloPage` | Abas: visão geral, aparelho, eletrodos, parâmetros, segurança, casos |
 | `/aparelho/:id` | ambos | `AparelhoPage` | Canvas 3D + `ListaControles` textual com as mesmas funções |
@@ -666,21 +696,25 @@ Frontend no **Firebase Hosting** (plano Spark). Só existe o ambiente de produç
 ---
 ## 18. Estado atual e pendências
 
-Pronto nesta base:
+Pronto:
 
 - Vite + React 19 + TypeScript; dependências da stack instaladas.
-- Rotas com `ProtectedRoute` por perfil; `/login` e `/` funcionando.
-- `AuthProvider` com sessão no `localStorage`.
-- Cliente axios com Bearer token e redirecionamento no 401.
-- `LoginPage` com React Hook Form + Zod e erros acessíveis.
-- Vitest configurado; 3 testes passando. Lint e build ok.
+- Base visual: tokens, fontes auto-hospedadas, componentes (`shared/ui`) e layout responsivo das telas de autenticação.
+- Favicon (folha com pulso) e `theme-color`.
+- Sessão pelo Supabase Auth, cliente HTTP com o token, `useUsuarioAtual` e `ProtectedRoute` de 3 estados.
+- Telas: entrar, esqueci a senha, nova senha e retorno do link do e-mail.
+- Tipos da API gerados do OpenAPI (`schema.d.ts`).
+- Vitest com `vitest-axe`: 39 testes (armazenamento, validação, componentes, login com acessibilidade e rotas). Lint e build ok.
 
 Pendente:
 
-- Troca da sessão própria pelo Supabase Auth (card de login, autenticação e verificação).
-- Componentes `shared/ui` sobre Radix.
+- Revisão jurídica/LGPD dos textos de Termos de uso e Política de privacidade (hoje preliminares; falta canal de contato do titular).
+- MFA: exigir `aal2` na API (endpoints de paciente), códigos de recuperação e troca de aparelho (hoje, perder o celular exige remover o fator pelo painel do Supabase).
+- CAPTCHA (Turnstile) no cadastro.
+- Ícones PNG (apple-touch-icon) e manifesto do app.
+- Componentes de `shared/ui` sobre Radix (diálogos, menus, seletores), quando surgirem.
 - Demais telas do mapa (seção 10).
-- `vitest-axe` em uso nos testes (instalado, sem teste ainda).
 - `openapi-typescript`: hoje roda por `npx` no script `api:types`, porque a versão 7.13 pede TypeScript 5 e o projeto usa 6. Instalar como dependência quando sair versão compatível.
-- Playwright, react-three-fiber, workflow de CI e deploy automático no Firebase.
+- Playwright (inclui comparação visual em 320, 390, 768 e 1280 px), react-three-fiber, workflow de CI e deploy automático no Firebase.
+- Teste com leitor de tela real (NVDA, VoiceOver, TalkBack).
 - Bundle passa de 500 kB: dividir rotas com `lazy()` quando houver mais telas.

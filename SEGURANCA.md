@@ -69,7 +69,7 @@ Configurar em *Authentication*:
 | Expiração do access token | 3600 s (padrão) |
 | Provedores sociais | Só Google. "Allow users without an email" e "Skip nonce checks" desligados |
 | Login anônimo | Desligado |
-| MFA (TOTP) | Habilitado. **Obrigatório para PROFISSIONAL** antes de dado real |
+| MFA (TOTP) | Habilitado. **Obrigatório para PROFISSIONAL** antes de dado real. O frontend já força: sem autenticador, o profissional é levado a `/mfa/ativar`; com autenticador, o login pede o código em `/mfa/verificar`. Estudante pode ativar e desativar na tela inicial. A API ainda não exige `aal2` (entra com os endpoints de paciente) |
 
 Regras:
 

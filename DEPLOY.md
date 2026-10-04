@@ -88,6 +88,28 @@ Intervalo de 14 min, não 15: o Render dorme aos 15 min. Das 22h às 7h a API do
    O arquivo fica com `VITE_API_URL`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`.
 4. Em `frontend/`: `firebase deploy --only hosting`. No fim, a CLI mostra o *Hosting URL*.
 
+### Deploy automático do frontend (GitHub Actions)
+
+O workflow `.github/workflows/frontend.yml` roda lint, testes e build em todo Pull Request para a `main` que muda `frontend/`. A `homologacao` não aciona nada. Quando algo entra na `main`, ele publica no Firebase Hosting (job `publicar`). Não publica em Pull Request. O deploy manual (`firebase deploy --only hosting`) continua valendo.
+
+Configuração, uma vez, por quem administra o repositório (*Settings › Secrets and variables › Actions*):
+
+1. **Secret `FIREBASE_SERVICE_ACCOUNT`**: no Google Cloud (projeto `fisiotech-3b4ad`) › *IAM › Contas de serviço*, crie a conta `github-deploy` com os papéis *Firebase Hosting Admin*, *API Keys Viewer* e *Service Account User*. Em *Chaves*, crie uma chave JSON e cole o conteúdo inteiro no secret. Depois apague o arquivo JSON da sua máquina. Nunca no repositório.
+2. **Variables** (aba *Variables*; são públicas por desenho): `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` e `VITE_TURNSTILE_SITE_KEY`, com os mesmos valores do `.env.production.local`.
+3. Em *Branches*, marque o check `Lint, testes e build` como obrigatório na `main`.
+
+O deploy publica o que está na `main`. Backend e frontend mudam juntos quando o contrato muda (ex.: o cadastro com `aceiteTermos`): publique o backend no Render antes de mergear o front.
+
+### CAPTCHA (Cloudflare Turnstile)
+
+Widget `Fisiotech` no painel da Cloudflare (Turnstile), modo *Managed*, hostnames `fisiotech-3b4ad.web.app`, `fisiotech-3b4ad.firebaseapp.com` e `localhost`. Cadastro, login, "esqueci a senha" e reenvio de e-mail enviam o token ao Supabase. Ordem para ligar em produção, sem derrubar o acesso:
+
+1. Ponha a **Site Key** (pública) em `frontend/.env.production.local` como `VITE_TURNSTILE_SITE_KEY`.
+2. Publique o front (`firebase deploy --only hosting`). A CSP já libera `challenges.cloudflare.com`.
+3. **Só depois**, no Supabase › *Authentication › Attack Protection*, ligue o CAPTCHA, provedor Turnstile, e cole a **Secret Key** (nunca no repositório nem no chat).
+
+Ligar o passo 3 antes do 2 derruba cadastro e login. Se a Secret Key vazar, use *Rotate Secret Key* no widget.
+
 ### Como o projeto foi criado (histórico)
 
 1. Console do Firebase › projeto › **Hosting** › **Vamos começar** › *Próxima* até o fim › **Continuar para o console**. Cria o site `<id-do-projeto>.web.app`. Não instalar o SDK do Firebase nem copiar o `firebaseConfig`: o login é do Supabase.
@@ -138,6 +160,6 @@ OPTIONS <API>/api/v1/usuarios/me, Origin: site desconhecido   403
 | Item | Observação |
 |---|---|
 | Domínio próprio | Melhora entrega do e-mail (DKIM, SPF, DMARC) e o endereço do site |
-| Deploy automático do frontend | Hoje manual (`firebase deploy`). Candidato a GitHub Actions |
+| Deploy automático do frontend | Workflow pronto (`frontend.yml`); falta o admin criar o secret e as variables no GitHub |
 | Região do banco | Antes de dado real: Supabase em `sa-east-1` (SEGURANCA.md, seção 9) |
 | Tempo de subida (3 min) | Pode cair com cache de classes da JVM (AppCDS), em card próprio |
