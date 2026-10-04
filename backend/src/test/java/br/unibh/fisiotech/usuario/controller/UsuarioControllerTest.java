@@ -80,7 +80,7 @@ class UsuarioControllerTest {
         mvc.perform(post("/api/v1/usuarios/me").with(jwt().jwt(j -> j.subject(ID.toString())))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"nome":"Ana Souza","perfil":"ESTUDANTE","instituicao":"UniBH","periodo":5}
+                                {"aceiteTermos":true,"nome":"Ana Souza","perfil":"ESTUDANTE","instituicao":"UniBH","periodo":5}
                                 """))
                 .andExpect(status().isCreated());
     }
@@ -90,7 +90,7 @@ class UsuarioControllerTest {
         mvc.perform(post("/api/v1/usuarios/me").with(jwt().jwt(j -> j.subject(ID.toString())))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"nome":"Ganhe www.premio.com","perfil":"ESTUDANTE","instituicao":"UniBH","periodo":5}
+                                {"aceiteTermos":true,"nome":"Ganhe www.premio.com","perfil":"ESTUDANTE","instituicao":"UniBH","periodo":5}
                                 """))
                 .andExpect(status().isBadRequest());
     }
@@ -100,8 +100,19 @@ class UsuarioControllerTest {
         mvc.perform(post("/api/v1/usuarios/me").with(jwt().jwt(j -> j.subject(ID.toString())))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"nome":"Bia Lima","perfil":"PROFISSIONAL","categoria":"FISIOTERAPEUTA","registro":"123-F","uf":"XX"}
+                                {"aceiteTermos":true,"nome":"Bia Lima","perfil":"PROFISSIONAL","categoria":"FISIOTERAPEUTA","registro":"123-F","uf":"XX"}
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deveRecusarCadastroSemAceiteDosTermos() throws Exception {
+        mvc.perform(post("/api/v1/usuarios/me").with(jwt().jwt(j -> j.subject(ID.toString())))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nome":"Ana Souza","perfil":"ESTUDANTE","instituicao":"UniBH","periodo":5}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.aceiteTermos").exists());
     }
 }

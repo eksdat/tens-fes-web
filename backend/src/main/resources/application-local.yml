@@ -1,0 +1,19 @@
+# Perfil "local": backend e banco do Supabase local (npx supabase start, na raiz do repositório).
+# Valores públicos do ambiente local; nada daqui vale para produção.
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:54322/postgres
+    username: postgres
+    password: postgres
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://127.0.0.1:54321/auth/v1
+          jwk-set-uri: http://127.0.0.1:54321/auth/v1/.well-known/jwks.json
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

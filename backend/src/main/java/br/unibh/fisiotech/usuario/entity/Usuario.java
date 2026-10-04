@@ -62,6 +62,10 @@ public class Usuario implements Persistable<UUID> {
     @Column(length = 2)
     private Uf uf;
 
+    private Instant termosAceitosEm;
+
+    private String termosVersao;
+
     @CreationTimestamp
     @Column(updatable = false)
     private Instant criadoEm;
@@ -78,6 +82,12 @@ public class Usuario implements Persistable<UUID> {
         this.nome = nome;
         this.perfil = perfil;
         this.novo = true;
+    }
+
+    /** Registra qual versão dos termos e da política de privacidade o usuário aceitou, e quando. */
+    public void registrarAceiteTermos(String versao, Instant quando) {
+        this.termosVersao = versao;
+        this.termosAceitosEm = quando;
     }
 
     public void definirDadosEstudante(String instituicao, Short periodo) {
