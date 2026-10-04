@@ -3,12 +3,15 @@ package br.unibh.fisiotech.usuario.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,11 +41,24 @@ class UsuarioServiceTest {
     }
 
     @Test
+    void deveRegistrarVersaoEDataDoAceiteDosTermos() {
+        salvaComoRecebido();
+        var antes = Instant.now();
+
+        service.cadastrar(ID, new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null, true));
+
+        var salvo = ArgumentCaptor.forClass(Usuario.class);
+        verify(repository).saveAndFlush(salvo.capture());
+        assertThat(salvo.getValue().getTermosVersao()).isEqualTo(UsuarioService.VERSAO_TERMOS);
+        assertThat(salvo.getValue().getTermosAceitosEm()).isBetween(antes, Instant.now());
+    }
+
+    @Test
     void deveCadastrarEstudanteComInstituicaoEPeriodo() {
         salvaComoRecebido();
 
         var resposta = service.cadastrar(ID,
-                new CadastroRequest(" Ana Souza ", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null));
+                new CadastroRequest(" Ana Souza ", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null, true));
 
         assertThat(resposta.id()).isEqualTo(ID);
         assertThat(resposta.nome()).isEqualTo("Ana Souza");
@@ -55,7 +71,7 @@ class UsuarioServiceTest {
         salvaComoRecebido();
 
         var resposta = service.cadastrar(ID, new CadastroRequest("Bia Lima", Perfil.PROFISSIONAL, null, null,
-                Categoria.FISIOTERAPEUTA, "123456-F", Uf.MG));
+                Categoria.FISIOTERAPEUTA, "123456-F", Uf.MG, true));
 
         assertThat(resposta.revisor()).isFalse();
     }
@@ -65,7 +81,7 @@ class UsuarioServiceTest {
         salvaComoRecebido();
 
         var resposta = service.cadastrar(ID, new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5,
-                Categoria.FISIOTERAPEUTA, "123456-F", Uf.MG));
+                Categoria.FISIOTERAPEUTA, "123456-F", Uf.MG, true));
 
         assertThat(resposta.categoria()).isNull();
         assertThat(resposta.registro()).isNull();
@@ -77,7 +93,7 @@ class UsuarioServiceTest {
         when(repository.saveAndFlush(any(Usuario.class))).thenThrow(new DataIntegrityViolationException("pk"));
 
         assertThatThrownBy(() -> service.cadastrar(ID,
-                new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null)))
+                new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null, true)))
                 .isInstanceOf(ConflitoException.class);
     }
 }
