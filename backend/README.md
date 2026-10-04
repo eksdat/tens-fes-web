@@ -128,6 +128,18 @@ A classe de teste `TestFisiotechApiApplication` sobe a API com um PostgreSQL 17 
 
 Use para desenvolver offline. Os dados somem ao parar.
 
+### Rodar com o Supabase local (Auth + banco)
+
+Para testar login e cadastro de ponta a ponta sem tocar na nuvem. Precisa de Docker. Na raiz do repositório:
+
+```powershell
+npx supabase start                  # sobe Postgres, Auth e Mailpit (a primeira vez baixa as imagens)
+cd backend
+.mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+O perfil `local` (`application-local.yml`) aponta para o banco `127.0.0.1:54322` e valida os tokens do Auth local. Não usa o `.env`. O Flyway cria as tabelas na primeira subida. Os e-mails saem pelo SMTP real: preencha `supabase/.env` antes (modelo em `supabase/.env.example`). Com o SMTP desligado no `config.toml`, abra o Mailpit em http://127.0.0.1:54324. O painel (Studio) fica em http://127.0.0.1:54323. `npx supabase stop` desliga tudo; os dados ficam guardados para a próxima vez. A configuração do Auth local (`supabase/config.toml`) repete a política da nuvem: senha de 10 caracteres com maiúscula, minúscula, número e símbolo, confirmação por e-mail e templates em português.
+
 ---
 
 ## 4. Variáveis de ambiente
@@ -299,14 +311,15 @@ Regras obrigatórias no backend:
 7. Senha, e-mail, redefinição de senha e MFA ficam no Supabase Auth. Nossa tabela `usuario` não guarda e-mail nem senha. Perfil nunca no `user_metadata`. Regras de campo e validações em [SEGURANCA.md](../SEGURANCA.md) e no "Cadastro" abaixo.
 8. Até as políticas LGPD estarem definidas: **somente dados fictícios**.
 
-### Cadastro (tabela `usuario`, migration `V2__usuario.sql`)
+### Cadastro (tabela `usuario`, migrations `V2__usuario.sql` e `V3__aceite_termos.sql`)
 
 Dois perfis: `ESTUDANTE` e `PROFISSIONAL`. Paciente não é usuário. Docente é `PROFISSIONAL` com `revisor = true`. Uma tabela só, com colunas opcionais por perfil; o banco exige os campos de cada perfil por `CHECK`.
 
 | Campo | Perfil | Regra |
 |---|---|---|
 | `nome` | ambos | 2 a 120 caracteres |
-| `instituicao` | estudante | Texto. A tela oferece lista (UniBH, PUC Minas, UFMG, Unifenas...) e "Outra" com campo livre |
+| `termos_aceitos_em`, `termos_versao` | ambos | O `POST` exige `aceiteTermos: true` (400 sem ele). A API grava a data e a versão vigente (`UsuarioService.VERSAO_TERMOS`). Nulos só em cadastros anteriores à V3. Mudou o texto de `/termos` ou `/privacidade`: troque a versão |
+| `instituicao` | estudante | Texto livre. A tela sugere UniBH, PUC Minas, UFMG, Unifenas |
 | `periodo` | estudante | 1 a 12 |
 | `categoria` | profissional | `FISIOTERAPEUTA`, `TERAPEUTA_OCUPACIONAL`, `OUTRA` |
 | `registro` | profissional | Formato: `123456-F` (fisioterapeuta), `123456-TO` (terapeuta ocupacional); livre até 20 para `OUTRA`. Sem consulta ao CREFITO, sem selo de "verificado" |
@@ -797,7 +810,7 @@ Pronto:
 - Pacotes `config`, `shared/exception` e `usuario` (camadas em subpastas). Os demais pacotes da árvore nascem com a primeira classe de cada feature.
 - Validação do JWT do Supabase (ES256, JWKS, emissor, `aud`) e conversão do perfil do banco em papéis.
 - `GET`/`POST /api/v1/usuarios/me` com validação por perfil, erros por campo e 409 em cadastro duplicado.
-- Migrations `V1__seguranca_base.sql` (revoga `anon`/`authenticated`) e `V2__usuario.sql`, aplicadas no Supabase.
+- Migrations `V1__seguranca_base.sql` (revoga `anon`/`authenticated`) e `V2__usuario.sql`, aplicadas no Supabase. `V3__aceite_termos.sql` roda no próximo deploy do backend.
 - Tratamento global de erros em `ProblemDetail`.
 - Log de inicialização enxuto (banner Fisiotech e resumo) e senha fora do log.
 - Swagger desligado por padrão; liga com `SWAGGER_ENABLED=true` no `.env`.
