@@ -302,7 +302,7 @@ Consequência do padrão: o que uma camada usa de outra precisa ser `public` (ex
 
 Regras obrigatórias no backend:
 
-1. Endpoint de paciente exige `PROFISSIONAL` (`@PreAuthorize("hasRole('PROFISSIONAL')")`). `ESTUDANTE` recebe **403**.
+1. Endpoint de paciente exige `PROFISSIONAL` (`@PreAuthorize("hasRole('PROFISSIONAL')")`). `ESTUDANTE` recebe **403**. A `SecurityConfig` também barra `/api/v1/pacientes/**` (pacientes, avaliações e sessões) para quem não é `PROFISSIONAL`, então um endpoint novo nasce protegido mesmo se faltar o `@PreAuthorize`.
 2. Todo acesso a paciente, avaliação ou sessão confere `paciente.responsavel.id == usuarioLogado.id`. Se falhar, responde **404**, não 403. Assim não revela que o registro existe. O ponto único dessa verificação é `PacienteService.buscarDoResponsavel`.
 3. Paciente não é usuário: sem login, sem conta.
 4. Registro profissional digitado (CREFITO etc.) **não** gera selo de "verificado".
