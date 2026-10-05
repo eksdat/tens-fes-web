@@ -38,7 +38,7 @@ import br.unibh.fisiotech.TestcontainersConfiguration;
 class UsuarioIntegracaoTest {
 
     private static final String ESTUDANTE = """
-            {"nome":"Ana Souza","perfil":"ESTUDANTE","instituicao":"UniBH","periodo":5}
+            {"aceiteTermos":true,"nome":"Ana Souza","perfil":"ESTUDANTE","instituicao":"UniBH","periodo":5}
             """;
 
     @Autowired

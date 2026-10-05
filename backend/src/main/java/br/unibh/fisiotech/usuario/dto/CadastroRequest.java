@@ -19,7 +19,9 @@ public record CadastroRequest(
         @Min(1) @Max(12) Short periodo,
         Categoria categoria,
         @Size(max = 20) @Pattern(regexp = TEXTO_SEGURO) String registro,
-        Uf uf) {
+        Uf uf,
+        @NotNull(message = "Aceite os termos de uso e a política de privacidade.")
+        @AssertTrue(message = "Aceite os termos de uso e a política de privacidade.") Boolean aceiteTermos) {
 
     /** Anti-spam no texto livre: só letras, números, espaço e {@code . - ' ( ) /}, sem {@code www.}. */
     static final String TEXTO_SEGURO = "(?i)(?!.*www\\.)[\\p{L}\\p{N} .'()/-]+";

@@ -1,26 +1,27 @@
-import { createContext, useState, type ReactNode } from 'react'
-import { lerSessaoSalva, limparSessaoSalva, salvarSessao, type Sessao } from './sessaoStorage'
+import { useQueryClient } from '@tanstack/react-query'
+import type { Session } from '@supabase/supabase-js'
+import { useEffect, useState, type ReactNode } from 'react'
+import { supabase } from '../api/supabase'
+import { AuthContext } from './contexto'
 
-type AuthContextValue = {
-  sessao: Sessao | null
-  entrar: (sessao: Sessao) => void
-  sair: () => void
-}
-
-export const AuthContext = createContext<AuthContextValue | null>(null)
-
+/** Reflete a sessão do Supabase Auth. O perfil NÃO vem daqui: vem de GET /usuarios/me. */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [sessao, setSessao] = useState<Sessao | null>(lerSessaoSalva)
+  const [sessao, setSessao] = useState<Session | null>(null)
+  const [carregando, setCarregando] = useState(true)
+  const queryClient = useQueryClient()
 
-  function entrar(nova: Sessao) {
-    salvarSessao(nova)
-    setSessao(nova)
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((evento, nova) => {
+      setSessao(nova)
+      setCarregando(false)
+      if (evento === 'SIGNED_OUT') queryClient.clear()
+    })
+    return () => data.subscription.unsubscribe()
+  }, [queryClient])
+
+  async function sair() {
+    await supabase.auth.signOut()
   }
 
-  function sair() {
-    limparSessaoSalva()
-    setSessao(null)
-  }
-
-  return <AuthContext value={{ sessao, entrar, sair }}>{children}</AuthContext>
+  return <AuthContext value={{ sessao, carregando, sair }}>{children}</AuthContext>
 }

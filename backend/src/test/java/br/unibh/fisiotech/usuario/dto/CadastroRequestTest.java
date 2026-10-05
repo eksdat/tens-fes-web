@@ -20,25 +20,25 @@ class CadastroRequestTest {
     }
 
     private static CadastroRequest profissional(Categoria categoria, String registro) {
-        return new CadastroRequest("Bia Lima", Perfil.PROFISSIONAL, null, null, categoria, registro, Uf.MG);
+        return new CadastroRequest("Bia Lima", Perfil.PROFISSIONAL, null, null, categoria, registro, Uf.MG, true);
     }
 
     @Test
     void deveAceitarEstudanteCompleto() {
-        assertThat(valido(new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null)))
+        assertThat(valido(new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null, true)))
                 .isTrue();
     }
 
     @Test
     void deveRecusarEstudanteSemPeriodo() {
-        assertThat(valido(new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", null, null, null, null)))
+        assertThat(valido(new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", null, null, null, null, true)))
                 .isFalse();
     }
 
     @Test
     void deveRecusarProfissionalSemUf() {
         assertThat(valido(new CadastroRequest("Bia Lima", Perfil.PROFISSIONAL, null, null,
-                Categoria.FISIOTERAPEUTA, "123456-F", null))).isFalse();
+                Categoria.FISIOTERAPEUTA, "123456-F", null, true))).isFalse();
     }
 
     @Test
@@ -57,8 +57,16 @@ class CadastroRequestTest {
     }
 
     @Test
+    void deveRecusarCadastroSemAceiteDosTermos() {
+        assertThat(valido(new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null,
+                false))).isFalse();
+        assertThat(valido(new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null,
+                null))).isFalse();
+    }
+
+    @Test
     void deveRecusarNomeComLink() {
         assertThat(valido(new CadastroRequest("Ganhe www.premio.com", Perfil.ESTUDANTE, "UniBH", (short) 5,
-                null, null, null))).isFalse();
+                null, null, null, true))).isFalse();
     }
 }
