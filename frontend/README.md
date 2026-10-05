@@ -225,6 +225,8 @@ Crie a pasta da feature quando a primeira tela dela for feita. Não deixe pasta 
 
 ### Identidade visual
 
+O guia completo (tokens, componentes, regras de conteúdo, capturas de tela e protótipo) está em [docs/design-system/README.md](docs/design-system/README.md). Leia antes de criar ou alterar uma tela. Resumo:
+
 O protótipo (design system de referência) é só uma referência visual: cores, tipografia, cartões e campos. Fluxos e regras seguem este projeto. Pontos que valem lembrar:
 
 - **Só tema claro.** O tema escuro do design system não foi adotado; `color-scheme: light` fixo.

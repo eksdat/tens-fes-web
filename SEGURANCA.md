@@ -93,7 +93,7 @@ Regras:
 
 1. **Negar por padrão.** `anyRequest().authenticated()`. Endpoint público só com liberação explícita na `SecurityConfig`.
 2. **Perfil vem do banco**, pelo `sub` do token. Usuário com token válido e sem linha em `usuario` só acessa `POST /api/v1/usuarios/me` (completar cadastro).
-3. `@PreAuthorize("hasRole('PROFISSIONAL')")` em todo endpoint de paciente, avaliação e sessão. `ESTUDANTE` recebe **403**.
+3. `@PreAuthorize("hasRole('PROFISSIONAL')")` em todo endpoint de paciente, avaliação e sessão. `ESTUDANTE` recebe **403**. Segunda barreira na `SecurityConfig`: `/api/v1/pacientes/**` exige `PROFISSIONAL` (testes em `RestricaoPorPerfilTest` e `RestricaoPorPerfilIntegracaoTest`).
 4. **Posse:** toda consulta a paciente passa por `PacienteService.buscarDoResponsavel`. Paciente de outro profissional: **404**, nunca 403.
 5. **Sem IDOR:** id da URL nunca é confiado sozinho. A consulta sempre filtra pelo responsável (`findByIdAndResponsavelId`).
 6. Autor não aprova o próprio material (regra no Service, com teste).

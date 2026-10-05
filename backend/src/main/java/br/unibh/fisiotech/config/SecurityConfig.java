@@ -24,6 +24,7 @@ public class SecurityConfig {
     /**
      * API stateless com JWT do Supabase: sem sessão HTTP, logo sem CSRF.
      * {@code /api/v1/usuarios/me} aceita quem ainda não completou o cadastro (sem papel);
+     * {@code /api/v1/pacientes/**} (pacientes, avaliações e sessões) é só de PROFISSIONAL;
      * todo o resto exige perfil.
      */
     @Bean
@@ -36,6 +37,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/usuarios/me").authenticated()
+                        .requestMatchers("/api/v1/pacientes/**").hasRole("PROFISSIONAL")
                         .anyRequest().hasAnyRole("ESTUDANTE", "PROFISSIONAL"))
                 .build();
     }
