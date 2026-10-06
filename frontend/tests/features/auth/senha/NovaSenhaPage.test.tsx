@@ -2,8 +2,8 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
-import { NovaSenhaPage } from './NovaSenhaPage'
-import { renderComRotas } from '../../../test/renderComRotas'
+import { NovaSenhaPage } from '@/features/auth/senha/NovaSenhaPage'
+import { renderComRotas } from '../../../renderComRotas'
 
 const { auth, estado } = vi.hoisted(() => ({
   auth: {
@@ -16,9 +16,9 @@ const { auth, estado } = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('../../../shared/api/supabase', () => ({ supabase: { auth } }))
-vi.mock('../../../shared/auth/useAuth', () => ({ useAuth: () => ({ sessao: estado.sessao, carregando: false }) }))
-vi.mock('../../mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.nivel }))
+vi.mock('@/shared/api/supabase', () => ({ supabase: { auth } }))
+vi.mock('@/shared/auth/useAuth', () => ({ useAuth: () => ({ sessao: estado.sessao, carregando: false }) }))
+vi.mock('@/features/mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.nivel }))
 
 function renderizar() {
   return renderComRotas(

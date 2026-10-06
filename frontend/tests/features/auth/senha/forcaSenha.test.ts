@@ -1,5 +1,5 @@
-import { dadosPessoais, EXEMPLOS_SENHA_FORTE, motivoSenhaFraca, senhaFacilDeAdivinhar } from './forcaSenha'
-import { senhaNovaSchema } from '../schemas'
+import { dadosPessoais, EXEMPLOS_SENHA_FORTE, motivoSenhaFraca, senhaFacilDeAdivinhar } from '@/features/auth/senha/forcaSenha'
+import { senhaNovaSchema } from '@/features/auth/schemas'
 
 test.each(['Senha@12345', 'Qwerty@12345', 'Aaaaaaaa@1', 'Fisioterapia1!', 'Brasil@2024'])(
   'deveRecusarSenhaPrevisivel %s',

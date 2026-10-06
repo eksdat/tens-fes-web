@@ -62,3 +62,20 @@ export function IconeEnvelope(props: Props) {
     </Base>
   )
 }
+
+export function IconePessoa(props: Props) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" />
+    </Base>
+  )
+}
+
+export function IconeSeta(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </Base>
+  )
+}

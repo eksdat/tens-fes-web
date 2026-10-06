@@ -2,19 +2,19 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
-import { LoginPage } from './LoginPage'
-import { renderComRotas } from '../../../test/renderComRotas'
+import { LoginPage } from '@/features/auth/login/LoginPage'
+import { renderComRotas } from '../../../renderComRotas'
 
 const { authMock, estado } = vi.hoisted(() => ({
   authMock: { signInWithPassword: vi.fn(), resend: vi.fn() },
   estado: { sessao: null as object | null },
 }))
 
-vi.mock('../../../shared/api/supabase', () => ({
+vi.mock('@/shared/api/supabase', () => ({
   supabase: { auth: authMock },
   urlDeRetornoAuth: () => `${window.location.origin}/auth/callback`,
 }))
-vi.mock('../../../shared/auth/useAuth', () => ({
+vi.mock('@/shared/auth/useAuth', () => ({
   useAuth: () => ({ sessao: estado.sessao, carregando: false, sair: vi.fn() }),
 }))
 

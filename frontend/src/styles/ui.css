@@ -774,7 +774,7 @@ fieldset.tf-captcha {
   outline-color: var(--accent);
 }
 
-/* Layout das telas logadas: menu principal em barra inferior (celular) e lateral (a partir de 880px) */
+/* Layout das telas logadas: menu principal em barra inferior (celular) e cabeçalho (a partir de 880px) */
 
 .tf-pular {
   position: absolute;
@@ -847,45 +847,156 @@ fieldset.tf-captcha {
   box-shadow: inset 0 -4px 0 var(--brand);
 }
 
-@media (min-width: 880px) {
-  .tf-app {
-    display: grid;
-    grid-template-columns: 240px 1fr;
-  }
+.tf-menu__conta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: calc(var(--target-min) + var(--space-3));
+  padding: 0 var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
 
+.tf-menu__conta[data-state='open'] .tf-menu__seta {
+  transform: rotate(180deg);
+}
+
+.tf-menu__nome {
+  display: block;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.tf-menu__perfil {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.tf-menu__opcoes {
+  z-index: 40;
+  min-width: 180px;
+  padding: var(--space-2);
+  background: var(--surface-200);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.tf-menu__opcao {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+}
+
+.tf-menu__opcao[data-highlighted] {
+  background: var(--brand-tint);
+}
+
+.tf-menu__opcao:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* No celular a barra só tem o ícone; o nome continua disponível ao leitor de tela. */
+@media (max-width: 879.98px) {
+  .tf-menu__identidade {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 880px) {
   .tf-app__conteudo {
     padding-bottom: 0;
   }
 
   .tf-menu {
     position: sticky;
-    inset: 0 auto auto;
-    flex-direction: column;
-    align-self: start;
+    inset: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
     gap: var(--space-5);
-    height: 100dvh;
-    padding: var(--space-5) var(--space-4);
+    min-height: 64px;
+    padding: 0 var(--space-5);
     border-top: 0;
-    border-right: 2px solid var(--line-strong);
+    border-bottom: 2px solid var(--line-strong);
   }
 
   .tf-menu .tf-brand {
     display: inline-flex;
+    justify-self: start;
   }
 
   .tf-menu__lista {
-    flex: 1;
-    flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-5);
+  }
+
+  .tf-menu__lista li {
+    flex: none;
   }
 
   .tf-menu__link {
-    place-items: center start;
-    min-height: var(--target-min);
-    border-radius: var(--radius-md);
+    min-height: 64px;
+    padding: 0 var(--space-1);
+    font-size: 14px;
   }
 
   .tf-menu__link[aria-current='page'] {
-    box-shadow: inset 4px 0 0 var(--brand);
+    background: transparent;
+    box-shadow: none;
+    text-decoration: underline;
+    text-decoration-color: var(--brand);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 8px;
+  }
+
+  .tf-menu__conta {
+    justify-self: end;
+    min-height: 40px;
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface-200);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-md);
+  }
+
+  .tf-menu__conta .tf-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .tf-menu__conta .tf-menu__seta {
+    width: 14px;
+    height: 14px;
+  }
+
+  .tf-menu__identidade {
+    text-align: left;
+  }
+
+  .tf-menu__nome {
+    font-size: 14px;
+    line-height: 18px;
+  }
+
+  .tf-menu__perfil {
+    line-height: 14px;
   }
 }

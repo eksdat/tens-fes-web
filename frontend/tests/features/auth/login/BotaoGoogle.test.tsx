@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { axe } from 'vitest-axe'
-import { BotaoGoogle } from './BotaoGoogle'
+import { BotaoGoogle } from '@/features/auth/login/BotaoGoogle'
 
 const { signInWithOAuth } = vi.hoisted(() => ({ signInWithOAuth: vi.fn() }))
 
-vi.mock('../../../shared/api/supabase', () => ({
+vi.mock('@/shared/api/supabase', () => ({
   supabase: { auth: { signInWithOAuth } },
   urlDeRetornoAuth: () => `${window.location.origin}/auth/callback`,
 }))

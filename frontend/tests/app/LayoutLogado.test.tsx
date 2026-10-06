@@ -1,11 +1,12 @@
 import { screen, within } from '@testing-library/react'
 import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
-import { renderComRotas } from '../test/renderComRotas'
-import { LayoutLogado } from './LayoutLogado'
+import { renderComRotas } from '../renderComRotas'
+import { LayoutLogado } from '@/app/LayoutLogado'
 
-vi.mock('../shared/auth/useAuth', () => ({ useAuth: () => ({ sair: vi.fn() }) }))
-vi.mock('../features/usuario/useUsuarioAtual', () => ({
+vi.mock('@/shared/auth/useAuth', () => ({ useAuth: () => ({ sair: vi.fn() }) }))
+vi.mock('@/features/usuario/useUsuarioAtual', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/usuario/useUsuarioAtual')>()),
   useUsuarioAtual: () => ({ data: { perfil: 'ESTUDANTE' } }),
 }))
 

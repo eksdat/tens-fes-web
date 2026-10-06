@@ -2,8 +2,8 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
-import { CompletarCadastroPage } from './CompletarCadastroPage'
-import { renderComRotas } from '../../../test/renderComRotas'
+import { CompletarCadastroPage } from '@/features/auth/cadastro/CompletarCadastroPage'
+import { renderComRotas } from '../../../renderComRotas'
 
 const { estado, cadastrar, sair } = vi.hoisted(() => ({
   estado: {
@@ -14,14 +14,14 @@ const { estado, cadastrar, sair } = vi.hoisted(() => ({
   sair: vi.fn(),
 }))
 
-vi.mock('../../../shared/auth/useAuth', () => ({
+vi.mock('@/shared/auth/useAuth', () => ({
   useAuth: () => ({ sessao: { user: { user_metadata: estado.metadata } }, carregando: false, sair }),
 }))
-vi.mock('../../usuario/useUsuarioAtual', () => ({
+vi.mock('@/features/usuario/useUsuarioAtual', () => ({
   CHAVE_USUARIO_ATUAL: ['usuario', 'me'],
   useUsuarioAtual: () => estado.usuario,
 }))
-vi.mock('../../usuario/cadastrarUsuario', () => ({
+vi.mock('@/features/usuario/cadastrarUsuario', () => ({
   cadastrarUsuario: cadastrar,
   lerErroDeCadastro: () => ({ jaCadastrado: false, mensagem: 'Dados inválidos.', campos: {} }),
 }))

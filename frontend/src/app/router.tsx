@@ -9,8 +9,13 @@ import { TermosDeUsoPage } from '../features/termos/TermosDeUsoPage'
 import { AtivarMfaPage } from '../features/mfa/AtivarMfaPage'
 import { VerificarMfaPage } from '../features/mfa/VerificarMfaPage'
 import { InicioPage } from '../features/inicio/InicioPage'
+import { EmConstrucao } from './EmConstrucao'
 import { LayoutLogado } from './LayoutLogado'
 import { RaizApp } from './RaizApp'
+
+function emConstrucao(path: string, titulo: string) {
+  return { path, handle: { titulo }, element: <EmConstrucao titulo={titulo} /> }
+}
 
 export const router = createBrowserRouter([
   {
@@ -44,7 +49,13 @@ export const router = createBrowserRouter([
         children: [
           {
             element: <LayoutLogado />,
-            children: [{ path: '/', handle: { titulo: 'Início' }, element: <InicioPage /> }],
+            children: [
+              { path: '/', handle: { titulo: 'Início' }, element: <InicioPage /> },
+              emConstrucao('/tens', 'TENS'),
+              emConstrucao('/fes', 'FES'),
+              emConstrucao('/criar-conteudo', 'Criar conteúdo'),
+              emConstrucao('/perfil', 'Meu perfil'),
+            ],
           },
         ],
       },

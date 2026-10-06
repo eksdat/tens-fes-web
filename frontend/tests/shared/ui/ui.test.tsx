@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { axe } from 'vitest-axe'
-import { Alerta } from './Alerta'
-import { AuthLayout } from './AuthLayout'
-import { Botao } from './Botao'
-import { Campo } from './Campo'
-import { CampoSenha } from './CampoSenha'
+import { Alerta } from '@/shared/ui/Alerta'
+import { AuthLayout } from '@/shared/ui/AuthLayout'
+import { Botao } from '@/shared/ui/Botao'
+import { Campo } from '@/shared/ui/Campo'
+import { CampoSenha } from '@/shared/ui/CampoSenha'
 
 test('deveLigarRotuloDicaEErroAoCampo', () => {
   render(<Campo rotulo="E-mail" dica="Use o e-mail da faculdade" erro="Informe seu e-mail" />)

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Link, RouterProvider, createMemoryRouter } from 'react-router'
-import { RaizApp } from './RaizApp'
+import { RaizApp } from '@/app/RaizApp'
 
 function renderizar(rotaInicial = '/') {
   const router = createMemoryRouter(

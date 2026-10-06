@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { axe } from 'vitest-axe'
-import { PoliticaPrivacidadePage } from './PoliticaPrivacidadePage'
-import { TermosDeUsoPage } from './TermosDeUsoPage'
+import { PoliticaPrivacidadePage } from '@/features/termos/PoliticaPrivacidadePage'
+import { TermosDeUsoPage } from '@/features/termos/TermosDeUsoPage'
 
 test.each([
   ['Termos de uso', TermosDeUsoPage, '/privacidade'],

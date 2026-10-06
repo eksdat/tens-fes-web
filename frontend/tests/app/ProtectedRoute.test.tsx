@@ -1,8 +1,8 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route } from 'react-router'
-import { ProtectedRoute } from './ProtectedRoute'
-import { renderComRotas } from '../test/renderComRotas'
+import { ProtectedRoute } from '@/app/ProtectedRoute'
+import { renderComRotas } from '../renderComRotas'
 
 const { estado, refetch, sair } = vi.hoisted(() => ({
   estado: {
@@ -14,9 +14,9 @@ const { estado, refetch, sair } = vi.hoisted(() => ({
   sair: vi.fn(),
 }))
 
-vi.mock('../shared/auth/useAuth', () => ({ useAuth: () => ({ ...estado.auth, sair }) }))
-vi.mock('../features/mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.mfa }))
-vi.mock('../features/usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ ...estado.usuario, refetch }) }))
+vi.mock('@/shared/auth/useAuth', () => ({ useAuth: () => ({ ...estado.auth, sair }) }))
+vi.mock('@/features/mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.mfa }))
+vi.mock('@/features/usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ ...estado.usuario, refetch }) }))
 
 function renderizar(perfil?: 'ESTUDANTE' | 'PROFISSIONAL', semMfa = false) {
   return renderComRotas(
