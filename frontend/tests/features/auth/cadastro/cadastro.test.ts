@@ -6,8 +6,8 @@ import {
   normalizarRegistro,
   paraCadastroRequest,
   PERFIL_VAZIO,
-} from './cadastro'
-import { cadastroSeguroSchema } from './cadastroSeguro'
+} from '@/features/auth/cadastro/cadastro'
+import { cadastroSeguroSchema } from '@/features/auth/cadastro/cadastroSeguro'
 
 const comuns = { nome: 'Ana Souza', email: 'ana@exemplo.com', senha: 'SenhaForte1!', confirmacao: 'SenhaForte1!', termos: true }
 const estudante = { ...PERFIL_VAZIO, perfil: 'ESTUDANTE' as const, instituicao: 'UniBH', periodo: '5' }

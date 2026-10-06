@@ -9,7 +9,7 @@ export type SecaoLegal = { titulo: string; paragrafos: string[] }
 /** Página de texto longo (termos e privacidade): abre em outra aba a partir do cadastro e leva de volta a ele. */
 export function DocumentoLegal({ titulo, secoes, outro }: { titulo: string; secoes: SecaoLegal[]; outro: ReactNode }) {
   return (
-    <main className="tf-pagina tf-documento">
+    <main id="conteudo" tabIndex={-1} className="tf-pagina tf-documento">
       <Link className="tf-link" to="/cadastro">
         <span aria-hidden="true">‹&nbsp;</span>Voltar
       </Link>

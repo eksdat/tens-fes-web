@@ -24,7 +24,7 @@ export function ProtectedRoute({ perfil, semMfa = false }: { perfil?: Perfil; se
 
   if (usuario.isError) {
     return (
-      <main className="tf-pagina">
+      <main id="conteudo" tabIndex={-1} className="tf-pagina">
         <Alerta
           intencao="atencao"
           titulo="Não foi possível carregar seus dados"

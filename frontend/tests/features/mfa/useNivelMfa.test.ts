@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
-import { nivelDaSessao } from './useNivelMfa'
+import { nivelDaSessao } from '@/features/mfa/useNivelMfa'
 
 function token(claims: object) {
   const parte = btoa(JSON.stringify(claims)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')

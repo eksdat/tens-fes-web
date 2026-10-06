@@ -48,7 +48,7 @@ export function AuthLayout({ kicker, titulo, texto, faixa = false, voltarPara, a
         </p>
       </aside>
 
-      <main className="tf-auth__conteudo">
+      <main id="conteudo" tabIndex={-1} className="tf-auth__conteudo">
         <div className="tf-auth__cartao">{children}</div>
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { armazenamentoDaSessao, definirManterConectado } from './armazenamento'
+import { armazenamentoDaSessao, definirManterConectado } from '@/shared/auth/armazenamento'
 
 const CHAVE = 'sb-sessao'
 

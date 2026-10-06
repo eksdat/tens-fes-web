@@ -2,9 +2,9 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
-import { AtivarMfaPage } from './AtivarMfaPage'
-import { VerificarMfaPage } from './VerificarMfaPage'
-import { renderComRotas } from '../../test/renderComRotas'
+import { AtivarMfaPage } from '@/features/mfa/AtivarMfaPage'
+import { VerificarMfaPage } from '@/features/mfa/VerificarMfaPage'
+import { renderComRotas } from '../../renderComRotas'
 
 const { mfa, estado, sair } = vi.hoisted(() => ({
   mfa: {
@@ -21,10 +21,10 @@ const { mfa, estado, sair } = vi.hoisted(() => ({
   sair: vi.fn(),
 }))
 
-vi.mock('../../shared/api/supabase', () => ({ supabase: { auth: { mfa, refreshSession: mfa.refreshSession } } }))
-vi.mock('../../shared/auth/useAuth', () => ({ useAuth: () => ({ sessao: {}, carregando: false, sair }) }))
-vi.mock('./useNivelMfa', () => ({ useNivelMfa: () => estado.nivel }))
-vi.mock('../usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ data: { perfil: estado.perfil } }) }))
+vi.mock('@/shared/api/supabase', () => ({ supabase: { auth: { mfa, refreshSession: mfa.refreshSession } } }))
+vi.mock('@/shared/auth/useAuth', () => ({ useAuth: () => ({ sessao: {}, carregando: false, sair }) }))
+vi.mock('@/features/mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.nivel }))
+vi.mock('@/features/usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ data: { perfil: estado.perfil } }) }))
 
 function renderizar(pagina: React.ReactNode) {
   return renderComRotas(

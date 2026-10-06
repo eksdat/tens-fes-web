@@ -1,4 +1,4 @@
-import { emailSchema, senhaNovaSchema } from './schemas'
+import { emailSchema, senhaNovaSchema } from '@/features/auth/schemas'
 
 function mensagem(resultado: { success: boolean; error?: { issues: { message: string }[] } }) {
   return resultado.success ? null : resultado.error?.issues[0]?.message

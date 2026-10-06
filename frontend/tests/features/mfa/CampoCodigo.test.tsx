@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { axe } from 'vitest-axe'
-import { CampoCodigo } from './CampoCodigo'
+import { CampoCodigo } from '@/features/mfa/CampoCodigo'
 
 function renderizar(erro?: string) {
   const aoMudar = vi.fn()
