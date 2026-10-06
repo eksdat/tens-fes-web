@@ -9,26 +9,46 @@ import { TermosDeUsoPage } from '../features/termos/TermosDeUsoPage'
 import { AtivarMfaPage } from '../features/mfa/AtivarMfaPage'
 import { VerificarMfaPage } from '../features/mfa/VerificarMfaPage'
 import { InicioPage } from '../features/inicio/InicioPage'
+import { LayoutLogado } from './LayoutLogado'
+import { RaizApp } from './RaizApp'
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
-  { path: '/cadastro', lazy: async () => ({ Component: (await import('../features/auth/cadastro/CadastroPage')).CadastroPage }) },
-  { path: '/esqueci-senha', element: <EsqueciSenhaPage /> },
-  { path: '/nova-senha', lazy: async () => ({ Component: (await import('../features/auth/senha/NovaSenhaPage')).NovaSenhaPage }) },
-  { path: '/auth/callback', element: <AuthCallbackPage /> },
-  { path: '/completar-cadastro', element: <CompletarCadastroPage /> },
-  { path: '/termos', element: <TermosDeUsoPage /> },
-  { path: '/privacidade', element: <PoliticaPrivacidadePage /> },
   {
-    element: <ProtectedRoute semMfa />,
+    element: <RaizApp />,
     children: [
-      { path: '/mfa/ativar', element: <AtivarMfaPage /> },
-      { path: '/mfa/verificar', element: <VerificarMfaPage /> },
+      { path: '/login', handle: { titulo: 'Entrar' }, element: <LoginPage /> },
+      {
+        path: '/cadastro',
+        handle: { titulo: 'Criar conta' },
+        lazy: async () => ({ Component: (await import('../features/auth/cadastro/CadastroPage')).CadastroPage }),
+      },
+      { path: '/esqueci-senha', handle: { titulo: 'Recuperar senha' }, element: <EsqueciSenhaPage /> },
+      {
+        path: '/nova-senha',
+        handle: { titulo: 'Nova senha' },
+        lazy: async () => ({ Component: (await import('../features/auth/senha/NovaSenhaPage')).NovaSenhaPage }),
+      },
+      { path: '/auth/callback', handle: { titulo: 'Entrando' }, element: <AuthCallbackPage /> },
+      { path: '/completar-cadastro', handle: { titulo: 'Completar cadastro' }, element: <CompletarCadastroPage /> },
+      { path: '/termos', handle: { titulo: 'Termos de uso' }, element: <TermosDeUsoPage /> },
+      { path: '/privacidade', handle: { titulo: 'Política de privacidade' }, element: <PoliticaPrivacidadePage /> },
+      {
+        element: <ProtectedRoute semMfa />,
+        children: [
+          { path: '/mfa/ativar', handle: { titulo: 'Ativar verificação em duas etapas' }, element: <AtivarMfaPage /> },
+          { path: '/mfa/verificar', handle: { titulo: 'Verificar código' }, element: <VerificarMfaPage /> },
+        ],
+      },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <LayoutLogado />,
+            children: [{ path: '/', handle: { titulo: 'Início' }, element: <InicioPage /> }],
+          },
+        ],
+      },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
-  {
-    element: <ProtectedRoute />,
-    children: [{ path: '/', element: <InicioPage /> }],
-  },
-  { path: '*', element: <Navigate to="/" replace /> },
 ])

@@ -386,7 +386,7 @@ Imagens originais do protótipo, guardadas só como **referência de estilo**. Q
 | Login | Sem Google nem CAPTCHA | Com Google e CAPTCHA (Turnstile) |
 | Aceite dos termos | Caixa simples | Exigido pela API, que grava versão e data |
 | Cantos | Cartões mais arredondados nas imagens | Valem os tokens: 2, 4 e 6 px |
-| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | A decidir quando a navegação for implementada. O componente "Navegação" do design system descreve abas no cabeçalho |
+| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | Barra inferior no celular e **barra lateral no computador** (Card 22). Só entram abas de telas que já existem |
 
 ---
 

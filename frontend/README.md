@@ -186,7 +186,10 @@ frontend/
     │   └── ui.css             # componentes (classes tf-*) e layout das telas de autenticação
     ├── app/
     │   ├── providers.tsx      # QueryClientProvider + AuthProvider
-    │   ├── router.tsx         # todas as rotas
+    │   ├── router.tsx         # todas as rotas, com o título de cada uma (handle.titulo)
+    │   ├── RaizApp.tsx        # link "Pular para o conteúdo", document.title e anúncio da página
+    │   ├── LayoutLogado.tsx   # menu + <main id="conteudo"> das telas logadas
+    │   ├── MenuPrincipal.tsx  # nav "Principal": abas fixas, barra inferior (celular) ou lateral (880px+)
     │   └── ProtectedRoute.tsx # guarda de rotas (sessão, cadastro, perfil, MFA); compõe auth, mfa e usuario
     ├── shared/
     │   ├── api/
