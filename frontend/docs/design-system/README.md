@@ -280,7 +280,7 @@ Padrões que nasceram nas features (em `src/features`):
 | CAPTCHA | `auth/CampoCaptcha` e `captcha.tsx` | Widget do Cloudflare Turnstile dentro de um `fieldset` com legenda; anuncia "Verificação de segurança concluída" |
 | Aceite dos termos | `auth/CampoAceiteTermos` | Caixa de seleção com links que abrem em outra aba para não perder o formulário |
 | Cartões de opção | `auth/PerfilCampos` | Botões de rádio em cartões (Estudante ou Profissional) com descrição |
-| Documento longo | `auth/DocumentoLegal` | Termos e Privacidade: título, aviso "Versão preliminar", seções numeradas |
+| Documento longo | `legal/DocumentoLegal` | Termos e Privacidade: título, aviso "Versão preliminar", seções numeradas |
 
 Exemplo de formulário com os componentes do app:
 

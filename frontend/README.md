@@ -193,12 +193,13 @@ frontend/
     │   │   ├── contexto.ts        # AuthContext (tipo e contexto)
     │   │   ├── AuthContext.tsx    # AuthProvider: reflete onAuthStateChange
     │   │   ├── useAuth.ts         # hook de acesso ao contexto
+    │   │   ├── ProtectedRoute.tsx # guarda de rotas (sessão, cadastro, perfil, MFA)
     │   │   └── armazenamento.ts   # "Manter conectado": localStorage ou sessionStorage
     │   └── ui/                # Marca, Botao, BotaoLink, Campo, CampoSenha, Alerta, AuthLayout, FolhasDecorativas, Icones, TelaCarregando
     ├── features/
     │   ├── auth/              # LoginPage, CadastroPage (2 etapas + verificação), CompletarCadastroPage, EsqueciSenhaPage,
-    │   │                      # NovaSenhaPage, AuthCallbackPage, ProtectedRoute, schemas, RequisitosSenha,
-    │   │                      # TermosDeUsoPage, PoliticaPrivacidadePage (textos preliminares)
+    │   │                      # NovaSenhaPage, AuthCallbackPage, schemas, RequisitosSenha
+    │   ├── legal/             # TermosDeUsoPage, PoliticaPrivacidadePage, DocumentoLegal (textos preliminares)
     │   ├── mfa/               # AtivarMfaPage, VerificarMfaPage, useNivelMfa (AAL da sessão), CampoCodigo
     │   ├── usuario/           # useUsuarioAtual (GET /usuarios/me)
     │   ├── inicio/            # InicioPage (provisória)
