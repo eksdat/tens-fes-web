@@ -231,7 +231,7 @@ Regras de desenho:
 
 - **A entidade nunca sai do backend.** Sempre DTO.
 - **Não criar `IXService`** com uma implementação só. O Mockito mocka a classe concreta. Interface só existe com mais de uma implementação real ou quando o teste precisa de um fake. Caso atual: `LlmClient`.
-- Erro sai como `ProblemDetail` (`shared/GlobalExceptionHandler`). Exceções de domínio estendem `ErrorResponseException` e já levam o status: `RecursoNaoEncontradoException` (404), `ConflitoException` (409). Erro de validação traz `erros: { campo: mensagem }`.
+- Erro sai como `ProblemDetail` (`shared/GlobalExceptionHandler`). Exceções de domínio estendem `ErrorResponseException` e já levam o status: `RecursoNaoEncontradoException` (404), `ConflitoException` (409). Erro de validação traz `erros: { campo: mensagem }`. Erro do framework sai com "Requisição inválida." e exceção não tratada com 500 "Erro interno." (detalhe só no log). Exceção nova de domínio que deva manter a própria mensagem precisa entrar na exceção do `handleExceptionInternal`.
 - Rotas da API: prefixo `/api/v1`. Ex.: `POST /api/v1/pacientes/{id}/sessoes`.
 
 ### Segurança (`config/SecurityConfig.java`)

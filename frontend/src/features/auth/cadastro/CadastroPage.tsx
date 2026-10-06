@@ -2,27 +2,28 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useRef, useState } from 'react'
 import { FormProvider, useForm, useWatch, type FieldErrors } from 'react-hook-form'
 import { Link, Navigate } from 'react-router'
-import { supabase, urlDeRetornoAuth } from '../../shared/api/supabase'
-import { useAuth } from '../../shared/auth/useAuth'
-import { Alerta } from '../../shared/ui/Alerta'
-import { AuthLayout } from '../../shared/ui/AuthLayout'
-import { Botao, BotaoLink } from '../../shared/ui/Botao'
-import { Campo } from '../../shared/ui/Campo'
-import { CampoSenha } from '../../shared/ui/CampoSenha'
-import { EtapaProgresso } from '../../shared/ui/EtapaProgresso'
-import { IconeEnvelope } from '../../shared/ui/Icones'
+import { supabase, urlDeRetornoAuth } from '../../../shared/api/supabase'
+import { useAuth } from '../../../shared/auth/useAuth'
+import { Alerta } from '../../../shared/ui/Alerta'
+import { AuthLayout } from '../../../shared/ui/AuthLayout'
+import { Botao, BotaoLink } from '../../../shared/ui/Botao'
+import { Campo } from '../../../shared/ui/Campo'
+import { CampoSenha } from '../../../shared/ui/CampoSenha'
+import { EtapaProgresso } from '../../../shared/ui/EtapaProgresso'
+import { IconeEnvelope } from '../../../shared/ui/Icones'
 import {
   CAMPOS_ETAPA_1,
-  cadastroSchema,
   paraCadastroRequest,
   PERFIL_VAZIO,
   type CadastroForm,
 } from './cadastro'
 import { PerfilCampos } from './PerfilCampos'
-import { BotaoGoogle } from './BotaoGoogle'
-import { MENSAGEM_CAPTCHA, useCaptcha } from './captcha'
+import { BotaoGoogle } from '../login/BotaoGoogle'
+import { MENSAGEM_CAPTCHA, useCaptcha } from '../captcha/captcha'
 import { CampoAceiteTermos } from './CampoAceiteTermos'
-import { RequisitosSenha } from './RequisitosSenha'
+import { cadastroSeguroSchema } from './cadastroSeguro'
+import { dadosPessoais } from '../senha/forcaSenha'
+import { RequisitosSenha } from '../senha/RequisitosSenha'
 
 type Etapa = 1 | 2 | 'verificar'
 
@@ -58,7 +59,7 @@ export function CadastroPage() {
   const primeiraRenderizacao = useRef(true)
 
   const form = useForm<CadastroForm>({
-    resolver: zodResolver(cadastroSchema),
+    resolver: zodResolver(cadastroSeguroSchema),
     defaultValues: { nome: '', email: '', senha: '', confirmacao: '', termos: false, ...PERFIL_VAZIO },
   })
   const {
@@ -79,7 +80,7 @@ export function CadastroPage() {
     titulo.current?.focus()
   }, [etapa])
 
-  const senha = useWatch({ control, name: 'senha' })
+  const [senha, nome, email] = useWatch({ control, name: ['senha', 'nome', 'email'] })
 
   if (sessao) return <Navigate to="/" replace />
 
@@ -161,7 +162,7 @@ export function CadastroPage() {
                   erro={errors.senha?.message}
                   {...register('senha')}
                 />
-                <RequisitosSenha senha={senha} />
+                <RequisitosSenha senha={senha} dados={dadosPessoais(nome, email)} />
                 <CampoSenha
                   rotulo="Confirme a senha"
                   autoComplete="new-password"

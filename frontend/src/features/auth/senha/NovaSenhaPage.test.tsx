@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
 import { NovaSenhaPage } from './NovaSenhaPage'
+import { renderComRotas } from '../../../test/renderComRotas'
 
 const { auth, estado } = vi.hoisted(() => ({
   auth: {
@@ -16,20 +16,17 @@ const { auth, estado } = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('../../shared/api/supabase', () => ({ supabase: { auth } }))
-vi.mock('../../shared/auth/useAuth', () => ({ useAuth: () => ({ sessao: estado.sessao, carregando: false }) }))
-vi.mock('../mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.nivel }))
+vi.mock('../../../shared/api/supabase', () => ({ supabase: { auth } }))
+vi.mock('../../../shared/auth/useAuth', () => ({ useAuth: () => ({ sessao: estado.sessao, carregando: false }) }))
+vi.mock('../../mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.nivel }))
 
 function renderizar() {
-  return render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={['/nova-senha']}>
-        <Routes>
-          <Route path="/nova-senha" element={<NovaSenhaPage />} />
-          <Route path="/login" element={<p>tela de login</p>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+  return renderComRotas(
+    <>
+      <Route path="/nova-senha" element={<NovaSenhaPage />} />
+      <Route path="/login" element={<p>tela de login</p>} />
+    </>,
+    '/nova-senha',
   )
 }
 
@@ -54,6 +51,27 @@ test('deveSalvarANovaSenha', async () => {
 
   expect(await screen.findByText('Senha alterada')).toBeInTheDocument()
   expect(auth.updateUser).toHaveBeenCalledWith({ password: 'SenhaNova1!' })
+})
+
+test('deveRecusarSenhaFacilDeAdivinharSemChamarOSupabase', async () => {
+  renderizar()
+
+  await preencher('Senha@12345')
+  await userEvent.click(screen.getByRole('button', { name: 'Salvar nova senha' }))
+
+  expect(await screen.findByText(/Essa senha é fácil de adivinhar/)).toBeInTheDocument()
+  expect(auth.updateUser).not.toHaveBeenCalled()
+})
+
+test('deveRecusarSenhaComPartesDoEmailDaConta', async () => {
+  estado.sessao = { user: { email: 'ana.clara@exemplo.com' } }
+  renderizar()
+
+  await preencher('Xk#clara#91Z')
+  await userEvent.click(screen.getByRole('button', { name: 'Salvar nova senha' }))
+
+  expect(await screen.findByText(/Essa senha é fácil de adivinhar/)).toBeInTheDocument()
+  expect(auth.updateUser).not.toHaveBeenCalled()
 })
 
 test('deveAvisarQueANovaSenhaNaoPodeSerIgualAAtual', async () => {

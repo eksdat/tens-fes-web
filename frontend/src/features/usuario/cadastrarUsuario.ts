@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { api } from '../../shared/api/client'
-import type { CadastroRequest } from '../auth/cadastro'
+import type { CadastroRequest } from '../auth/cadastro/cadastro'
 import type { Usuario } from './useUsuarioAtual'
 
 export async function cadastrarUsuario(corpo: CadastroRequest): Promise<Usuario> {

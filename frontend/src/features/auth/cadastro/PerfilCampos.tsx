@@ -1,7 +1,7 @@
 import { useFormContext } from 'react-hook-form'
-import { Campo } from '../../shared/ui/Campo'
-import { CampoSelecao } from '../../shared/ui/CampoSelecao'
-import { ErroDeCampo } from '../../shared/ui/ErroDeCampo'
+import { Campo } from '../../../shared/ui/Campo'
+import { CampoSelecao } from '../../../shared/ui/CampoSelecao'
+import { ErroDeCampo } from '../../../shared/ui/ErroDeCampo'
 import {
   CATEGORIAS,
   exemploDeRegistro,

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { supabase, urlDeRetornoAuth } from '../../shared/api/supabase'
-import { Alerta } from '../../shared/ui/Alerta'
-import { Botao } from '../../shared/ui/Botao'
+import { supabase, urlDeRetornoAuth } from '../../../shared/api/supabase'
+import { Alerta } from '../../../shared/ui/Alerta'
+import { Botao } from '../../../shared/ui/Botao'
 
 function LogoGoogle() {
   return (

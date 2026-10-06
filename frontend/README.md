@@ -141,6 +141,9 @@ Plataforma: uma versão web responsiva (computador e navegador do celular). Não
 
 Cada feature tem suas páginas, componentes, hooks de dados e schemas juntos. O que é usado por várias features fica em `shared/`.
 
+- `shared` não importa de `features`; feature não importa de outra feature; quem compõe várias fica em `app/`.
+- Teste ao lado do arquivo; helper de render em `src/test/renderComRotas.tsx`.
+
 | Peça | Papel | Pode | Não pode |
 |---|---|---|---|
 | Página (container) | Busca dados por hook e orquestra componentes | Usar hooks de dados | — |
@@ -183,7 +186,8 @@ frontend/
     │   └── ui.css             # componentes (classes tf-*) e layout das telas de autenticação
     ├── app/
     │   ├── providers.tsx      # QueryClientProvider + AuthProvider
-    │   └── router.tsx         # todas as rotas
+    │   ├── router.tsx         # todas as rotas
+    │   └── ProtectedRoute.tsx # guarda de rotas (sessão, cadastro, perfil, MFA); compõe auth, mfa e usuario
     ├── shared/
     │   ├── api/
     │   │   ├── supabase.ts    # cliente do Supabase (só auth)
@@ -196,9 +200,14 @@ frontend/
     │   │   └── armazenamento.ts   # "Manter conectado": localStorage ou sessionStorage
     │   └── ui/                # Marca, Botao, BotaoLink, Campo, CampoSenha, Alerta, AuthLayout, FolhasDecorativas, Icones, TelaCarregando
     ├── features/
-    │   ├── auth/              # LoginPage, CadastroPage (2 etapas + verificação), CompletarCadastroPage, EsqueciSenhaPage,
-    │   │                      # NovaSenhaPage, AuthCallbackPage, ProtectedRoute, schemas, RequisitosSenha,
-    │   │                      # TermosDeUsoPage, PoliticaPrivacidadePage (textos preliminares)
+    │   ├── auth/
+    │   │   ├── schemas.ts     # emailSchema, senhaNovaSchema (usados por login, cadastro e senha)
+    │   │   ├── login/         # LoginPage, BotaoGoogle, AuthCallbackPage
+    │   │   ├── cadastro/      # CadastroPage (2 etapas + verificação), CompletarCadastroPage, PerfilCampos,
+    │   │   │                  # CampoAceiteTermos, cadastro.ts, cadastroSeguro.ts
+    │   │   ├── senha/         # EsqueciSenhaPage, NovaSenhaPage, RequisitosSenha, forcaSenha.ts (zxcvbn-ts)
+    │   │   └── captcha/       # captcha.tsx (useCaptcha), CampoCaptcha
+    │   ├── termos/            # TermosDeUsoPage, PoliticaPrivacidadePage, DocumentoLegal (textos preliminares)
     │   ├── mfa/               # AtivarMfaPage, VerificarMfaPage, useNivelMfa (AAL da sessão), CampoCodigo
     │   ├── usuario/           # useUsuarioAtual (GET /usuarios/me)
     │   ├── inicio/            # InicioPage (provisória)
@@ -217,6 +226,7 @@ frontend/
     │       └── schemas.ts     # Zod
     └── test/
         ├── setup.ts           # jest-dom, vitest-axe e limpeza do armazenamento
+        ├── renderComRotas.tsx # QueryClientProvider + MemoryRouter + Routes para testes de página
         └── vitest-axe.d.ts    # tipo do matcher toHaveNoViolations
 e2e/                           # Playwright (a criar)
 ```
@@ -590,7 +600,7 @@ Padrão de chave do TanStack Query: `[recurso, ...ids]`. Ex.: `["pacientes"]`, `
 Meta: **WCAG 2.2 AA**. Testes manuais com NVDA, VoiceOver e TalkBack.
 
 - Toda função do 3D existe também na lista textual (`ListaControles`). O 3D é complemento.
-- Erro de formulário ligado ao campo por `aria-describedby`, com `aria-invalid`. Erro geral em `role="alert"`. Veja `src/features/auth/LoginPage.tsx`.
+- Erro de formulário ligado ao campo por `aria-describedby`, com `aria-invalid`. Erro geral em `role="alert"`. Veja `src/features/auth/login/LoginPage.tsx`.
 - Todo `input` tem `label` com `htmlFor`.
 - Foco previsível ao abrir e fechar diálogos (Radix garante).
 - Foco sempre visível (`:focus-visible` em `src/index.css`).
@@ -628,7 +638,7 @@ Regras:
 - Sem dependência de ordem, relógio real ou rede. Chamadas HTTP mockadas.
 - `src/test/setup.ts` limpa o DOM e o `localStorage` depois de cada teste.
 
-Exemplo atual: `src/shared/auth/ProtectedRoute.test.tsx` (3 testes).
+Exemplo atual: `src/app/ProtectedRoute.test.tsx` (3 testes).
 
 ---
 

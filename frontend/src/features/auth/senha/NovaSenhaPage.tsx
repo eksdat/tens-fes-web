@@ -1,30 +1,40 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
-import { supabase } from '../../shared/api/supabase'
-import { useAuth } from '../../shared/auth/useAuth'
-import { Alerta } from '../../shared/ui/Alerta'
-import { AuthLayout } from '../../shared/ui/AuthLayout'
-import { Botao, BotaoLink } from '../../shared/ui/Botao'
-import { CampoSenha } from '../../shared/ui/CampoSenha'
-import { TelaCarregando } from '../../shared/ui/TelaCarregando'
-import { CampoCodigo } from '../mfa/CampoCodigo'
-import { codigoSchema } from '../mfa/codigoSchema'
-import { useNivelMfa } from '../mfa/useNivelMfa'
-import { verificarCodigo } from '../mfa/verificarCodigo'
+import { supabase } from '../../../shared/api/supabase'
+import { useAuth } from '../../../shared/auth/useAuth'
+import { Alerta } from '../../../shared/ui/Alerta'
+import { AuthLayout } from '../../../shared/ui/AuthLayout'
+import { Botao, BotaoLink } from '../../../shared/ui/Botao'
+import { CampoSenha } from '../../../shared/ui/CampoSenha'
+import { TelaCarregando } from '../../../shared/ui/TelaCarregando'
+import { CampoCodigo } from '../../mfa/CampoCodigo'
+import { codigoSchema } from '../../mfa/codigoSchema'
+import { useNivelMfa } from '../../mfa/useNivelMfa'
+import { verificarCodigo } from '../../mfa/verificarCodigo'
+import { dadosPessoais, mensagemSenhaFraca } from './forcaSenha'
 import { RequisitosSenha } from './RequisitosSenha'
-import { senhaNovaSchema } from './schemas'
+import { senhaNovaSchema } from '../schemas'
 
-const schema = z
-  .object({
-    senha: senhaNovaSchema,
-    confirmacao: z.string().min(1, 'Confirme a senha'),
-    codigo: z.string(),
-  })
-  .refine((v) => v.senha === v.confirmacao, { path: ['confirmacao'], message: 'As senhas não coincidem' })
+function criarSchema(dados: string[]) {
+  return z
+    .object({
+      senha: senhaNovaSchema,
+      confirmacao: z.string().min(1, 'Confirme a senha'),
+      codigo: z.string(),
+    })
+    .superRefine((v, ctx) => {
+      if (v.senha !== v.confirmacao) {
+        ctx.addIssue({ code: 'custom', path: ['confirmacao'], message: 'As senhas não coincidem' })
+      }
+      if (!senhaNovaSchema.safeParse(v.senha).success) return
+      const message = mensagemSenhaFraca(v.senha, dados)
+      if (message) ctx.addIssue({ code: 'custom', path: ['senha'], message })
+    })
+}
 
-type Form = z.infer<typeof schema>
+type Form = z.infer<ReturnType<typeof criarSchema>>
 
 type Resultado = 'ok' | 'igual' | 'codigo' | 'erro' | null
 
@@ -36,6 +46,9 @@ export function NovaSenhaPage() {
   const { sessao, carregando } = useAuth()
   const nivel = useNivelMfa()
   const [resultado, setResultado] = useState<Resultado>(null)
+  const email = sessao?.user?.email ?? ''
+  const dados = useMemo(() => dadosPessoais('', email), [email])
+  const schema = useMemo(() => criarSchema(dados), [dados])
   const {
     register,
     control,
@@ -120,7 +133,7 @@ export function NovaSenhaPage() {
               erro={errors.senha?.message}
               {...register('senha')}
             />
-            <RequisitosSenha senha={senha} />
+            <RequisitosSenha senha={senha} dados={dados} />
             <p className="tf-field__hint">A nova senha não pode ser igual à senha atual. Conferimos ao salvar.</p>
             <CampoSenha
               rotulo="Confirme a nova senha"

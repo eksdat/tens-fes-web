@@ -61,6 +61,7 @@ Configurar em *Authentication*:
 |---|---|
 | Confirmar e-mail | **Ligado** |
 | Senha mínima | 10 caracteres, com letras e números |
+| Senha fraca | Cadastro e nova senha recusam nota < 3 no zxcvbn-ts ou senha com nome/e-mail (`frontend/.../auth/senha/forcaSenha.ts`). Só no cliente. O Leaked Password Protection do Supabase exige plano Pro (ver `decisoes.md`) |
 | Proteção contra senha vazada | Ligar quando o plano permitir |
 | Site URL | URL do frontend em produção |
 | Redirect URLs | Só `http://localhost:5173/**` e as URLs do site (`https://fisiotech-3b4ad.web.app/**` e `https://fisiotech-3b4ad.firebaseapp.com/**`). Nunca `*` |
@@ -104,6 +105,8 @@ Regras:
 - `@Valid` em todo DTO, com `@Size` em todo texto. Sem campo livre sem limite.
 - Entidade nunca sai como JSON. Sempre DTO.
 - Erro sai como `ProblemDetail`, sem stack trace e sem mensagem de SQL.
+- Erro do framework (parâmetro inválido, JSON malformado) sai com texto fixo "Requisição inválida."; exceção não tratada sai como 500 "Erro interno.", detalhe só no log. Só as exceções de domínio mantêm a própria mensagem (`GlobalExceptionHandler`).
+- Todo parâmetro de texto livre leva `@Size` (ex.: `busca` até 100).
 - Upload (`Anexo`): só PDF, PNG e JPEG; até 10 MB (`spring.servlet.multipart.max-file-size=10MB`); conferir o tipo pelos primeiros bytes do arquivo, não pela extensão; nome do arquivo gerado pelo servidor.
 - Arquivos em bucket **privado** do Supabase Storage, acessado só pelo backend. Download por URL assinada de curta duração (5 min).
 - Texto rico (`Conteudo.corpo`) é sanitizado no backend antes de salvar.

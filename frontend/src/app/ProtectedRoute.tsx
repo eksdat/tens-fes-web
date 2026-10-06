@@ -1,10 +1,10 @@
 import { Navigate, Outlet } from 'react-router'
-import { useAuth } from '../../shared/auth/useAuth'
-import { Alerta } from '../../shared/ui/Alerta'
-import { Botao } from '../../shared/ui/Botao'
-import { TelaCarregando } from '../../shared/ui/TelaCarregando'
-import { useNivelMfa } from '../mfa/useNivelMfa'
-import { useUsuarioAtual, type Usuario } from '../usuario/useUsuarioAtual'
+import { useAuth } from '../shared/auth/useAuth'
+import { Alerta } from '../shared/ui/Alerta'
+import { Botao } from '../shared/ui/Botao'
+import { TelaCarregando } from '../shared/ui/TelaCarregando'
+import { useNivelMfa } from '../features/mfa/useNivelMfa'
+import { useUsuarioAtual, type Usuario } from '../features/usuario/useUsuarioAtual'
 
 type Perfil = Usuario['perfil']
 

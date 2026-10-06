@@ -1,32 +1,32 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
 import { LoginPage } from './LoginPage'
+import { renderComRotas } from '../../../test/renderComRotas'
 
 const { authMock, estado } = vi.hoisted(() => ({
   authMock: { signInWithPassword: vi.fn(), resend: vi.fn() },
   estado: { sessao: null as object | null },
 }))
 
-vi.mock('../../shared/api/supabase', () => ({
+vi.mock('../../../shared/api/supabase', () => ({
   supabase: { auth: authMock },
   urlDeRetornoAuth: () => `${window.location.origin}/auth/callback`,
 }))
-vi.mock('../../shared/auth/useAuth', () => ({
+vi.mock('../../../shared/auth/useAuth', () => ({
   useAuth: () => ({ sessao: estado.sessao, carregando: false, sair: vi.fn() }),
 }))
 
 function renderizar() {
-  return render(
-    <MemoryRouter initialEntries={['/login']}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<p>tela inicial</p>} />
-        <Route path="/cadastro" element={<p>tela de cadastro</p>} />
-        <Route path="/esqueci-senha" element={<p>tela de esqueci a senha</p>} />
-      </Routes>
-    </MemoryRouter>,
+  return renderComRotas(
+    <>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<p>tela inicial</p>} />
+      <Route path="/cadastro" element={<p>tela de cadastro</p>} />
+      <Route path="/esqueci-senha" element={<p>tela de esqueci a senha</p>} />
+    </>,
+    '/login',
   )
 }
 
