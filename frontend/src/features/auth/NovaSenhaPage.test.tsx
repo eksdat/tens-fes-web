@@ -56,6 +56,27 @@ test('deveSalvarANovaSenha', async () => {
   expect(auth.updateUser).toHaveBeenCalledWith({ password: 'SenhaNova1!' })
 })
 
+test('deveRecusarSenhaFacilDeAdivinharSemChamarOSupabase', async () => {
+  renderizar()
+
+  await preencher('Senha@12345')
+  await userEvent.click(screen.getByRole('button', { name: 'Salvar nova senha' }))
+
+  expect(await screen.findByText(/Essa senha é fácil de adivinhar/)).toBeInTheDocument()
+  expect(auth.updateUser).not.toHaveBeenCalled()
+})
+
+test('deveRecusarSenhaComPartesDoEmailDaConta', async () => {
+  estado.sessao = { user: { email: 'ana.clara@exemplo.com' } }
+  renderizar()
+
+  await preencher('Xk#clara#91Z')
+  await userEvent.click(screen.getByRole('button', { name: 'Salvar nova senha' }))
+
+  expect(await screen.findByText(/Essa senha é fácil de adivinhar/)).toBeInTheDocument()
+  expect(auth.updateUser).not.toHaveBeenCalled()
+})
+
 test('deveAvisarQueANovaSenhaNaoPodeSerIgualAAtual', async () => {
   auth.updateUser.mockResolvedValue({ error: { code: 'same_password' } })
   renderizar()

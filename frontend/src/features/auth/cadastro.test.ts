@@ -7,6 +7,7 @@ import {
   paraCadastroRequest,
   PERFIL_VAZIO,
 } from './cadastro'
+import { cadastroSeguroSchema } from './cadastroSeguro'
 
 const comuns = { nome: 'Ana Souza', email: 'ana@exemplo.com', senha: 'SenhaForte1!', confirmacao: 'SenhaForte1!', termos: true }
 const estudante = { ...PERFIL_VAZIO, perfil: 'ESTUDANTE' as const, instituicao: 'UniBH', periodo: '5' }
@@ -34,6 +35,11 @@ test('deveAceitarCadastroDeProfissionalCompleto', () => {
 test('deveRecusarSenhasDiferentes', () => {
   const r = cadastroSchema.safeParse({ ...comuns, confirmacao: 'Outra1!senha', ...estudante })
   expect(mensagens(r).confirmacao).toBe('As senhas não coincidem')
+})
+
+test.each(['Senha@12345', 'Ana@Souza2026'])('deveRecusarSenhaFacilDeAdivinhar %s', (senha) => {
+  const r = cadastroSeguroSchema.safeParse({ ...comuns, senha, confirmacao: senha, ...estudante })
+  expect(mensagens(r).senha).toBe('Essa senha é fácil de adivinhar. Evite sequências, palavras comuns e seus dados pessoais.')
 })
 
 test('deveExigirOAceiteDosTermos', () => {
