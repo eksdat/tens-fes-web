@@ -75,6 +75,12 @@ class ParametroDicionarioControllerTest {
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
+    @Test
+    void deveRecusarBuscaMaiorQueOLimite() throws Exception {
+        mvc.perform(get("/api/v1/parametros").param("busca", "a".repeat(101)).with(estudante()))
+                .andExpect(status().isBadRequest());
+    }
+
     private static RequestPostProcessor estudante() {
         return jwt().authorities(new SimpleGrantedAuthority("ROLE_ESTUDANTE"));
     }
