@@ -13,7 +13,7 @@ import { CampoCodigo } from '../mfa/CampoCodigo'
 import { codigoSchema } from '../mfa/codigoSchema'
 import { useNivelMfa } from '../mfa/useNivelMfa'
 import { verificarCodigo } from '../mfa/verificarCodigo'
-import { dadosPessoais, MENSAGEM_SENHA_FACIL, senhaFacilDeAdivinhar } from './forcaSenha'
+import { dadosPessoais, mensagemSenhaFraca } from './forcaSenha'
 import { RequisitosSenha } from './RequisitosSenha'
 import { senhaNovaSchema } from './schemas'
 
@@ -28,9 +28,9 @@ function criarSchema(dados: string[]) {
       if (v.senha !== v.confirmacao) {
         ctx.addIssue({ code: 'custom', path: ['confirmacao'], message: 'As senhas não coincidem' })
       }
-      if (senhaNovaSchema.safeParse(v.senha).success && senhaFacilDeAdivinhar(v.senha, dados)) {
-        ctx.addIssue({ code: 'custom', path: ['senha'], message: MENSAGEM_SENHA_FACIL })
-      }
+      if (!senhaNovaSchema.safeParse(v.senha).success) return
+      const message = mensagemSenhaFraca(v.senha, dados)
+      if (message) ctx.addIssue({ code: 'custom', path: ['senha'], message })
     })
 }
 

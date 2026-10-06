@@ -39,7 +39,12 @@ test('deveRecusarSenhasDiferentes', () => {
 
 test.each(['Senha@12345', 'Ana@Souza2026'])('deveRecusarSenhaFacilDeAdivinhar %s', (senha) => {
   const r = cadastroSeguroSchema.safeParse({ ...comuns, senha, confirmacao: senha, ...estudante })
-  expect(mensagens(r).senha).toBe('Essa senha é fácil de adivinhar. Evite sequências, palavras comuns e seus dados pessoais.')
+  expect(mensagens(r).senha).toMatch(/^Essa senha é fácil de adivinhar\. .+/)
+})
+
+test('deveExplicarQueONomeNaoPodeEntrarNaSenhaDoCadastro', () => {
+  const r = cadastroSeguroSchema.safeParse({ ...comuns, senha: 'Xk#Souza#91Zq', confirmacao: 'Xk#Souza#91Zq', ...estudante })
+  expect(mensagens(r).senha).toBe('Essa senha é fácil de adivinhar. Não use seu nome nem seu e-mail na senha.')
 })
 
 test('deveExigirOAceiteDosTermos', () => {

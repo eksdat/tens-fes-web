@@ -88,6 +88,21 @@ test('deveMarcarOsRequisitosDaSenhaEmTempoReal', async () => {
   expect(requisitos).toHaveTextContent('Mínimo de 10 caracteres (atendido)')
 })
 
+test('deveMostrarExemplosDeSenhaForte', () => {
+  renderizar()
+
+  expect(screen.getByText(/Cafe-Bicicleta-Lua7!/)).toBeInTheDocument()
+  expect(screen.getByText(/não use estes/i)).toBeInTheDocument()
+})
+
+test('deveExplicarPorQueASenhaEPrevisivelEmTempoReal', async () => {
+  renderizar()
+  expect(screen.queryByText(/Está muito previsível|semelhante a uma senha/)).not.toBeInTheDocument()
+
+  await userEvent.type(screen.getByLabelText('Senha'), 'Senha@12345')
+  expect(await screen.findByText(/semelhante a uma senha comumente usada|Está muito previsível/)).toBeInTheDocument()
+})
+
 test('deveAvancarParaAEtapa2QuandoAEtapa1EstaValida', async () => {
   renderizar()
 
