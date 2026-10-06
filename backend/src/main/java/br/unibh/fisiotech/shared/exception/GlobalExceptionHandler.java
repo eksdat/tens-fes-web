@@ -53,10 +53,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return super.handleExceptionInternal(e, corpo, headers, status, request);
     }
 
-    /** Exceção sem tratamento próprio: o detalhe vai para o log, nunca para a resposta. */
+    /**
+     * Exceção sem tratamento próprio: o detalhe vai para o log, nunca para a resposta. Erros de segurança de
+     * método (@PreAuthorize) são repassados: têm tratamento próprio da cadeia de segurança (401/403, não 500).
+     */
     @ExceptionHandler(Exception.class)
     ResponseEntity<Object> handleErroInesperado(Exception e) throws Exception {
-        // Erros de segurança de método (@PreAuthorize) têm tratamento próprio da cadeia de segurança: 401/403, não 500.
         if (e instanceof AccessDeniedException || e instanceof AuthenticationException) {
             throw e;
         }

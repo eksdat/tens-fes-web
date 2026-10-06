@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import type { components } from '../../shared/api/schema'
-import { emailSchema, senhaNovaSchema } from './schemas'
+import type { components } from '../../../shared/api/schema'
+import { emailSchema, senhaNovaSchema } from '../schemas'
 
 export type CadastroRequest = components['schemas']['CadastroRequest']
 type Categoria = NonNullable<CadastroRequest['categoria']>

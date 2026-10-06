@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
 import { CompletarCadastroPage } from './CompletarCadastroPage'
+import { renderComRotas } from '../../../test/renderComRotas'
 
 const { estado, cadastrar, sair } = vi.hoisted(() => ({
   estado: {
@@ -14,29 +14,26 @@ const { estado, cadastrar, sair } = vi.hoisted(() => ({
   sair: vi.fn(),
 }))
 
-vi.mock('../../shared/auth/useAuth', () => ({
+vi.mock('../../../shared/auth/useAuth', () => ({
   useAuth: () => ({ sessao: { user: { user_metadata: estado.metadata } }, carregando: false, sair }),
 }))
-vi.mock('../usuario/useUsuarioAtual', () => ({
+vi.mock('../../usuario/useUsuarioAtual', () => ({
   CHAVE_USUARIO_ATUAL: ['usuario', 'me'],
   useUsuarioAtual: () => estado.usuario,
 }))
-vi.mock('../usuario/cadastrarUsuario', () => ({
+vi.mock('../../usuario/cadastrarUsuario', () => ({
   cadastrarUsuario: cadastrar,
   lerErroDeCadastro: () => ({ jaCadastrado: false, mensagem: 'Dados inválidos.', campos: {} }),
 }))
 
 function renderizar() {
-  return render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={['/completar-cadastro']}>
-        <Routes>
-          <Route path="/completar-cadastro" element={<CompletarCadastroPage />} />
-          <Route path="/login" element={<p>tela de login</p>} />
-          <Route path="/" element={<p>tela inicial</p>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+  return renderComRotas(
+    <>
+      <Route path="/completar-cadastro" element={<CompletarCadastroPage />} />
+      <Route path="/login" element={<p>tela de login</p>} />
+      <Route path="/" element={<p>tela inicial</p>} />
+    </>,
+    '/completar-cadastro',
   )
 }
 

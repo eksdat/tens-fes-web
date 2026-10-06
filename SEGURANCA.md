@@ -61,7 +61,7 @@ Configurar em *Authentication*:
 |---|---|
 | Confirmar e-mail | **Ligado** |
 | Senha mínima | 10 caracteres, com letras e números |
-| Senha fraca | Cadastro e nova senha recusam nota < 3 no zxcvbn-ts ou senha com nome/e-mail (`frontend/.../auth/forcaSenha.ts`). Só no cliente. O Leaked Password Protection do Supabase exige plano Pro (ver `decisoes.md`) |
+| Senha fraca | Cadastro e nova senha recusam nota < 3 no zxcvbn-ts ou senha com nome/e-mail (`frontend/.../auth/senha/forcaSenha.ts`). Só no cliente. O Leaked Password Protection do Supabase exige plano Pro (ver `decisoes.md`) |
 | Proteção contra senha vazada | Ligar quando o plano permitir |
 | Site URL | URL do frontend em produção |
 | Redirect URLs | Só `http://localhost:5173/**` e as URLs do site (`https://fisiotech-3b4ad.web.app/**` e `https://fisiotech-3b4ad.firebaseapp.com/**`). Nunca `*` |

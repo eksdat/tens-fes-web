@@ -1,9 +1,9 @@
 import { Navigate } from 'react-router'
-import { useAuth } from '../../shared/auth/useAuth'
-import { Alerta } from '../../shared/ui/Alerta'
-import { AuthLayout } from '../../shared/ui/AuthLayout'
-import { BotaoLink } from '../../shared/ui/Botao'
-import { TelaCarregando } from '../../shared/ui/TelaCarregando'
+import { useAuth } from '../../../shared/auth/useAuth'
+import { Alerta } from '../../../shared/ui/Alerta'
+import { AuthLayout } from '../../../shared/ui/AuthLayout'
+import { BotaoLink } from '../../../shared/ui/Botao'
+import { TelaCarregando } from '../../../shared/ui/TelaCarregando'
 
 /**
  * Destino do link de confirmação do e-mail e da volta do Google. O supabase-js lê o endereço e abre a sessão; daqui, a rota protegida

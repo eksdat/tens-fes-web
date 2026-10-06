@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { Route } from 'react-router'
 import { ProtectedRoute } from './ProtectedRoute'
+import { renderComRotas } from '../test/renderComRotas'
 
 const { estado, refetch, sair } = vi.hoisted(() => ({
   estado: {
@@ -13,24 +14,23 @@ const { estado, refetch, sair } = vi.hoisted(() => ({
   sair: vi.fn(),
 }))
 
-vi.mock('./useAuth', () => ({ useAuth: () => ({ ...estado.auth, sair }) }))
-vi.mock('../../features/mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.mfa }))
-vi.mock('../../features/usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ ...estado.usuario, refetch }) }))
+vi.mock('../shared/auth/useAuth', () => ({ useAuth: () => ({ ...estado.auth, sair }) }))
+vi.mock('../features/mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.mfa }))
+vi.mock('../features/usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ ...estado.usuario, refetch }) }))
 
 function renderizar(perfil?: 'ESTUDANTE' | 'PROFISSIONAL', semMfa = false) {
-  return render(
-    <MemoryRouter initialEntries={['/area']}>
-      <Routes>
-        <Route path="/login" element={<p>tela de login</p>} />
-        <Route path="/completar-cadastro" element={<p>tela de completar cadastro</p>} />
-        <Route path="/" element={<p>tela inicial</p>} />
-        <Route path="/mfa/verificar" element={<p>tela de verificar mfa</p>} />
-        <Route path="/mfa/ativar" element={<p>tela de ativar mfa</p>} />
-        <Route element={<ProtectedRoute perfil={perfil} semMfa={semMfa} />}>
-          <Route path="/area" element={<p>area protegida</p>} />
-        </Route>
-      </Routes>
-    </MemoryRouter>,
+  return renderComRotas(
+    <>
+      <Route path="/login" element={<p>tela de login</p>} />
+      <Route path="/completar-cadastro" element={<p>tela de completar cadastro</p>} />
+      <Route path="/" element={<p>tela inicial</p>} />
+      <Route path="/mfa/verificar" element={<p>tela de verificar mfa</p>} />
+      <Route path="/mfa/ativar" element={<p>tela de ativar mfa</p>} />
+      <Route element={<ProtectedRoute perfil={perfil} semMfa={semMfa} />}>
+        <Route path="/area" element={<p>area protegida</p>} />
+      </Route>
+    </>,
+    '/area',
   )
 }
 

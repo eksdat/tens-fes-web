@@ -15,7 +15,6 @@ const REQUISITOS = [
 /** Checklist da política de senha (SEGURANCA.md, seção 3), atualizado a cada tecla. Estado vai em texto, não só em cor. */
 export function RequisitosSenha({ senha, dados }: { senha: string; dados: string[] }) {
   const atendidos = REQUISITOS.filter(({ vale }) => vale(senha, dados)).length
-  // Só explica quando o resto da política já vale: antes disso, o motivo da previsibilidade só atrapalharia.
   const motivo = REQUISITOS.slice(0, -1).every(({ vale }) => vale(senha, dados)) ? motivoSenhaFraca(senha, dados) : null
 
   return (

@@ -1,6 +1,6 @@
 import { useFormContext } from 'react-hook-form'
 import { Link } from 'react-router'
-import { ErroDeCampo } from '../../shared/ui/ErroDeCampo'
+import { ErroDeCampo } from '../../../shared/ui/ErroDeCampo'
 
 /** Aceite dos termos (a API exige e grava a versão aceita). Abre os textos em outra aba para não perder o formulário. */
 export function CampoAceiteTermos() {

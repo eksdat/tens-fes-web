@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
 import { AtivarMfaPage } from './AtivarMfaPage'
 import { VerificarMfaPage } from './VerificarMfaPage'
+import { renderComRotas } from '../../test/renderComRotas'
 
 const { mfa, estado, sair } = vi.hoisted(() => ({
   mfa: {
@@ -27,15 +27,12 @@ vi.mock('./useNivelMfa', () => ({ useNivelMfa: () => estado.nivel }))
 vi.mock('../usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ data: { perfil: estado.perfil } }) }))
 
 function renderizar(pagina: React.ReactNode) {
-  return render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={['/mfa']}>
-        <Routes>
-          <Route path="/mfa" element={pagina} />
-          <Route path="/" element={<p>tela inicial</p>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+  return renderComRotas(
+    <>
+      <Route path="/mfa" element={pagina} />
+      <Route path="/" element={<p>tela inicial</p>} />
+    </>,
+    '/mfa',
   )
 }
 

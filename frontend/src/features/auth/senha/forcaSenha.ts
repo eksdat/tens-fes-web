@@ -27,10 +27,9 @@ export function dadosPessoais(nome: string, email: string): string[] {
   return [...palavrasDoNome, ...(local.length >= 3 ? [local] : []), ...(partesDoEmail.length > 1 ? partesDoEmail : [])]
 }
 
-/** Por que a senha foi recusada, ou null se ela passa. */
+/** Por que a senha foi recusada, ou null se ela passa. O zxcvbn só reduz a nota de quem usa o nome; aqui a senha é recusada. */
 export function motivoSenhaFraca(senha: string, dados: string[]): string | null {
   const normalizada = normalizar(senha)
-  // O zxcvbn só reduz a nota de quem usa o nome; aqui a senha é recusada.
   if (dados.some((dado) => normalizada.includes(normalizar(dado)))) return 'Não use seu nome nem seu e-mail na senha.'
   const { score, feedback } = zxcvbn.check(senha, dados)
   if (score >= SCORE_MINIMO) return null

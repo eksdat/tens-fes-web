@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { LoginPage } from './LoginPage'
+import { LoginPage } from '../login/LoginPage'
 import { MENSAGEM_CAPTCHA, useCaptcha } from './captcha'
 
 const { authMock, turnstile } = vi.hoisted(() => ({
@@ -9,11 +9,11 @@ const { authMock, turnstile } = vi.hoisted(() => ({
   turnstile: { render: vi.fn(), remove: vi.fn() },
 }))
 
-vi.mock('../../shared/api/supabase', () => ({
+vi.mock('../../../shared/api/supabase', () => ({
   supabase: { auth: authMock },
   urlDeRetornoAuth: () => 'http://localhost/auth/callback',
 }))
-vi.mock('../../shared/auth/useAuth', () => ({ useAuth: () => ({ sessao: null, carregando: false, sair: vi.fn() }) }))
+vi.mock('../../../shared/auth/useAuth', () => ({ useAuth: () => ({ sessao: null, carregando: false, sair: vi.fn() }) }))
 
 function Sonda() {
   const captcha = useCaptcha()

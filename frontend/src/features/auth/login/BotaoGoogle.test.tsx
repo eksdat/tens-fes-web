@@ -6,7 +6,7 @@ import { BotaoGoogle } from './BotaoGoogle'
 
 const { signInWithOAuth } = vi.hoisted(() => ({ signInWithOAuth: vi.fn() }))
 
-vi.mock('../../shared/api/supabase', () => ({
+vi.mock('../../../shared/api/supabase', () => ({
   supabase: { auth: { signInWithOAuth } },
   urlDeRetornoAuth: () => `${window.location.origin}/auth/callback`,
 }))
