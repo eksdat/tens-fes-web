@@ -386,7 +386,7 @@ Imagens originais do protótipo, guardadas só como **referência de estilo**. Q
 | Login | Sem Google nem CAPTCHA | Com Google e CAPTCHA (Turnstile) |
 | Aceite dos termos | Caixa simples | Exigido pela API, que grava versão e data |
 | Cantos | Cartões mais arredondados nas imagens | Valem os tokens: 2, 4 e 6 px |
-| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | Barra inferior no celular e **abas no cabeçalho no computador**, como no protótipo (Card 22). Abas: Início, TENS, FES, Criar conteúdo (Pacientes só para profissional, no Card 36). "Meu perfil" fica no menu da conta, junto com "Sair" |
+| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | Barra inferior no celular e **abas no cabeçalho no computador**, como no protótipo (Card 22). Abas: Início, TENS, FES, Criar conteúdo e Pacientes (só para profissional). "Meu perfil" fica no menu da conta, junto com "Sair" |
 
 ---
 
