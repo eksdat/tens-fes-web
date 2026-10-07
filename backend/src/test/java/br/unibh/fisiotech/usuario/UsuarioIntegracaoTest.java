@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -122,5 +123,25 @@ class UsuarioIntegracaoTest {
         assertThatThrownBy(() -> jdbc.update(
                 "insert into usuario (id, nome, perfil, revisor, instituicao, periodo) values (?::uuid, 'Ana', 'ESTUDANTE', true, 'UniBH', 5)",
                 sub)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void devePromoverEstudanteParaProfissionalComSucesso() throws Exception {
+        mvc.perform(post("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer())
+                .contentType(MediaType.APPLICATION_JSON).content(ESTUDANTE))
+                .andExpect(status().isCreated());
+
+        mvc.perform(put("/api/v1/usuarios/me/perfil").header(HttpHeaders.AUTHORIZATION, bearer())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"categoria":"FISIOTERAPEUTA","registro":"123456-F","uf":"MG"}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.perfil").value("PROFISSIONAL"))
+                .andExpect(jsonPath("$.categoria").value("FISIOTERAPEUTA"))
+                .andExpect(jsonPath("$.registro").value("123456-F"))
+                .andExpect(jsonPath("$.uf").value("MG"))
+                .andExpect(jsonPath("$.instituicao").value("UniBH"))
+                .andExpect(jsonPath("$.periodo").value(5));
     }
 }

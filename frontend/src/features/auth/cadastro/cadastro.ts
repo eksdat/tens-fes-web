@@ -22,10 +22,10 @@ export const UFS: Uf[] = [
 ]
 
 /** Mesma regra do backend (CadastroRequest.TEXTO_SEGURO): sem link e sem símbolo fora de letras, números e . - ' ( ) /. */
-const TEXTO_SEGURO = /^(?!.*www\.)[\p{L}\p{N} .'()/-]+$/iu
-const MENSAGEM_TEXTO = "Use só letras, números e . - ' ( ) /, sem links"
+export const TEXTO_SEGURO = /^(?!.*www\.)[\p{L}\p{N} .'()/-]+$/iu
+export const MENSAGEM_TEXTO = "Use só letras, números e . - ' ( ) /, sem links"
 
-const FORMATO_REGISTRO: Partial<Record<Categoria, { formato: RegExp; exemplo: string }>> = {
+export const FORMATO_REGISTRO: Partial<Record<Categoria, { formato: RegExp; exemplo: string }>> = {
   FISIOTERAPEUTA: { formato: /^\d{1,7}-F$/, exemplo: '123456-F' },
   TERAPEUTA_OCUPACIONAL: { formato: /^\d{1,7}-TO$/, exemplo: '123456-TO' },
 }

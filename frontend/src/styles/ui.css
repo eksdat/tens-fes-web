@@ -1001,3 +1001,55 @@ fieldset.tf-captcha {
     line-height: 14px;
   }
 }
+
+/* Cartão padrão do design system */
+.tf-cartao {
+  background: var(--surface-200);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+}
+
+.tf-cartao__titulo {
+  font: 700 20px/28px var(--font-sans);
+  color: var(--ink);
+  margin-bottom: var(--space-3);
+}
+
+.tf-dados-perfil {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.tf-dado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--surface-300);
+}
+
+.tf-dado:first-child {
+  padding-top: 0;
+}
+
+.tf-dado:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.tf-dado__rotulo {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tf-dado__valor {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+

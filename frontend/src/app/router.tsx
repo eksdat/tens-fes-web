@@ -9,6 +9,7 @@ import { TermosDeUsoPage } from '../features/termos/TermosDeUsoPage'
 import { AtivarMfaPage } from '../features/mfa/AtivarMfaPage'
 import { VerificarMfaPage } from '../features/mfa/VerificarMfaPage'
 import { InicioPage } from '../features/inicio/InicioPage'
+import { PerfilPage } from '../features/perfil/PerfilPage'
 import { EmConstrucao } from './EmConstrucao'
 import { LayoutLogado } from './LayoutLogado'
 import { RaizApp } from './RaizApp'
@@ -54,7 +55,7 @@ export const router = createBrowserRouter([
               emConstrucao('/tens', 'TENS'),
               emConstrucao('/fes', 'FES'),
               emConstrucao('/criar-conteudo', 'Criar conteúdo'),
-              emConstrucao('/perfil', 'Meu perfil'),
+              { path: '/perfil', handle: { titulo: 'Meu perfil' }, element: <PerfilPage /> },
               { element: <ProtectedRoute perfil="PROFISSIONAL" />, children: [emConstrucao('/pacientes', 'Pacientes')] },
             ],
           },
