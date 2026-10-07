@@ -254,7 +254,7 @@ Cabeçalho com marca, abas fixas e chip do perfil atual. Abas: **Início, TENS e
 
 ## 5. Componentes implementados no app
 
-Em `src/shared/ui`, com testes de acessibilidade em `ui.test.tsx`. Os estilos estão em `src/styles/ui.css` (prefixo `tf-`).
+Em `src/shared/ui`, com testes de acessibilidade em `tests/shared/ui/ui.test.tsx`. Os estilos estão em `src/styles/ui.css` (prefixo `tf-`).
 
 | Componente | Props principais | Notas |
 |---|---|---|
@@ -280,7 +280,7 @@ Padrões que nasceram nas features (em `src/features`):
 | CAPTCHA | `auth/CampoCaptcha` e `captcha.tsx` | Widget do Cloudflare Turnstile dentro de um `fieldset` com legenda; anuncia "Verificação de segurança concluída" |
 | Aceite dos termos | `auth/CampoAceiteTermos` | Caixa de seleção com links que abrem em outra aba para não perder o formulário |
 | Cartões de opção | `auth/PerfilCampos` | Botões de rádio em cartões (Estudante ou Profissional) com descrição |
-| Documento longo | `auth/DocumentoLegal` | Termos e Privacidade: título, aviso "Versão preliminar", seções numeradas |
+| Documento longo | `termos/DocumentoLegal` | Termos e Privacidade: título, aviso "Versão preliminar", seções numeradas |
 
 Exemplo de formulário com os componentes do app:
 
@@ -386,7 +386,7 @@ Imagens originais do protótipo, guardadas só como **referência de estilo**. Q
 | Login | Sem Google nem CAPTCHA | Com Google e CAPTCHA (Turnstile) |
 | Aceite dos termos | Caixa simples | Exigido pela API, que grava versão e data |
 | Cantos | Cartões mais arredondados nas imagens | Valem os tokens: 2, 4 e 6 px |
-| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | A decidir quando a navegação for implementada. O componente "Navegação" do design system descreve abas no cabeçalho |
+| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | Barra inferior no celular e **abas no cabeçalho no computador**, como no protótipo (Card 22). Abas: Início, TENS, FES, Criar conteúdo (Pacientes só para profissional, no Card 36). "Meu perfil" fica no menu da conta, junto com "Sair" |
 
 ---
 

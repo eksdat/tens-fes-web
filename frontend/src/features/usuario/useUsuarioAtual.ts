@@ -8,6 +8,8 @@ export type Usuario = components['schemas']['UsuarioResponse']
 
 export const CHAVE_USUARIO_ATUAL = ['usuario', 'me'] as const
 
+export const ROTULO_PERFIL: Record<Usuario['perfil'], string> = { ESTUDANTE: 'Estudante', PROFISSIONAL: 'Profissional' }
+
 /**
  * Usuário logado, vindo da API. `data === null` significa "autenticado no Supabase, mas sem cadastro completo"
  * (a API responde 404): o usuário precisa completar o cadastro.

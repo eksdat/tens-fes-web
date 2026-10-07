@@ -38,6 +38,8 @@ springdoc:
 server:
   # O Render define PORT; localmente fica 8080.
   port: ${PORT:8080}
+  # O Render termina o TLS e repassa HTTP; sem isso o Spring Security nunca envia o HSTS.
+  forward-headers-strategy: framework
 
 app:
   cors:

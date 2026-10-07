@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 
 import br.unibh.fisiotech.parametro.dto.ParametroDicionarioResponse;
@@ -20,7 +21,8 @@ public class ParametroDicionarioController {
     private final ParametroDicionarioService service;
 
     @GetMapping
-    public List<ParametroDicionarioResponse> listar(@RequestParam(name = "busca", required = false) String busca) {
+    public List<ParametroDicionarioResponse> listar(
+            @RequestParam(name = "busca", required = false) @Size(max = 100) String busca) {
         return service.listar(busca);
     }
 }

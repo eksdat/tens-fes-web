@@ -1,28 +1,19 @@
-import { useAuth } from '../../shared/auth/useAuth'
-import { Botao, BotaoLink } from '../../shared/ui/Botao'
-import { Marca } from '../../shared/ui/Marca'
-import { useUsuarioAtual } from '../usuario/useUsuarioAtual'
-
-const PERFIL = { ESTUDANTE: 'Estudante', PROFISSIONAL: 'Profissional' } as const
+import { BotaoLink } from '../../shared/ui/Botao'
+import { ROTULO_PERFIL, useUsuarioAtual } from '../usuario/useUsuarioAtual'
 
 /** Provisória: a tela inicial de verdade vem com os módulos TENS e FES. */
 export function InicioPage() {
-  const { sair } = useAuth()
   const usuario = useUsuarioAtual().data
 
   return (
-    <main className="tf-pagina">
-      <Marca />
+    <section className="tf-pagina">
       <h1 className="tf-titulo">Olá, {usuario?.nome}</h1>
-      <p className="tf-sub">Perfil: {usuario ? PERFIL[usuario.perfil] : ''}. Esta tela está em construção.</p>
+      <p className="tf-sub">Perfil: {usuario ? ROTULO_PERFIL[usuario.perfil] : ''}. Esta tela está em construção.</p>
       <div className="tf-linha">
         <BotaoLink to="/mfa/ativar" variante="secundario">
           Verificação em duas etapas
         </BotaoLink>
-        <Botao variante="secundario" onClick={() => void sair()}>
-          Sair
-        </Botao>
       </div>
-    </main>
+    </section>
   )
 }

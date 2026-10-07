@@ -141,6 +141,9 @@ Plataforma: uma versão web responsiva (computador e navegador do celular). Não
 
 Cada feature tem suas páginas, componentes, hooks de dados e schemas juntos. O que é usado por várias features fica em `shared/`.
 
+- `shared` não importa de `features`; feature não importa de outra feature; quem compõe várias fica em `app/`.
+- Teste em `tests/`, no mesmo caminho do arquivo testado, com o alias `@/` para `src/`; helper de render em `tests/renderComRotas.tsx`.
+
 | Peça | Papel | Pode | Não pode |
 |---|---|---|---|
 | Página (container) | Busca dados por hook e orquestra componentes | Usar hooks de dados | — |
@@ -168,56 +171,70 @@ flowchart TB
 frontend/
 ├── index.html                 # lang="pt-BR", theme-color, favicon
 ├── package.json
-├── vite.config.ts             # plugin React + config do Vitest (variáveis VITE_* de teste)
+├── vite.config.ts             # plugin React + alias `@/` e config do Vitest (variáveis VITE_* de teste)
 ├── firebase.json, .firebaserc # Firebase Hosting (ver DEPLOY.md)
 ├── .oxlintrc.json             # lint, com jsx-a11y
 ├── .env.example
 ├── public/
 │   └── favicon.svg            # folha da marca com pulso
-└── src/
-    ├── main.tsx               # fontes, estilos, Providers + RouterProvider
-    ├── vite-env.d.ts          # tipos das variáveis VITE_* e dos módulos @fontsource
-    ├── styles/
-    │   ├── tokens.css         # cores, espaço, cantos, fontes (somente tema claro)
-    │   ├── base.css           # reset mínimo, foco visível, reduced motion
-    │   └── ui.css             # componentes (classes tf-*) e layout das telas de autenticação
-    ├── app/
-    │   ├── providers.tsx      # QueryClientProvider + AuthProvider
-    │   └── router.tsx         # todas as rotas
-    ├── shared/
-    │   ├── api/
-    │   │   ├── supabase.ts    # cliente do Supabase (só auth)
-    │   │   ├── client.ts      # axios: baseURL, Bearer do Supabase, 401 → encerra a sessão
-    │   │   └── schema.d.ts    # GERADO por `npm run api:types` — não editar
-    │   ├── auth/
-    │   │   ├── contexto.ts        # AuthContext (tipo e contexto)
-    │   │   ├── AuthContext.tsx    # AuthProvider: reflete onAuthStateChange
-    │   │   ├── useAuth.ts         # hook de acesso ao contexto
-    │   │   └── armazenamento.ts   # "Manter conectado": localStorage ou sessionStorage
-    │   └── ui/                # Marca, Botao, BotaoLink, Campo, CampoSenha, Alerta, AuthLayout, FolhasDecorativas, Icones, TelaCarregando
-    ├── features/
-    │   ├── auth/              # LoginPage, CadastroPage (2 etapas + verificação), CompletarCadastroPage, EsqueciSenhaPage,
-    │   │                      # NovaSenhaPage, AuthCallbackPage, ProtectedRoute, schemas, RequisitosSenha,
-    │   │                      # TermosDeUsoPage, PoliticaPrivacidadePage (textos preliminares)
-    │   ├── mfa/               # AtivarMfaPage, VerificarMfaPage, useNivelMfa (AAL da sessão), CampoCodigo
-    │   ├── usuario/           # useUsuarioAtual (GET /usuarios/me)
-    │   ├── inicio/            # InicioPage (provisória)
-    │   ├── perfil/            # a criar
-    │   ├── modulos/           # TENS e FES, aba Segurança (a criar)
-    │   ├── dicionario/        # a criar
-    │   ├── aparelho/          # Aparelho3D + ListaControles (a criar)
-    │   ├── atlas/             # a criar
-    │   ├── simulador/         # a criar
-    │   ├── conteudo/          # CriarConteudo, Revisao, Biblioteca (a criar)
-    │   ├── casos/             # a criar
-    │   └── pacientes/         # a criar, com o formato abaixo
-    │       ├── api/           # usePacientes, useCriarSessao
-    │       ├── pages/
-    │       ├── components/
-    │       └── schemas.ts     # Zod
-    └── test/
-        ├── setup.ts           # jest-dom, vitest-axe e limpeza do armazenamento
-        └── vitest-axe.d.ts    # tipo do matcher toHaveNoViolations
+├── src/
+│   ├── main.tsx               # fontes, estilos, Providers + RouterProvider
+│   ├── vite-env.d.ts          # tipos das variáveis VITE_* e dos módulos @fontsource
+│   ├── styles/
+│   │   ├── tokens.css         # cores, espaço, cantos, fontes (somente tema claro)
+│   │   ├── base.css           # reset mínimo, foco visível, reduced motion
+│   │   └── ui.css             # componentes (classes tf-*) e layout das telas de autenticação
+│   ├── app/
+│   │   ├── providers.tsx      # QueryClientProvider + AuthProvider
+│   │   ├── router.tsx         # todas as rotas, com o título de cada uma (handle.titulo)
+│   │   ├── RaizApp.tsx        # link "Pular para o conteúdo", document.title e anúncio da página
+│   │   ├── EmConstrucao.tsx   # tela provisória das abas TENS, FES, Criar conteúdo e Meu perfil, até cada card entregar a sua
+│   │   ├── LayoutLogado.tsx   # menu + <main id="conteudo"> das telas logadas
+│   │   ├── MenuPrincipal.tsx  # nav "Principal": abas fixas, barra inferior (celular) ou cabeçalho (880px+), menu da conta (nome, perfil, Sair)
+│   │   └── ProtectedRoute.tsx # guarda de rotas (sessão, cadastro, perfil, MFA); compõe auth, mfa e usuario
+│   ├── shared/
+│   │   ├── api/
+│   │   │   ├── supabase.ts    # cliente do Supabase (só auth)
+│   │   │   ├── client.ts      # axios: baseURL, Bearer do Supabase, 401 → encerra a sessão
+│   │   │   └── schema.d.ts    # GERADO por `npm run api:types` — não editar
+│   │   ├── auth/
+│   │   │   ├── contexto.ts        # AuthContext (tipo e contexto)
+│   │   │   ├── AuthContext.tsx    # AuthProvider: reflete onAuthStateChange
+│   │   │   ├── useAuth.ts         # hook de acesso ao contexto
+│   │   │   └── armazenamento.ts   # "Manter conectado": localStorage ou sessionStorage
+│   │   └── ui/                # Marca, Botao, BotaoLink, Campo, CampoSenha, Alerta, AuthLayout, FolhasDecorativas, Icones, TelaCarregando
+│   ├── features/
+│   │   ├── auth/
+│   │   │   ├── schemas.ts     # emailSchema, senhaNovaSchema (usados por login, cadastro e senha)
+│   │   │   ├── login/         # LoginPage, BotaoGoogle, AuthCallbackPage
+│   │   │   ├── cadastro/      # CadastroPage (2 etapas + verificação), CompletarCadastroPage, PerfilCampos,
+│   │   │   │                  # CampoAceiteTermos, cadastro.ts, cadastroSeguro.ts
+│   │   │   ├── senha/         # EsqueciSenhaPage, NovaSenhaPage, RequisitosSenha, forcaSenha.ts (zxcvbn-ts)
+│   │   │   └── captcha/       # captcha.tsx (useCaptcha), CampoCaptcha
+│   │   ├── termos/            # TermosDeUsoPage, PoliticaPrivacidadePage, DocumentoLegal (textos preliminares)
+│   │   ├── mfa/               # AtivarMfaPage, VerificarMfaPage, useNivelMfa (AAL da sessão), CampoCodigo
+│   │   ├── usuario/           # useUsuarioAtual (GET /usuarios/me)
+│   │   ├── inicio/            # InicioPage (provisória)
+│   │   ├── perfil/            # a criar
+│   │   ├── modulos/           # TENS e FES, aba Segurança (a criar)
+│   │   ├── dicionario/        # a criar
+│   │   ├── aparelho/          # Aparelho3D + ListaControles (a criar)
+│   │   ├── atlas/             # a criar
+│   │   ├── simulador/         # a criar
+│   │   ├── conteudo/          # CriarConteudo, Revisao, Biblioteca (a criar)
+│   │   ├── casos/             # a criar
+│   │   └── pacientes/         # a criar, com o formato abaixo
+│   │       ├── api/           # usePacientes, useCriarSessao
+│   │       ├── pages/
+│   │       ├── components/
+│   │       └── schemas.ts     # Zod
+├── tests/                     # espelha a árvore de src/; alias @/ aponta para src/
+│   ├── setup.ts               # jest-dom, vitest-axe e limpeza do armazenamento
+│   ├── renderComRotas.tsx     # QueryClientProvider + MemoryRouter + Routes para testes de página
+│   ├── vitest-axe.d.ts        # tipo do matcher toHaveNoViolations
+│   ├── app/                   # ex.: ProtectedRoute.test.tsx
+│   ├── features/              # auth/login/LoginPage.test.tsx, mfa/, termos/ ...
+│   └── shared/
 e2e/                           # Playwright (a criar)
 ```
 
@@ -590,7 +607,7 @@ Padrão de chave do TanStack Query: `[recurso, ...ids]`. Ex.: `["pacientes"]`, `
 Meta: **WCAG 2.2 AA**. Testes manuais com NVDA, VoiceOver e TalkBack.
 
 - Toda função do 3D existe também na lista textual (`ListaControles`). O 3D é complemento.
-- Erro de formulário ligado ao campo por `aria-describedby`, com `aria-invalid`. Erro geral em `role="alert"`. Veja `src/features/auth/LoginPage.tsx`.
+- Erro de formulário ligado ao campo por `aria-describedby`, com `aria-invalid`. Erro geral em `role="alert"`. Veja `src/features/auth/login/LoginPage.tsx`.
 - Todo `input` tem `label` com `htmlFor`.
 - Foco previsível ao abrir e fechar diálogos (Radix garante).
 - Foco sempre visível (`:focus-visible` em `src/index.css`).
@@ -603,7 +620,7 @@ Meta: **WCAG 2.2 AA**. Testes manuais com NVDA, VoiceOver e TalkBack.
 ## 14. Convenções de código
 
 - Nomes em **português** do domínio (`entrar`, `sair`, `Sessao`, `usePacientes`). Termos de biblioteca ficam como são.
-- Componente: `PascalCase.tsx`. Hook: `useAlgo.ts`. Teste ao lado do arquivo: `Algo.test.tsx`.
+- Componente: `PascalCase.tsx`. Hook: `useAlgo.ts`. Teste em `tests/`, no mesmo caminho do arquivo testado (`Algo.test.tsx`), com o alias `@/` para `src/`.
 - Exportação nomeada. Sem `export default` (exceto config de ferramenta).
 - Componente de apresentação não chama HTTP.
 - Não escreva tipo de DTO à mão: use `schema.d.ts` gerado.
@@ -616,7 +633,7 @@ Meta: **WCAG 2.2 AA**. Testes manuais com NVDA, VoiceOver e TalkBack.
 
 | Tipo | Ferramenta | Onde |
 |---|---|---|
-| Unitário / componente | Vitest + Testing Library + jsdom | `src/**/*.test.tsx` |
+| Unitário / componente | Vitest + Testing Library + jsdom | `tests/**/*.test.tsx` |
 | Acessibilidade automática | `vitest-axe` | nos testes de componente |
 | End-to-end | Playwright *(a adicionar)* | `e2e/` |
 
@@ -626,9 +643,9 @@ Regras:
 - Nome descreve comportamento: `deveRedirecionarEstudanteQueTentaAbrirPacientes`.
 - Teste o que o usuário vê (texto, papel, label), não detalhe interno.
 - Sem dependência de ordem, relógio real ou rede. Chamadas HTTP mockadas.
-- `src/test/setup.ts` limpa o DOM e o `localStorage` depois de cada teste.
+- `tests/setup.ts` limpa o DOM e o `localStorage` depois de cada teste.
 
-Exemplo atual: `src/shared/auth/ProtectedRoute.test.tsx` (3 testes).
+Exemplo atual: `tests/app/ProtectedRoute.test.tsx` (3 testes).
 
 ---
 
