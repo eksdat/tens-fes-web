@@ -55,6 +55,7 @@ export const router = createBrowserRouter([
               emConstrucao('/fes', 'FES'),
               emConstrucao('/criar-conteudo', 'Criar conteúdo'),
               emConstrucao('/perfil', 'Meu perfil'),
+              { element: <ProtectedRoute perfil="PROFISSIONAL" />, children: [emConstrucao('/pacientes', 'Pacientes')] },
             ],
           },
         ],

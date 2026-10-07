@@ -107,6 +107,16 @@ test('deveListarAsAbasDoCard22NaOrdem', () => {
   expect(nomes).toEqual(['Início', 'TENS', 'FES', 'Criar conteúdo'])
 })
 
+test('deveListarPacientesPorUltimoParaProfissional', () => {
+  estado.perfil = 'PROFISSIONAL'
+  renderizarComAbasPadrao()
+
+  const nav = screen.getByRole('navigation', { name: 'Principal' })
+  const nomes = within(nav).getAllByRole('listitem').map((i) => i.textContent)
+  expect(nomes).toEqual(['Início', 'TENS', 'FES', 'Criar conteúdo', 'Pacientes'])
+  expect(within(nav).getByRole('link', { name: 'Pacientes' })).toHaveAttribute('href', '/pacientes')
+})
+
 test('deveOferecerMeuPerfilDentroDoMenuDaConta', async () => {
   renderizarComAbasPadrao()
   expect(screen.queryByRole('menuitem', { name: 'Meu perfil' })).not.toBeInTheDocument()

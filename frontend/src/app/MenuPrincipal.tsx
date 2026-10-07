@@ -7,12 +7,13 @@ import { Marca } from '../shared/ui/Marca'
 
 type Aba = { rotulo: string; para: string; perfil?: Usuario['perfil'] }
 
-/** Nomes, ordem e posição nunca mudam entre telas (Card 22). "Pacientes" entra com o Card 36, só para PROFISSIONAL. */
+/** Nomes, ordem e posição nunca mudam entre telas (Card 22). */
 const ABAS: Aba[] = [
   { rotulo: 'Início', para: '/' },
   { rotulo: 'TENS', para: '/tens' },
   { rotulo: 'FES', para: '/fes' },
   { rotulo: 'Criar conteúdo', para: '/criar-conteudo' },
+  { rotulo: 'Pacientes', para: '/pacientes', perfil: 'PROFISSIONAL' },
 ]
 
 export function MenuPrincipal({ abas = ABAS }: { abas?: Aba[] }) {
