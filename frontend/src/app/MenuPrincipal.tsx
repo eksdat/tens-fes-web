@@ -35,7 +35,7 @@ export function MenuPrincipal({ abas = ABAS }: { abas?: Aba[] }) {
           ))}
       </ul>
       {usuario && (
-        <DropdownMenu.Root>
+        <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger className="tf-menu__conta">
             <IconePessoa />
             <span className="tf-menu__identidade">
