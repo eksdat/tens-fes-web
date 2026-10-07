@@ -90,7 +90,7 @@ Intervalo de 14 min, não 15: o Render dorme aos 15 min. Das 22h às 7h a API do
 
 ### Deploy automático do frontend (GitHub Actions)
 
-O workflow `.github/workflows/frontend.yml` roda lint, testes e build em todo Pull Request para a `main` que muda `frontend/`. A `homologacao` não aciona nada. Quando algo entra na `main`, ele publica no Firebase Hosting (job `publicar`). Não publica em Pull Request. O deploy manual (`firebase deploy --only hosting`) continua valendo.
+O workflow `.github/workflows/frontend.yml` roda lint, testes e build em todo Pull Request para a `homologacao` ou a `main` que muda `frontend/`. Publicar, só a `main`: quando algo entra na `main`, ele publica no Firebase Hosting (job `publicar`). Não publica em Pull Request. O deploy manual (`firebase deploy --only hosting`) continua valendo.
 
 Configuração, uma vez, por quem administra o repositório (*Settings › Secrets and variables › Actions*):
 
