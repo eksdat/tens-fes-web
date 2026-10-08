@@ -144,7 +144,18 @@ Escala do design system:
 | `data-lg` | 32 / 36 px | 400 | Valor em destaque no simulador, sempre com unidade |
 | `data` | 20 / 24 px | 400 | Valor dentro de campo e unidade em sufixo |
 
-Regras: **nunca texto abaixo de 14 px**; texto corrido de 16 px, ampliável com o zoom do navegador; campos de formulário com 16 px ou mais (o iOS dá zoom automático em campos menores); títulos com `letter-spacing: 0.01em`.
+Regras: **nunca texto abaixo de 0,875 rem (~14 px)**; texto corrido de 1 rem (~16 px); campos de formulário com 1 rem ou mais (o iOS dá zoom automático em campos menores); títulos com `letter-spacing: 0.01em`.
+
+Tamanhos de fonte no código usam **sempre** as variáveis `--fs-*` em `rem` (nunca px direto), para que o texto escale com a preferência de fonte do navegador — WCAG 1.4.4 (AA). Variáveis definidas em `src/styles/tokens.css`:
+
+| Variável | Valor rem | Valor px de referência | Uso |
+|---|---|---|---|
+| `--fs-xs` | `0.75rem` | ~12 px | Kicker, metadados mínimos |
+| `--fs-sm` | `0.875rem` | ~14 px | Dicas, legendas, rótulos menores |
+| `--fs-base` | `1rem` | ~16 px | Texto corrido e campos |
+| `--fs-lg` | `1.125rem` | ~18 px | Texto de destaque |
+| `--fs-xl` | `1.25rem` | ~20 px | Subtítulos |
+| `--fs-2xl` | `1.5rem` | ~24 px | Código de verificação nas caixas |
 
 ### 3.5 Espaço
 
@@ -258,7 +269,7 @@ Em `src/shared/ui`, com testes de acessibilidade em `tests/shared/ui/ui.test.tsx
 
 | Componente | Props principais | Notas |
 |---|---|---|
-| `Botao` | `variante` (`primario` \| `secundario` \| `ghost`), `bloco`, `carregando` | `type="button"` por padrão; `carregando` desabilita e mostra estado |
+| `Botao` | `variante` (`primario` \| `secundario` \| `ghost` \| `perigo`), `bloco`, `carregando` | `type="button"` por padrão; `carregando` desabilita e mostra estado; `perigo` reservado para ações dentro de `Dialogo` destrutivo |
 | `BotaoLink` | `variante`, `bloco`, `to` | Link com cara de botão (react-router) |
 | `Alerta` | `intencao` (`info` \| `atencao` \| `perigo` \| `sucesso`), `titulo`, `acao` | `role="alert"` só no perigo |
 | `Campo` | `rotulo`, `dica`, `erro`, `complemento` | Liga rótulo, dica e erro por `aria-describedby`; `aria-invalid` no erro |
@@ -270,6 +281,7 @@ Em `src/shared/ui`, com testes de acessibilidade em `tests/shared/ui/ui.test.tsx
 | `Marca` | `para` | Folha e nome, link para a página inicial |
 | `FolhasDecorativas` | `className` | Folhas do painel verde, `aria-hidden` |
 | `TelaCarregando` | — | `<output>` "Carregando…" |
+| `Dialogo` | `gatilho`, `titulo`, `descricao?`, `acoes?`, `aberto?`, `aoFechar?` | **Radix UI Dialog**: captura foco, ESC fecha, `aria-labelledby`/`aria-describedby`, overlay inerte, animação com `prefers-reduced-motion` |
 
 Padrões que nasceram nas features (em `src/features`):
 
@@ -386,7 +398,7 @@ Imagens originais do protótipo, guardadas só como **referência de estilo**. Q
 | Login | Sem Google nem CAPTCHA | Com Google e CAPTCHA (Turnstile) |
 | Aceite dos termos | Caixa simples | Exigido pela API, que grava versão e data |
 | Cantos | Cartões mais arredondados nas imagens | Valem os tokens: 2, 4 e 6 px |
-| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | Barra inferior no celular e **abas no cabeçalho no computador**, como no protótipo (Card 22). Abas: Início, TENS, FES, Criar conteúdo (Pacientes só para profissional, no Card 36). "Meu perfil" fica no menu da conta, junto com "Sair" |
+| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | Barra inferior no celular e **abas no cabeçalho no computador**, como no protótipo (Card 22). Abas: Início, TENS, FES, Criar conteúdo e Pacientes (só para profissional). "Meu perfil" fica no menu da conta, junto com "Sair" |
 
 ---
 
