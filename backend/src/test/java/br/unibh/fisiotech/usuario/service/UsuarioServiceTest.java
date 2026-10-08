@@ -96,4 +96,34 @@ class UsuarioServiceTest {
                 new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null, true)))
                 .isInstanceOf(ConflitoException.class);
     }
+
+    @Test
+    void devePromoverEstudanteParaProfissionalMantendoHistoricoAcademico() {
+        salvaComoRecebido();
+        var estudante = new Usuario(ID, "Ana Souza", Perfil.ESTUDANTE);
+        estudante.definirDadosEstudante("UniBH", (short) 5);
+        when(repository.findById(ID)).thenReturn(java.util.Optional.of(estudante));
+
+        var req = new br.unibh.fisiotech.usuario.dto.AtualizarPerfilProfissionalRequest(
+                Categoria.FISIOTERAPEUTA, " 123456-F ", Uf.MG);
+        var resposta = service.atualizarPerfilProfissional(ID, req);
+
+        assertThat(resposta.perfil()).isEqualTo(Perfil.PROFISSIONAL);
+        assertThat(resposta.categoria()).isEqualTo(Categoria.FISIOTERAPEUTA);
+        assertThat(resposta.registro()).isEqualTo("123456-F");
+        assertThat(resposta.uf()).isEqualTo(Uf.MG);
+        assertThat(resposta.instituicao()).isEqualTo("UniBH");
+        assertThat(resposta.periodo()).isEqualTo((short) 5);
+    }
+
+    @Test
+    void deveLancarExcecaoAoAtualizarPerfilDeUsuarioInexistente() {
+        when(repository.findById(ID)).thenReturn(java.util.Optional.empty());
+
+        var req = new br.unibh.fisiotech.usuario.dto.AtualizarPerfilProfissionalRequest(
+                Categoria.FISIOTERAPEUTA, "123456-F", Uf.MG);
+
+        assertThatThrownBy(() -> service.atualizarPerfilProfissional(ID, req))
+                .isInstanceOf(br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException.class);
+    }
 }

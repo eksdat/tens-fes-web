@@ -101,6 +101,13 @@ public class Usuario implements Persistable<UUID> {
         this.uf = uf;
     }
 
+    public void promoverParaProfissional(Categoria categoria, String registro, Uf uf) {
+        this.perfil = Perfil.PROFISSIONAL;
+        this.categoria = categoria;
+        this.registro = registro;
+        this.uf = uf;
+    }
+
     @Override
     public boolean isNew() {
         return novo;
