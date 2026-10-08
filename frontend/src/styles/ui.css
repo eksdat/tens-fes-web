@@ -1,4 +1,6 @@
-/* Componentes compartilhados. Classes com prefixo tf- (nome herdado do design system de referência). */
+/* Componentes compartilhados. Classes com prefixo tf- (nome herdado do design system de referência).
+ * Regra: tamanhos de fonte usam SEMPRE var(--fs-*) em rem; nunca px diretamente.
+ * Espaçamentos (padding, margin, gap) e bordas continuam em px pois não são afetados pelo zoom de fonte. */
 
 .tf-sr-only {
   position: absolute;
@@ -28,7 +30,7 @@
 
 /* Títulos e texto de tela */
 .tf-titulo {
-  font: 800 clamp(36px, 8vw, 52px) / 1 var(--font-display);
+  font: 800 clamp(2.25rem, 8vw, 3.25rem) / 1 var(--font-display);
   text-transform: uppercase;
   letter-spacing: 0.01em;
   overflow-wrap: anywhere;
@@ -36,7 +38,7 @@
 
 .tf-sub {
   color: var(--ink-muted);
-  font: 400 16px/24px var(--font-sans);
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
 }
 
 .tf-link {
@@ -65,7 +67,7 @@
   align-items: center;
   gap: var(--space-3);
   color: var(--ink-muted);
-  font: 400 14px/20px var(--font-sans);
+  font: 400 var(--fs-sm) / 1.43 var(--font-sans);
 }
 
 .tf-divisor::before,
@@ -81,7 +83,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font: 800 28px/1 var(--font-display);
+  font: 800 1.75rem / 1 var(--font-display);
   letter-spacing: 0.04em;
   color: var(--ink);
   text-decoration: none;
@@ -121,7 +123,7 @@
   border: 2px solid var(--edge);
   border-radius: var(--radius-md);
   box-shadow: 3px 3px 0 var(--edge);
-  font: 700 16px/24px var(--font-sans);
+  font: 700 var(--fs-base) / 1.5 var(--font-sans);
   letter-spacing: 0.02em;
   text-decoration: none;
   cursor: pointer;
@@ -169,6 +171,13 @@
   background: var(--brand-tint);
 }
 
+/* Variante perigo: usada dentro de AlertDialog (Radix) para ações destrutivas irreversíveis. */
+.tf-btn--perigo {
+  --edge: var(--danger);
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
 .tf-btn:disabled,
 .tf-btn[aria-disabled='true'] {
   background: var(--surface-300);
@@ -186,12 +195,12 @@
 }
 
 .tf-field__label {
-  font: 700 16px/24px var(--font-sans);
+  font: 700 var(--fs-base) / 1.5 var(--font-sans);
 }
 
 .tf-field__hint {
   color: var(--ink-muted);
-  font: 400 14px/20px var(--font-sans);
+  font: 400 var(--fs-sm) / 1.43 var(--font-sans);
 }
 
 .tf-control {
@@ -215,7 +224,8 @@
   border: 0;
   background: transparent;
   padding: 0 var(--space-4);
-  font: 400 16px/24px var(--font-sans);
+  /* var(--fs-base) = 1rem: iOS dá zoom automático em campos < 16 px; rem evita isso. */
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
   color: var(--ink);
 }
 
@@ -237,7 +247,7 @@
   border-left: 2px solid var(--ink);
   background: var(--surface-300);
   color: var(--ink);
-  font: 700 14px/20px var(--font-sans);
+  font: 700 var(--fs-sm) / 1.43 var(--font-sans);
   cursor: pointer;
 }
 
@@ -255,7 +265,7 @@
   align-items: flex-start;
   gap: var(--space-2);
   color: var(--danger);
-  font: 700 14px/20px var(--font-sans);
+  font: 700 var(--fs-sm) / 1.43 var(--font-sans);
 }
 
 .tf-field__erro .tf-icon {
@@ -302,12 +312,12 @@
 }
 
 .tf-alert__titulo {
-  font: 700 16px/24px var(--font-sans);
+  font: 700 var(--fs-base) / 1.5 var(--font-sans);
   color: var(--info);
 }
 
 .tf-alert__texto {
-  font: 400 16px/24px var(--font-sans);
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
 }
 
 .tf-alert__acao {
@@ -409,20 +419,20 @@
 }
 
 .tf-auth__kicker {
-  font: 700 12px/16px var(--font-mono);
+  font: 700 var(--fs-xs) / 1.33 var(--font-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
 }
 
 .tf-auth__painel-titulo {
-  font: 800 clamp(32px, 8.6vw, 40px) / 0.95 var(--font-display);
+  font: 800 clamp(2rem, 8.6vw, 2.5rem) / 0.95 var(--font-display);
   text-transform: uppercase;
 }
 
 .tf-auth__painel-texto,
 .tf-auth__nota {
-  font: 400 14px/20px var(--font-sans);
+  font: 400 var(--fs-sm) / 1.43 var(--font-sans);
 }
 
 .tf-auth__nota {
@@ -516,12 +526,12 @@
   }
 
   .tf-auth__painel-titulo {
-    font-size: clamp(48px, 5.2vw, 72px);
+    font-size: clamp(3rem, 5.2vw, 4.5rem);
   }
 
   .tf-auth__painel-texto {
-    font-size: 18px;
-    line-height: 28px;
+    font-size: var(--fs-lg);
+    line-height: 1.56;
   }
 
   .tf-auth__nota {
@@ -541,7 +551,7 @@
   display: grid;
   place-items: center;
   color: var(--ink-muted);
-  font: 400 16px/24px var(--font-sans);
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
 }
 
 .tf-pagina {
@@ -592,7 +602,7 @@
 }
 
 .tf-etapas__rotulo {
-  font: 700 12px/16px var(--font-mono);
+  font: 700 var(--fs-xs) / 1.33 var(--font-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-muted);
@@ -671,13 +681,13 @@
 
 .tf-opcao__titulo {
   display: block;
-  font: 700 16px/24px var(--font-sans);
+  font: 700 var(--fs-base) / 1.5 var(--font-sans);
 }
 
 .tf-opcao__texto {
   display: block;
   color: var(--ink-muted);
-  font: 400 14px/20px var(--font-sans);
+  font: 400 var(--fs-sm) / 1.43 var(--font-sans);
 }
 
 .tf-requisitos {
@@ -687,7 +697,7 @@
   padding: 0;
   list-style: none;
   color: var(--ink-muted);
-  font: 400 14px/20px var(--font-sans);
+  font: 400 var(--fs-sm) / 1.43 var(--font-sans);
 }
 
 .tf-requisitos__ok {
@@ -718,7 +728,7 @@
   border-radius: var(--radius-md, 6px);
   background: var(--surface-200);
   color: var(--ink);
-  font: 700 24px/1 var(--font-mono);
+  font: 700 var(--fs-2xl) / 1 var(--font-mono);
   text-align: center;
 }
 
@@ -736,7 +746,7 @@
 }
 
 .tf-segredo {
-  font: 400 14px/20px var(--font-mono);
+  font: 400 var(--fs-sm) / 1.43 var(--font-mono);
   overflow-wrap: anywhere;
 }
 
@@ -745,11 +755,11 @@
   gap: var(--space-2);
   margin: 0;
   padding-left: var(--space-5);
-  font: 400 16px/24px var(--font-sans);
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
 }
 
 .tf-subtitulo {
-  font: 700 18px/26px var(--font-sans);
+  font: 700 var(--fs-lg) / 1.44 var(--font-sans);
 }
 
 .tf-documento {
@@ -868,14 +878,14 @@ fieldset.tf-captcha {
 .tf-menu__nome {
   display: block;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 1.25;
 }
 
 .tf-menu__perfil {
   display: block;
   color: var(--ink-muted);
-  font-size: 12px;
-  line-height: 16px;
+  font-size: var(--fs-xs);
+  line-height: 1.33;
 }
 
 .tf-menu__opcoes {
@@ -894,7 +904,7 @@ fieldset.tf-captcha {
   min-height: 36px;
   color: var(--ink);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   font-weight: 700;
@@ -957,7 +967,7 @@ fieldset.tf-captcha {
   .tf-menu__link {
     min-height: 64px;
     padding: 0 var(--space-1);
-    font-size: 14px;
+    font-size: var(--fs-sm);
   }
 
   .tf-menu__link[aria-current='page'] {
@@ -993,11 +1003,196 @@ fieldset.tf-captcha {
   }
 
   .tf-menu__nome {
-    font-size: 14px;
-    line-height: 18px;
+    font-size: var(--fs-sm);
+    line-height: 1.29;
   }
 
   .tf-menu__perfil {
-    line-height: 14px;
+    line-height: 1.08;
+  }
+}
+
+/* Cartão padrão do design system */
+.tf-cartao {
+  background: var(--surface-200);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+}
+
+.tf-cartao__titulo {
+  font: 700 var(--fs-xl) / 1.4 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: var(--space-3);
+}
+
+.tf-dados-perfil {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.tf-dado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--surface-300);
+}
+
+.tf-dado:first-child {
+  padding-top: 0;
+}
+
+.tf-dado:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.tf-dado__rotulo {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tf-dado__valor {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+/* =========================================================
+ * Diálogo (Dialog / AlertDialog do Radix UI)
+ * ---------------------------------------------------------
+ * .tf-dialogo-overlay  — camada escura atrás do painel
+ * .tf-dialogo          — painel de conteúdo
+ * .tf-dialogo__cabecalho — título e botão de fechar
+ * .tf-dialogo__titulo  — <h2> do diálogo
+ * .tf-dialogo__corpo   — área de conteúdo
+ * .tf-dialogo__rodape  — área de ações (botões)
+ * .tf-dialogo__fechar  — botão X
+ * ========================================================= */
+
+.tf-dialogo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(11, 31, 21, 0.6); /* --ink com 60% de opacidade */
+  animation: tf-overlay-in 150ms ease;
+}
+
+.tf-dialogo-overlay[data-state='closed'] {
+  animation: tf-overlay-out 150ms ease;
+}
+
+@keyframes tf-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes tf-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.tf-dialogo {
+  position: fixed;
+  inset: 0;
+  z-index: 51;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  /* Garante que o painel não causa rolagem horizontal com zoom de 200 %. */
+  overflow-y: auto;
+}
+
+.tf-dialogo__painel {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface-200);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  animation: tf-dialogo-in 200ms ease;
+}
+
+.tf-dialogo__painel[data-state='closed'] {
+  animation: tf-dialogo-out 150ms ease;
+}
+
+@keyframes tf-dialogo-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tf-dialogo-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(8px); }
+}
+
+.tf-dialogo__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) 0;
+}
+
+.tf-dialogo__titulo {
+  flex: 1;
+  font: 700 var(--fs-xl) / 1.4 var(--font-sans);
+  color: var(--ink);
+}
+
+.tf-dialogo__descricao {
+  padding: var(--space-3) var(--space-5) 0;
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
+  color: var(--ink-muted);
+}
+
+.tf-dialogo__corpo {
+  padding: var(--space-4) var(--space-5);
+}
+
+.tf-dialogo__rodape {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.tf-dialogo__fechar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  flex: none;
+}
+
+.tf-dialogo__fechar:hover {
+  background: var(--surface-300);
+  color: var(--ink);
+}
+
+.tf-dialogo__fechar:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* No mobile, ações em coluna (botões em bloco) */
+@media (max-width: 479.98px) {
+  .tf-dialogo__rodape {
+    flex-direction: column-reverse;
+  }
+
+  .tf-dialogo__rodape .tf-btn {
+    width: 100%;
   }
 }

@@ -21,13 +21,16 @@ body {
   min-height: 100dvh;
   background: var(--surface-100);
   color: var(--ink);
-  font: 400 16px/24px var(--font-sans);
+  /* var(--fs-base) = 1rem: escala com a preferência de fonte do navegador (WCAG 1.4.4). */
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
 }
 
 h1,
 h2,
 h3,
-p {
+p,
+dl,
+dd {
   margin: 0;
 }
 
