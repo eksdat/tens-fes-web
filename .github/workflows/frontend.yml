@@ -1,11 +1,11 @@
-# Frontend: confere (lint, testes, build) em Pull Requests para a main e, quando algo chega na main (ou alguém
+# Frontend: confere (lint, testes, build) em Pull Requests para a homologacao e a main e, quando algo chega na main (ou alguém
 # aciona à mão na aba Actions), publica no Firebase Hosting.
 # Configuração necessária (uma vez, por quem administra o repositório): ver "Deploy automático do frontend" no DEPLOY.md.
 name: Frontend
 
 on:
   pull_request:
-    branches: [main]
+    branches: [homologacao, main]
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend.yml'

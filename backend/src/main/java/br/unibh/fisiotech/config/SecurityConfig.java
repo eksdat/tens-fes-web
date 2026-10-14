@@ -36,7 +36,7 @@ public class SecurityConfig {
                 .oauth2ResourceServer(o -> o.jwt(jwt -> jwt.jwtAuthenticationConverter(perfilJwtConverter)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/api/v1/usuarios/me").authenticated()
+                        .requestMatchers("/api/v1/usuarios/me", "/api/v1/usuarios/me/**").authenticated()
                         .requestMatchers("/api/v1/pacientes/**").hasRole("PROFISSIONAL")
                         .anyRequest().hasAnyRole("ESTUDANTE", "PROFISSIONAL"))
                 .build();

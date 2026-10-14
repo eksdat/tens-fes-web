@@ -46,5 +46,18 @@
   --font-sans: 'Ubuntu', system-ui, 'Segoe UI', sans-serif;
   --font-mono: 'Ubuntu Mono', ui-monospace, Menlo, Consolas, monospace;
 
+  /*
+   * Escala de tamanho de fonte em rem (base: 16 px padrão do navegador).
+   * Usar SEMPRE as variáveis --fs-*; nunca escreva rem ou px diretamente em componentes.
+   * Com zoom de 200 % o navegador dobra o rem e nenhum texto some nem causa rolagem horizontal.
+   * Critério WCAG 1.4.4 — Redimensionamento de texto (AA).
+   */
+  --fs-xs:   0.75rem;   /* ~12 px — mínimo absoluto; só kicker e metadados */
+  --fs-sm:   0.875rem;  /* ~14 px — dicas, legendas, rótulos menores       */
+  --fs-base: 1rem;      /* ~16 px — texto corrido e campos de formulário   */
+  --fs-lg:   1.125rem;  /* ~18 px — texto de destaque, body-lg             */
+  --fs-xl:   1.25rem;   /* ~20 px — subtítulos                             */
+  --fs-2xl:  1.5rem;    /* ~24 px — códigos de verificação em caixas       */
+
   color-scheme: light;
 }

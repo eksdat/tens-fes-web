@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import br.unibh.fisiotech.shared.exception.ConflitoException;
+import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
+import br.unibh.fisiotech.usuario.dto.AtualizarPerfilProfissionalRequest;
 import br.unibh.fisiotech.usuario.dto.CadastroRequest;
 import br.unibh.fisiotech.usuario.dto.UsuarioResponse;
 import br.unibh.fisiotech.usuario.entity.Usuario;
@@ -48,5 +50,13 @@ public class UsuarioService {
         } catch (DataIntegrityViolationException e) {
             throw new ConflitoException("Cadastro já concluído.");
         }
+    }
+
+    @Transactional
+    public UsuarioResponse atualizarPerfilProfissional(UUID id, AtualizarPerfilProfissionalRequest req) {
+        var usuario = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cadastro não concluído."));
+        usuario.promoverParaProfissional(req.categoria(), req.registro().trim(), req.uf());
+        return UsuarioResponse.de(repository.saveAndFlush(usuario));
     }
 }

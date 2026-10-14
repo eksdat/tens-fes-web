@@ -38,6 +38,13 @@ export interface components {
             uf?: "AC" | "AL" | "AP" | "AM" | "BA" | "CE" | "DF" | "ES" | "GO" | "MA" | "MT" | "MS" | "MG" | "PA" | "PB" | "PR" | "PE" | "PI" | "RJ" | "RN" | "RS" | "RO" | "RR" | "SC" | "SP" | "SE" | "TO";
             aceiteTermos: boolean;
         };
+        AtualizarPerfilProfissionalRequest: {
+            /** @enum {string} */
+            categoria: "FISIOTERAPEUTA" | "TERAPEUTA_OCUPACIONAL" | "OUTRA";
+            registro: string;
+            /** @enum {string} */
+            uf: "AC" | "AL" | "AP" | "AM" | "BA" | "CE" | "DF" | "ES" | "GO" | "MA" | "MT" | "MS" | "MG" | "PA" | "PB" | "PR" | "PE" | "PI" | "RJ" | "RN" | "RS" | "RO" | "RR" | "SC" | "SP" | "SE" | "TO";
+        };
         UsuarioResponse: {
             /** Format: uuid */
             id: string;

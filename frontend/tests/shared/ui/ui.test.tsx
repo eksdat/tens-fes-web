@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { axe } from 'vitest-axe'
@@ -7,6 +7,7 @@ import { AuthLayout } from '@/shared/ui/AuthLayout'
 import { Botao } from '@/shared/ui/Botao'
 import { Campo } from '@/shared/ui/Campo'
 import { CampoSenha } from '@/shared/ui/CampoSenha'
+import { Dialogo } from '@/shared/ui/Dialogo'
 
 test('deveLigarRotuloDicaEErroAoCampo', () => {
   render(<Campo rotulo="E-mail" dica="Use o e-mail da faculdade" erro="Informe seu e-mail" />)
@@ -74,4 +75,89 @@ test('deveRenderizarOLayoutSemViolacoesDeAcessibilidade', async () => {
   )
 
   expect(await axe(container)).toHaveNoViolations()
+})
+
+describe('Dialogo', () => {
+  test('deveAbrirEFecharPorCliqueNoBotao', async () => {
+    render(
+      <Dialogo
+        gatilho={<Botao>Abrir</Botao>}
+        titulo="Confirmar ação"
+        descricao="Essa ação não pode ser desfeita."
+      >
+        <p>Conteúdo do diálogo.</p>
+      </Dialogo>,
+    )
+
+    // Antes de abrir: diálogo não está na árvore
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir' }))
+
+    // Depois de abrir
+    const dialogo = screen.getByRole('dialog')
+    expect(dialogo).toBeInTheDocument()
+    expect(screen.getByText('Confirmar ação')).toBeInTheDocument()
+    expect(screen.getByText('Essa ação não pode ser desfeita.')).toBeInTheDocument()
+
+    // Fechar pelo botão X
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar diálogo' }))
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  test('deveTerTituloLigadoAoPainelViaAriaLabelledby', async () => {
+    render(
+      <Dialogo gatilho={<Botao>Abrir</Botao>} titulo="Título acessível">
+        <p>Corpo</p>
+      </Dialogo>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir' }))
+
+    const dialogo = screen.getByRole('dialog')
+    expect(dialogo).toHaveAccessibleName('Título acessível')
+  })
+
+  test('deveFecharPelasTeclaEsc', async () => {
+    render(
+      <Dialogo gatilho={<Botao>Abrir</Botao>} titulo="Esc fecha">
+        <p>Conteúdo</p>
+      </Dialogo>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  test('deveRenderizarSemViolacoesDeAcessibilidade', async () => {
+    const { container } = render(
+      <Dialogo
+        gatilho={<Botao>Abrir</Botao>}
+        titulo="Confirmar exclusão"
+        descricao="Você está prestes a excluir este item."
+        acoes={
+          <>
+            <Botao variante="secundario">Cancelar</Botao>
+            <Botao variante="primario">Confirmar</Botao>
+          </>
+        }
+      >
+        <p>Esta ação é irreversível.</p>
+      </Dialogo>,
+    )
+
+    // Verificar acessibilidade antes de abrir (gatilho)
+    expect(await axe(container)).toHaveNoViolations()
+
+    // Verificar acessibilidade com o diálogo aberto
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir' }))
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
 })

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -114,5 +115,31 @@ class UsuarioControllerTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erros.aceiteTermos").exists());
+    }
+
+    @Test
+    void deveAtualizarPerfilProfissionalComStatus200() throws Exception {
+        var atualizado = new UsuarioResponse(ID, "Ana Souza", Perfil.PROFISSIONAL, false, "UniBH", (short) 5,
+                br.unibh.fisiotech.usuario.enums.Categoria.FISIOTERAPEUTA, "123456-F", br.unibh.fisiotech.usuario.enums.Uf.MG);
+        when(service.atualizarPerfilProfissional(eq(ID), any())).thenReturn(atualizado);
+
+        mvc.perform(put("/api/v1/usuarios/me/perfil").with(jwt().jwt(j -> j.subject(ID.toString())))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoria":"FISIOTERAPEUTA","registro":"123456-F","uf":"MG"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.perfil").value("PROFISSIONAL"))
+                .andExpect(jsonPath("$.registro").value("123456-F"));
+    }
+
+    @Test
+    void deveRecusarRegistroComFormatoInvalidoNaAtualizacao() throws Exception {
+        mvc.perform(put("/api/v1/usuarios/me/perfil").with(jwt().jwt(j -> j.subject(ID.toString())))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoria":"FISIOTERAPEUTA","registro":"invalido","uf":"MG"}
+                                """))
+                .andExpect(status().isBadRequest());
     }
 }
