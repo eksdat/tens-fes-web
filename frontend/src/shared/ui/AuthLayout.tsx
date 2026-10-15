@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { BotaoAcessibilidade } from '../acessibilidade/BotaoAcessibilidade'
 import { FolhasDecorativas } from './FolhasDecorativas'
 import { Marca } from './Marca'
 
@@ -49,6 +50,9 @@ export function AuthLayout({ kicker, titulo, texto, faixa = false, voltarPara, a
       </aside>
 
       <main id="conteudo" tabIndex={-1} className="tf-auth__conteudo">
+        <div className="tf-auth__acessibilidade">
+          <BotaoAcessibilidade />
+        </div>
         <div className="tf-auth__cartao">{children}</div>
       </main>
     </div>
