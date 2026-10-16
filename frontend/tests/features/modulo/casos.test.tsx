@@ -14,6 +14,17 @@ function renderizar(modulo: Modulo, rota: string) {
   return render(<RouterProvider router={roteador} />)
 }
 
+test.each([
+  [TENS, '/tens/parametros', '/simulador?modalidade=TENS&modo=Convencional'],
+  [TENS, '/tens/casos', '/simulador?modalidade=TENS&modo=Convencional'],
+  [FES, '/fes/parametros', '/simulador?modalidade=FES&modo=FES'],
+  [FES, '/fes/casos', '/simulador?modalidade=FES&modo=FES'],
+])('deveLevarAoSimuladorDaModalidade (%#)', (modulo, rota, destino) => {
+  renderizar(modulo, rota)
+
+  expect(screen.getByRole('link', { name: 'Testar no simulador' })).toHaveAttribute('href', destino)
+})
+
 test('deveListarOsCasosDoTensNaOrdemDoGuia', () => {
   renderizar(TENS, '/tens/casos')
 
