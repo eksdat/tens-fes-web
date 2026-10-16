@@ -3,7 +3,7 @@ import type { Fonte } from '../modulo/tipos'
 
 /** Guia Técnico, seção 20 (segurança). Referência de segurança: Houghton et al. (R4). */
 
-/** Itens do 'Checklist pronto' (seção 20) e das orientações de durante e depois, em forma de pergunta. */
+/** Antes: perguntas do 'Checklist pronto' (seção 20). Durante e Depois: as orientações da seção 20, no imperativo. */
 export type EtapaChecklist = { etapa: 'Antes' | 'Durante' | 'Depois'; grupos: { titulo: string; itens: string[] }[] }
 
 export type ConteudoSeguranca = {
@@ -75,15 +75,15 @@ export const SEGURANCA: ConteudoSeguranca = {
         {
           titulo: 'Resposta',
           itens: [
-            'Relato, contato dos eletrodos e resposta monitorados?',
-            'Na estimulação motora, movimento, compensações, fadiga e segurança da tarefa acompanhados?',
+            'Monitore o relato, o contato dos eletrodos e a resposta.',
+            'Na estimulação motora, acompanhe movimento, compensações, fadiga e segurança da tarefa.',
           ],
         },
-        { titulo: 'Desconforto', itens: ['Pele observada quando necessário?'] },
+        { titulo: 'Desconforto', itens: ['Observe a pele quando necessário.'] },
         {
           titulo: 'Critérios de interrupção',
           itens: [
-            'Saída interrompida diante de queimação, dor inesperada, mal-estar, alteração cutânea relevante ou movimento inseguro?',
+            'Se houver queimação, dor inesperada, mal-estar, alteração cutânea relevante ou movimento inseguro, interrompa a saída e avalie antes de retomar.',
           ],
         },
       ],
@@ -91,11 +91,14 @@ export const SEGURANCA: ConteudoSeguranca = {
     {
       etapa: 'Depois',
       grupos: [
-        { titulo: 'Pele', itens: ['Saída zerada antes de retirar os eletrodos?', 'Pele observada após a retirada?'] },
-        { titulo: 'Intercorrências', itens: ['Resposta, dose realizada e intercorrências registradas?'] },
+        { titulo: 'Pele', itens: ['Observe a pele depois da retirada.'] },
+        { titulo: 'Intercorrências', itens: ['Registre a resposta, a dose efetivamente realizada e as intercorrências.'] },
         {
           titulo: 'Cuidados com o material',
-          itens: ['Higienização, descarte e armazenamento conforme as instruções do fabricante?'],
+          itens: [
+            'Zere ou interrompa a saída antes de retirar os eletrodos, conforme o manual.',
+            'Higienize, descarte ou guarde o material conforme as instruções do fabricante.',
+          ],
         },
       ],
     },
