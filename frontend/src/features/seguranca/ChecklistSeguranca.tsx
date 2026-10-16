@@ -1,13 +1,27 @@
 import { useState } from 'react'
 import type { EtapaChecklist } from './conteudoSeguranca'
 
-/** Checklist marcável. Na aba Segurança o estado fica só na memória; o registro de sessão reaproveita os mesmos itens. */
-export function ChecklistSeguranca({ etapas }: { etapas: EtapaChecklist[] }) {
-  const [marcados, setMarcados] = useState<Set<string>>(new Set())
+type Props = {
+  etapas: EtapaChecklist[]
+  /** Controlado pelo registro de sessão, que salva os itens. Sem isto (aba Segurança), o estado fica só na memória. */
+  marcados?: Set<string>
+  aoAlternar?: (chave: string) => void
+}
+
+/** Chave de um item: "Etapa:texto", o mesmo formato gravado na sessão. */
+const chaveDoItem = (etapa: string, item: string) => `${etapa}:${item}`
+
+export function ChecklistSeguranca({ etapas, marcados, aoAlternar }: Props) {
+  const [locais, setLocais] = useState<Set<string>>(new Set())
+  const atuais = marcados ?? locais
 
   function alternar(chave: string) {
-    setMarcados((atuais) => {
-      const novos = new Set(atuais)
+    if (aoAlternar) {
+      aoAlternar(chave)
+      return
+    }
+    setLocais((anteriores) => {
+      const novos = new Set(anteriores)
       if (novos.has(chave)) novos.delete(chave)
       else novos.add(chave)
       return novos
@@ -27,11 +41,11 @@ export function ChecklistSeguranca({ etapas }: { etapas: EtapaChecklist[] }) {
               <h4 className="tf-cartao__titulo">{grupo.titulo}</h4>
               <ul className="tf-checklist__itens">
                 {grupo.itens.map((item) => {
-                  const chave = `${etapa}:${item}`
+                  const chave = chaveDoItem(etapa, item)
                   return (
                     <li key={item}>
                       <label className="tf-checklist__item">
-                        <input type="checkbox" checked={marcados.has(chave)} onChange={() => alternar(chave)} />
+                        <input type="checkbox" checked={atuais.has(chave)} onChange={() => alternar(chave)} />
                         {item}
                       </label>
                     </li>

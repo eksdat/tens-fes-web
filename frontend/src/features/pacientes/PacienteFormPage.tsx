@@ -10,6 +10,7 @@ import { Campo } from '../../shared/ui/Campo'
 import { Dialogo } from '../../shared/ui/Dialogo'
 import { TelaCarregando } from '../../shared/ui/TelaCarregando'
 import { AvaliacoesDoPaciente } from '../avaliacao/AvaliacoesDoPaciente'
+import { SessoesDoPaciente } from '../sessao/SessoesDoPaciente'
 import { AvisoDadosFicticios } from './AvisoDadosFicticios'
 import {
   atualizarPaciente,
@@ -185,6 +186,7 @@ export function PacienteFormPage() {
       </form>
 
       {id && <AvaliacoesDoPaciente pacienteId={id} />}
+      {id && <SessoesDoPaciente pacienteId={id} />}
     </section>
   )
 }

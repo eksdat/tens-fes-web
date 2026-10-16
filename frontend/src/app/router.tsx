@@ -17,6 +17,7 @@ import { PerfilPage } from '../features/perfil/PerfilPage'
 import { PacienteFormPage } from '../features/pacientes/PacienteFormPage'
 import { PacientesPage } from '../features/pacientes/PacientesPage'
 import { AvaliacaoFormPage } from '../features/avaliacao/AvaliacaoFormPage'
+import { SessaoFormPage } from '../features/sessao/SessaoFormPage'
 import { SimuladorPage } from '../features/simulador/SimuladorPage'
 import { EmConstrucao } from './EmConstrucao'
 import { LayoutLogado } from './LayoutLogado'
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
                   { path: '/pacientes/:id', handle: { titulo: 'Paciente' }, element: <PacienteFormPage /> },
                   { path: '/pacientes/:id/avaliacoes/nova', handle: { titulo: 'Avaliação inicial' }, element: <AvaliacaoFormPage /> },
                   { path: '/pacientes/:id/avaliacoes/:avaliacaoId', handle: { titulo: 'Avaliação' }, element: <AvaliacaoFormPage /> },
+                  { path: '/pacientes/:id/sessoes/nova', handle: { titulo: 'Registrar sessão' }, element: <SessaoFormPage /> },
                 ],
               },
             ],
