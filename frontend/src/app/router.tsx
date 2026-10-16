@@ -17,6 +17,7 @@ import { PerfilPage } from '../features/perfil/PerfilPage'
 import { PacienteFormPage } from '../features/pacientes/PacienteFormPage'
 import { PacientesPage } from '../features/pacientes/PacientesPage'
 import { AvaliacaoFormPage } from '../features/avaliacao/AvaliacaoFormPage'
+import { SimuladorPage } from '../features/simulador/SimuladorPage'
 import { EmConstrucao } from './EmConstrucao'
 import { LayoutLogado } from './LayoutLogado'
 import { RaizApp } from './RaizApp'
@@ -62,6 +63,7 @@ export const router = createBrowserRouter([
               { path: '/', handle: { titulo: 'Início' }, element: <InicioPage /> },
               rotasDoModulo(TENS),
               rotasDoModulo(FES),
+              { path: '/simulador', handle: { titulo: 'Simulador' }, element: <SimuladorPage /> },
               emConstrucao('/criar-conteudo', 'Criar conteúdo'),
               { path: '/perfil', handle: { titulo: 'Meu perfil' }, element: <PerfilPage /> },
               {
