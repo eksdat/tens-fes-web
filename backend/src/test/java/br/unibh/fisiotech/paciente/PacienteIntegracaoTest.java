@@ -195,29 +195,34 @@ class PacienteIntegracaoTest {
     @Test
     void deveRecusarDadosInvalidos() throws Exception {
         criar(profissionalA, """
-                {"nome":"","sobrenome":"Silva","identificador":"A-050","telefone":"abc",
+                {"nome":"","sobrenome":"Silva","identificador":"A-050",
                  "email":"nao-e-email","dataNascimento":"2999-01-01"}
                 """)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erros.nome", notNullValue()))
-                .andExpect(jsonPath("$.erros.telefone", notNullValue()))
                 .andExpect(jsonPath("$.erros.email", notNullValue()))
                 .andExpect(jsonPath("$.erros.dataNascimento", notNullValue()));
     }
 
     @Test
-    void deveRecusarTelefoneForaDoPadraoIdentificadorComCaraDeCpfENascimentoAntesDe1900() throws Exception {
+    void deveRecusarNomeComDigitoIdentificadorComCaraDeCpfENascimentoAntesDe1900() throws Exception {
         criar(profissionalA, """
-                {"nome":"Maria2","sobrenome":"Silva","identificador":"123.456.789-01","telefone":"112233445566778899",
+                {"nome":"Maria2","sobrenome":"Silva","identificador":"123.456.789-01",
                  "email":"joao@teste","dataNascimento":"1850-01-01"}
                 """)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erros.nome", notNullValue()))
-                .andExpect(jsonPath("$.erros.telefone", notNullValue()))
                 .andExpect(jsonPath("$.erros.email", notNullValue()));
         criar(profissionalA, paciente("Maria", "12345678901")).andExpect(status().isBadRequest());
         criar(profissionalA, paciente("Maria", "A-070").replace("1980-05-10", "1850-01-01"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deveNaoGuardarNemDevolverTelefone() throws Exception {
+        criar(profissionalA, paciente("Maria", "A-080").replace("{", "{\"telefone\":\"(31) 99999-0000\","))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.telefone").doesNotExist());
     }
 
     @Test
@@ -255,7 +260,7 @@ class PacienteIntegracaoTest {
 
     private static String paciente(String nome, String identificador) {
         return """
-                {"nome":"%s","sobrenome":"Silva","identificador":"%s","telefone":"(31) 99999-0000",
+                {"nome":"%s","sobrenome":"Silva","identificador":"%s",
                  "email":"maria@exemplo.com","dataNascimento":"1980-05-10"}
                 """.formatted(nome, identificador);
     }

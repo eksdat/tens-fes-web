@@ -11,7 +11,6 @@ public record PacienteResponse(
         String nome,
         String sobrenome,
         String identificador,
-        String telefone,
         String email,
         LocalDate dataNascimento,
         Instant criadoEm,
@@ -20,7 +19,7 @@ public record PacienteResponse(
         UUID alteradoPor) {
 
     public static PacienteResponse de(Paciente p) {
-        return new PacienteResponse(p.getId(), p.getNome(), p.getSobrenome(), p.getIdentificador(), p.getTelefone(),
+        return new PacienteResponse(p.getId(), p.getNome(), p.getSobrenome(), p.getIdentificador(),
                 p.getEmail(), p.getDataNascimento(), p.getCriadoEm(), p.getCriadoPor(), p.getAlteradoEm(),
                 p.getAlteradoPor());
     }

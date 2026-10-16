@@ -13,8 +13,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * O responsável não vem aqui: é sempre o usuário do token. As mesmas regras estão no formulário
- * ({@code PacienteFormPage.tsx}, {@code formatar.ts}), mas quem decide é este DTO.
+ * O responsável não vem aqui: é sempre o usuário do token. Sem telefone (minimização). As mesmas regras estão no
+ * formulário ({@code PacienteFormPage.tsx}, {@code formatar.ts}), mas quem decide é este DTO.
  */
 public record PacienteRequest(
         @NotBlank(message = "Informe o nome.") @Size(max = 80, message = "Use até 80 caracteres.")
@@ -23,8 +23,6 @@ public record PacienteRequest(
         @Pattern(regexp = NOME, message = "Use só letras.") String sobrenome,
         @NotBlank(message = "Informe o identificador.") @Size(max = 40, message = "Use até 40 caracteres.")
         @Pattern(regexp = "^[A-Za-z0-9._-]+$", message = "Use letras sem acento, números e hífen.") String identificador,
-        @NotBlank(message = "Informe o telefone.")
-        @Pattern(regexp = TELEFONE, message = "Informe o telefone com DDD, como (31) 99999-0000.") String telefone,
         @Email(message = "Informe um e-mail válido, como nome@exemplo.com.")
         @Pattern(regexp = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", message = "Informe um e-mail válido, como nome@exemplo.com.")
         @Size(max = 254, message = "Use até 254 caracteres.") String email,
@@ -33,9 +31,6 @@ public record PacienteRequest(
 
     /** Letras (com acento), espaço, apóstrofo e hífen; começa por letra. */
     static final String NOME = "^\\p{L}[\\p{L}\\s'’-]*$";
-
-    /** DDD de 11 a 99; celular 9XXXX-XXXX ou fixo [2-5]XXX-XXXX. */
-    static final String TELEFONE = "^\\([1-9][1-9]\\) (9\\d{4}|[2-5]\\d{3})-\\d{4}$";
 
     private static final LocalDate NASCIMENTO_MINIMO = LocalDate.of(1900, 1, 1);
 

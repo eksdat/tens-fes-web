@@ -4,23 +4,6 @@ export function formatarData(iso: string): string {
   return `${dia}/${mes}/${ano}`
 }
 
-/** Telefone brasileiro enquanto a pessoa digita: só dígitos, até 11, no formato (DD) 99999-9999 ou (DD) 9999-9999. */
-export function mascararTelefone(texto: string): string {
-  const d = texto.replace(/\D/g, '').slice(0, 11)
-  if (d.length === 0) return ''
-  if (d.length <= 2) return `(${d}`
-  const ddd = d.slice(0, 2)
-  const resto = d.slice(2)
-  if (resto.length <= 4) return `(${ddd}) ${resto}`
-  const meio = resto.length === 9 ? 5 : 4
-  return `(${ddd}) ${resto.slice(0, meio)}-${resto.slice(meio)}`
-}
-
-/** DDD de 11 a 99; celular com 9 dígitos começando por 9, fixo com 8 começando de 2 a 5. Mesma regra do backend. */
-export const PADRAO_TELEFONE = /^\([1-9][1-9]\) (9\d{4}|[2-5]\d{3})-\d{4}$/
-
-export const telefoneValido = (telefone: string) => PADRAO_TELEFONE.test(telefone)
-
 /** Só letras sem acento, dígitos, hífen, ponto e sublinhado, em maiúscula. */
 export const limparIdentificador = (texto: string) =>
   texto

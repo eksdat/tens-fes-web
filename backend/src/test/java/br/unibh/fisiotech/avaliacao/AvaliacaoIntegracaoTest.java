@@ -65,7 +65,7 @@ class AvaliacaoIntegracaoTest {
         profissionalB = cadastrarProfissional();
         var resposta = mvc.perform(post("/api/v1/pacientes").header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA)
                 .contentType(MediaType.APPLICATION_JSON).content("""
-                        {"nome":"Maria","sobrenome":"Silva","identificador":"A-1","telefone":"(31) 99999-0000",
+                        {"nome":"Maria","sobrenome":"Silva","identificador":"A-1",
                          "dataNascimento":"1980-05-10"}
                         """)).andExpect(status().isCreated()).andReturn();
         pacienteDeA = JsonPath.read(resposta.getResponse().getContentAsString(), "$.id");

@@ -43,8 +43,6 @@ public class Paciente {
 
     private String identificador;
 
-    private String telefone;
-
     private String email;
 
     private LocalDate dataNascimento;
@@ -69,12 +67,11 @@ public class Paciente {
         this.responsavelId = responsavelId;
     }
 
-    public void atualizar(String nome, String sobrenome, String identificador, String telefone, String email,
+    public void atualizar(String nome, String sobrenome, String identificador, String email,
             LocalDate dataNascimento) {
         this.nome = nome.trim();
         this.sobrenome = sobrenome.trim();
         this.identificador = identificador.trim();
-        this.telefone = telefone.trim();
         this.email = email == null || email.isBlank() ? null : email.trim();
         this.dataNascimento = dataNascimento;
     }

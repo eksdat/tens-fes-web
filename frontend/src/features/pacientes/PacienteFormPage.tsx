@@ -21,7 +21,7 @@ import {
   lerErroPaciente,
   type PacienteRequest,
 } from './api'
-import { limparIdentificador, limparNome, mascararTelefone, pareceDocumento, telefoneValido } from './formatar'
+import { limparIdentificador, limparNome, pareceDocumento } from './formatar'
 
 const hoje = () => new Date().toISOString().slice(0, 10)
 const NOME = /^\p{L}[\p{L}\s'’-]*$/u
@@ -41,7 +41,6 @@ const schema = z.object({
     .min(1, 'Informe o identificador.')
     .max(40, 'Use até 40 caracteres.')
     .refine((v) => !pareceDocumento(v), 'Parece um documento (CPF). Use um código interno, como CASO-01.'),
-  telefone: z.string().refine(telefoneValido, 'Informe o telefone com DDD, como (31) 99999-0000.'),
   email: z.union([
     z.literal(''),
     z.email('Informe um e-mail válido, como nome@exemplo.com.').max(254, 'Use até 254 caracteres.'),
@@ -55,7 +54,7 @@ const schema = z.object({
 
 type Valores = z.infer<typeof schema>
 
-const CAMPOS = ['nome', 'sobrenome', 'identificador', 'telefone', 'email', 'dataNascimento'] as const
+const CAMPOS = ['nome', 'sobrenome', 'identificador', 'email', 'dataNascimento'] as const
 
 export function PacienteFormPage() {
   const { id } = useParams()
@@ -75,10 +74,10 @@ export function PacienteFormPage() {
     formState: { errors, isSubmitting },
   } = useForm<Valores>({
     resolver: zodResolver(schema),
-    defaultValues: { nome: '', sobrenome: '', identificador: '', telefone: '', email: '', dataNascimento: '' },
+    defaultValues: { nome: '', sobrenome: '', identificador: '', email: '', dataNascimento: '' },
   })
 
-  function comFiltro(campo: 'nome' | 'sobrenome' | 'identificador' | 'telefone', filtrar: (v: string) => string) {
+  function comFiltro(campo: 'nome' | 'sobrenome' | 'identificador', filtrar: (v: string) => string) {
     const registrado = register(campo)
     return {
       ...registrado,
@@ -114,12 +113,16 @@ export function PacienteFormPage() {
       navigate('/pacientes')
     } catch (erro) {
       const lido = lerErroPaciente(erro)
-      setErroGeral(lido.mensagem)
+      // Erro de campo que não está na tela (versões diferentes de front e back) vai no alerta, senão some.
+      const semCampo: string[] = []
       for (const [campo, mensagem] of Object.entries(lido.campos)) {
         if ((CAMPOS as readonly string[]).includes(campo)) {
           setError(campo as (typeof CAMPOS)[number], { message: mensagem }, { shouldFocus: true })
+        } else {
+          semCampo.push(mensagem)
         }
       }
+      setErroGeral([lido.mensagem, ...semCampo].join(' '))
     }
   }
 
@@ -184,17 +187,6 @@ export function PacienteFormPage() {
             max={hoje()}
             erro={errors.dataNascimento?.message}
             {...register('dataNascimento')}
-          />
-          <Campo
-            rotulo="Telefone"
-            type="tel"
-            inputMode="numeric"
-            placeholder="(31) 99999-0000"
-            dica="Com DDD."
-            autoComplete="off"
-            maxLength={15}
-            erro={errors.telefone?.message}
-            {...comFiltro('telefone', mascararTelefone)}
           />
           <Campo
             rotulo="E-mail (opcional)"

@@ -6,7 +6,6 @@ export type Paciente = {
   nome: string
   sobrenome: string
   identificador: string
-  telefone: string
   email: string | null
   dataNascimento: string
   criadoEm: string
@@ -17,7 +16,7 @@ export type Paciente = {
 
 export type PacienteRequest = Pick<
   Paciente,
-  'nome' | 'sobrenome' | 'identificador' | 'telefone' | 'dataNascimento'
+  'nome' | 'sobrenome' | 'identificador' | 'dataNascimento'
 > & { email: string | null }
 
 export type Pagina<T> = { itens: T[]; pagina: number; tamanho: number; totalItens: number; totalPaginas: number }

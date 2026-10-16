@@ -14,7 +14,6 @@ const MARIA: api.Paciente = {
   nome: 'Maria',
   sobrenome: 'Silva',
   identificador: 'A-001',
-  telefone: '(31) 99999-0000',
   email: null,
   dataNascimento: '1980-05-10',
   criadoEm: '2026-10-16T10:00:00Z',
@@ -118,7 +117,6 @@ describe('formulário de paciente', () => {
     await usuario.type(screen.getByLabelText('Nome'), 'Maria')
     await usuario.type(screen.getByLabelText('Sobrenome'), 'Silva')
     await usuario.type(screen.getByLabelText('Identificador interno'), 'A-001')
-    await usuario.type(screen.getByLabelText('Telefone'), '(31) 99999-0000')
     await usuario.type(screen.getByLabelText('Data de nascimento'), '1980-05-10')
   }
 
@@ -135,7 +133,6 @@ describe('formulário de paciente', () => {
         nome: 'Maria',
         sobrenome: 'Silva',
         identificador: 'A-001',
-        telefone: '(31) 99999-0000',
         email: null,
         dataNascimento: '1980-05-10',
       }),
@@ -182,13 +179,10 @@ describe('formulário de paciente', () => {
     expect(screen.getByLabelText('Identificador interno')).toHaveAttribute('aria-invalid', 'true')
   })
 
-  test('deveMascararOTelefoneEIgnorarLetras', async () => {
+  test('deveNaoPedirTelefone', () => {
     renderizarForm()
-    const usuario = userEvent.setup()
 
-    await usuario.type(screen.getByLabelText('Telefone'), '31a999990000999')
-
-    expect(screen.getByLabelText('Telefone')).toHaveValue('(31) 99999-0000')
+    expect(screen.queryByLabelText(/Telefone/)).not.toBeInTheDocument()
   })
 
   test('deveDeixarOIdentificadorEmMaiusculaSemEspacoNemSimbolo', async () => {
@@ -212,26 +206,22 @@ describe('formulário de paciente', () => {
   test('deveMostrarExemploEmCadaCampo', () => {
     renderizarForm()
 
-    expect(screen.getByLabelText('Telefone')).toHaveAttribute('placeholder', '(31) 99999-0000')
     expect(screen.getByLabelText('E-mail (opcional)')).toHaveAttribute('placeholder', 'nome@exemplo.com')
     expect(screen.getByLabelText('Identificador interno')).toHaveAttribute('placeholder', 'CASO-01')
   })
 
-  test('deveRecusarTelefoneIncompletoIdentificadorComCaraDeCpfENascimentoAntigo', async () => {
+  test('deveRecusarIdentificadorComCaraDeCpfENascimentoAntigo', async () => {
     renderizarForm()
     const usuario = userEvent.setup()
 
     await preencher(usuario)
-    await usuario.clear(screen.getByLabelText('Telefone'))
-    await usuario.type(screen.getByLabelText('Telefone'), '3199990')
     await usuario.clear(screen.getByLabelText('Identificador interno'))
     await usuario.type(screen.getByLabelText('Identificador interno'), '12345678901')
     await usuario.clear(screen.getByLabelText('Data de nascimento'))
     await usuario.type(screen.getByLabelText('Data de nascimento'), '1850-01-01')
     await usuario.click(screen.getByRole('button', { name: 'Cadastrar paciente' }))
 
-    expect(await screen.findByText('Informe o telefone com DDD, como (31) 99999-0000.')).toBeInTheDocument()
-    expect(screen.getByText('Parece um documento (CPF). Use um código interno, como CASO-01.')).toBeInTheDocument()
+    expect(await screen.findByText('Parece um documento (CPF). Use um código interno, como CASO-01.')).toBeInTheDocument()
     expect(screen.getByText('Confira o ano: use uma data a partir de 1900.')).toBeInTheDocument()
   })
 
@@ -268,4 +258,27 @@ describe('formulário de paciente', () => {
 
     expect(await axe(document.body)).toHaveNoViolations()
   })
+})
+
+test('deveMostrarNoAlertaOErroDeCampoQueNaoEstaNaTela', async () => {
+  const erro = Object.assign(new Error('400'), {
+    isAxiosError: true,
+    response: { status: 400, data: { erros: { campoNovo: 'Informe o campo novo.' } } },
+  })
+  vi.spyOn(api, 'criarPaciente').mockRejectedValue(erro)
+  renderComRotas(
+    <Route element={<main><Outlet /></main>}>
+      <Route path="/pacientes/novo" element={<PacienteFormPage />} />
+    </Route>,
+    '/pacientes/novo',
+  )
+  const usuario = userEvent.setup()
+
+  await usuario.type(screen.getByLabelText('Nome'), 'Maria')
+  await usuario.type(screen.getByLabelText('Sobrenome'), 'Silva')
+  await usuario.type(screen.getByLabelText('Identificador interno'), 'A-001')
+  await usuario.type(screen.getByLabelText('Data de nascimento'), '1980-05-10')
+  await usuario.click(screen.getByRole('button', { name: 'Cadastrar paciente' }))
+
+  expect(await screen.findByText('Confira os campos destacados. Informe o campo novo.')).toBeInTheDocument()
 })

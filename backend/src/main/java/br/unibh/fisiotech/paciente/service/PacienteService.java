@@ -92,7 +92,7 @@ public class PacienteService {
     }
 
     private static void preencher(Paciente p, PacienteRequest req) {
-        p.atualizar(req.nome(), req.sobrenome(), req.identificador(), req.telefone(), req.email(),
+        p.atualizar(req.nome(), req.sobrenome(), req.identificador(), req.email(),
                 req.dataNascimento());
     }
 
