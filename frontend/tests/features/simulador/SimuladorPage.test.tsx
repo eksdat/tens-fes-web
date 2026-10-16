@@ -367,12 +367,29 @@ describe('osciloscópio ao vivo', () => {
     const usuario = userEvent.setup()
 
     await usuario.click(await screen.findByRole('button', { name: 'Iniciar simulação' }))
-    expect(screen.getByText(/Animação parada porque "reduzir movimento" está ativo/)).toBeInTheDocument()
+    expect(screen.getByText(/Animação parada porque "reduzir movimento" está ligado no painel de acessibilidade/)).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Animar mesmo assim' }))
     expect(screen.getByText(/Em execução, em câmera lenta/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Animar mesmo assim' })).not.toBeInTheDocument()
     delete document.documentElement.dataset.movimento
+  })
+
+  test('deveSeguirOPainelDeAcessibilidadeEIgnorarOSistemaQuandoOPainelDesligou', async () => {
+    const original = window.matchMedia
+    window.matchMedia = ((consulta: string) => ({
+      matches: consulta.includes('reduced-motion'),
+      media: consulta,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia
+    renderizarComEstado()
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Iniciar simulação' }))
+
+    expect(screen.getByText(/Em execução, em câmera lenta/)).toBeInTheDocument()
+    window.matchMedia = original
   })
 
   test('deveAvisarQueSemIntensidadeNaoHaPulsoParaVer', async () => {

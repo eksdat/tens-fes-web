@@ -15,29 +15,21 @@ type Props = {
   emExecucao: boolean
 }
 
-/** Respeita o sistema e o painel de acessibilidade (data-movimento="reduzido" no html). */
+/**
+ * Segue só o painel de acessibilidade (data-movimento="reduzido" no html). O painel já parte da preferência do sistema
+ * quando a pessoa não escolheu nada; consultar o sistema aqui também ignoraria quem desligou a opção no painel.
+ */
 function useMovimentoReduzido() {
-  const [reduzido, setReduzido] = useState(() => calcular())
+  const [reduzido, setReduzido] = useState(calcular)
   useEffect(() => {
-    const consulta = window.matchMedia?.('(prefers-reduced-motion: reduce)')
     const observador = new MutationObserver(() => setReduzido(calcular()))
     observador.observe(document.documentElement, { attributes: true, attributeFilter: ['data-movimento'] })
-    const aoMudar = () => setReduzido(calcular())
-    consulta?.addEventListener?.('change', aoMudar)
-    return () => {
-      observador.disconnect()
-      consulta?.removeEventListener?.('change', aoMudar)
-    }
+    return () => observador.disconnect()
   }, [])
   return reduzido
 }
 
-function calcular() {
-  return (
-    document.documentElement.dataset.movimento === 'reduzido' ||
-    Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
-  )
-}
+const calcular = () => document.documentElement.dataset.movimento === 'reduzido'
 
 /**
  * Osciloscópio: o traçado de cada canal corre da direita para a esquerda enquanto a simulação está em execução.
@@ -101,7 +93,7 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
 
   const bloqueadoPeloMovimento = emExecucao && reduzido && !animarMesmoAssim
   const estado = bloqueadoPeloMovimento
-    ? 'Animação parada porque "reduzir movimento" está ativo no sistema ou no painel de acessibilidade.'
+    ? 'Animação parada porque "reduzir movimento" está ligado no painel de acessibilidade (botão no canto da tela).'
     : emExecucao
       ? lentidao > 1
         ? `Em execução, em câmera lenta: ${numero.format(lentidao)}× mais lento que o real.`
