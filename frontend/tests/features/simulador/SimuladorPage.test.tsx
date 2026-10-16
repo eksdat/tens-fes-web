@@ -76,7 +76,7 @@ test('deveListarSoOsModosQueOAparelhoSimula', async () => {
     .getAllByRole('option')
     .map((o) => o.textContent)
     .filter((texto) => texto !== 'Selecione')
-  expect(opcoes).toEqual(['Convencional', 'Normal', 'Acupuntura'])
+  expect(opcoes).toEqual(['Convencional', 'Normal', 'Acupuntura', 'Burst'])
 })
 
 test('deveComecarComAIntensidadeEmZero', async () => {
@@ -122,7 +122,8 @@ test('deveUsarAsFaixasDoModoEscolhido', async () => {
 
   expect(screen.queryByText(/fora da faixa/)).not.toBeInTheDocument()
   await usuario.selectOptions(screen.getByRole('combobox', { name: 'Modo' }), 'Convencional')
-  expect(await screen.findByText(/fora da faixa documentada para o aparelho/)).toBeInTheDocument()
+  expect(frequencia).toHaveValue('75')
+  expect(screen.queryByText(/fora da faixa documentada para o aparelho/)).not.toBeInTheDocument()
 })
 
 test('deveAvisarForaDaFaixaEducativaDentroDoAparelho', async () => {
@@ -309,8 +310,8 @@ describe('anúncio ao ajustar um controle', () => {
     expect(anuncio()).toHaveTextContent('Simulação pausada.')
   })
 
-  test('deveAnunciarRecursoNaoDisponivelParaModoQueOSimuladorNaoTem', async () => {
-    renderizar('/simulador?modalidade=TENS&modo=Burst')
+  test('deveAvisarRecursoNaoDisponivelParaModoQueOSimuladorNaoTem', async () => {
+    renderizar('/simulador?modalidade=TENS&modo=Misto')
 
     expect(await screen.findByText('Recurso não disponível neste modelo.')).toBeInTheDocument()
   })
@@ -396,5 +397,54 @@ describe('osciloscópio ao vivo', () => {
     renderizarComEstado()
 
     expect(await screen.findByText('Intensidade em zero: aumente a intensidade de um canal para ver os pulsos.')).toBeInTheDocument()
+  })
+})
+
+describe('cada modo com seu comportamento', () => {
+  test('deveLevarFrequenciaELarguraParaOMeioDaFaixaAoTrocarDeModo', async () => {
+    renderizar()
+    const usuario = userEvent.setup()
+
+    await usuario.selectOptions(await screen.findByRole('combobox', { name: 'Modo' }), 'Acupuntura')
+
+    expect(screen.getByRole('textbox', { name: 'Frequência' })).toHaveValue('3')
+    expect(screen.getByRole('textbox', { name: 'Largura de pulso' })).toHaveValue('200')
+    expect(anuncio()).toHaveTextContent('Frequência alterada para 3 hertz.')
+    expect(screen.getByTestId('descricao-pulso')).toHaveTextContent('3 pulsos por segundo')
+  })
+
+  test('deveAbrirNosValoresDoModoPedidoNaUrl', async () => {
+    renderizar('/simulador?modalidade=TENS&modo=Acupuntura')
+
+    expect(await screen.findByRole('textbox', { name: 'Frequência' })).toHaveValue('3')
+  })
+
+  test('deveMostrarRajadasComFrequenciaFixaNoBurst', async () => {
+    renderizar()
+    const usuario = userEvent.setup()
+
+    await usuario.selectOptions(await screen.findByRole('combobox', { name: 'Modo' }), 'Burst')
+
+    expect(screen.queryByRole('textbox', { name: 'Frequência' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Rajadas de 250 Hz, 2 por segundo, fixas neste aparelho/)).toBeInTheDocument()
+    expect(screen.getByTestId('descricao-pulso')).toHaveTextContent('Rajadas de pulsos a 250 hertz, 2 rajadas por segundo')
+  })
+
+  test('deveTerFesSincronoEReciproco', async () => {
+    renderizar('/simulador?modalidade=FES')
+
+    const modo = await screen.findByRole('combobox', { name: 'Modo' })
+    const opcoes = within(modo)
+      .getAllByRole('option')
+      .map((o) => o.textContent)
+      .filter((t) => t !== 'Selecione')
+    expect(opcoes).toEqual(['FES síncrono', 'FES recíproco'])
+  })
+
+  test('deveAlternarOsCanaisNoFesReciproco', async () => {
+    renderizarComEstado('/simulador?modalidade=FES&modo=FES recíproco')
+
+    expect(await screen.findByText('Canal 1: Subida 0 s de 2 · Canal 2: Repouso 20 s de 30')).toBeInTheDocument()
+    expect(screen.getByTestId('descricao-pulso')).toHaveTextContent('os canais alternam')
   })
 })

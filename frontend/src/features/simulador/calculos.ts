@@ -76,14 +76,20 @@ export type EstadoPulso = {
   larguraUs: number
   intensidadeMa: [number, number]
   rampas?: Rampas
+  forma?: 'continuo' | 'burst' | 'sincrono' | 'reciproco'
 }
 
-export function descreverPulso({ modalidade, modo, frequenciaHz, larguraUs, intensidadeMa, rampas }: EstadoPulso): string {
+export function descreverPulso({ modalidade, modo, frequenciaHz, larguraUs, intensidadeMa, rampas, forma = 'continuo' }: EstadoPulso): string {
+  const modoDito = modo.startsWith(modalidade) ? modo : `${modalidade}, modo ${modo}`
   const partes = [
-    `${modalidade}, modo ${modo}.`,
+    `${modoDito}.`,
     `Pulso bifásico quadrático simétrico: cada fase dura ${fmt(larguraUs)} microssegundos, e o pulso completo, ${fmt(2 * larguraUs)} microssegundos.`,
-    `${fmt(frequenciaHz)} pulsos por segundo, um a cada ${fmt(periodoMs(frequenciaHz))} milissegundos.`,
+    forma === 'burst'
+      ? 'Rajadas de pulsos a 250 hertz, 2 rajadas por segundo. O desenho usa 7 pulsos por rajada, como esquema.'
+      : `${fmt(frequenciaHz)} pulsos por segundo, um a cada ${fmt(periodoMs(frequenciaHz))} milissegundos.`,
   ]
+  if (forma === 'sincrono') partes.push('Modo síncrono: os dois canais estimulam juntos.')
+  if (forma === 'reciproco') partes.push('Modo recíproco: os canais alternam; o canal 2 começa quando o estímulo do canal 1 termina.')
   if (intensidadeMa.every((i) => i === 0)) {
     partes.push('Intensidade em zero nos dois canais: não há estimulação.')
   } else {

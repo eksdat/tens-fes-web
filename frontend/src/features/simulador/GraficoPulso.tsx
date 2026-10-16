@@ -1,15 +1,23 @@
 import { periodoMs, type Rampas } from './calculos'
 import { OsciloscopioAoVivo } from './OsciloscopioAoVivo'
+import { BURST, type Forma } from './tracado'
 
 const numero = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 })
 
-type Props = { frequenciaHz: number; larguraUs: number; rampas?: Rampas; intensidades: [number, number]; emExecucao: boolean }
+type Props = {
+  frequenciaHz: number
+  larguraUs: number
+  rampas?: Rampas
+  intensidades: [number, number]
+  emExecucao: boolean
+  forma?: Forma
+}
 
 /**
  * Osciloscópio ao vivo e, abaixo, os desenhos parados de um pulso e do trem, sem escala de intensidade: forma quadrática simétrica bifásica (manual do Neurodyn, cap. 8.2.4).
  * Os desenhos são decorativos para o leitor de tela; a tabela e a descrição ao lado trazem os mesmos valores.
  */
-export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, emExecucao }: Props) {
+export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, emExecucao, forma = 'continuo' }: Props) {
   const periodo = periodoMs(frequenciaHz)
   // Fração do período ocupada pelo pulso (duas fases); mínimo visível de 2% para pulsos muito curtos.
   const ocupacao = Math.max(0.02, Math.min(0.9, (2 * larguraUs) / 1000 / periodo))
@@ -19,6 +27,15 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, em
     const meia = (larguraPeriodo * ocupacao) / 2
     return `M${x} 60 V25 H${x + meia} V95 H${x + 2 * meia} V60 H${x + larguraPeriodo}`
   }).join(' ')
+  // Burst: duas rajadas de 7 pulsos, cada pulso um traço; o espaço entre elas é a pausa da modulação.
+  const rajadas = [0, 1]
+    .flatMap((r) =>
+      Array.from({ length: BURST.pulsosPorRajada }, (_, j) => {
+        const x = 30 + r * 140 + j * 9
+        return `M${x} 60 V25 H${x + 3} V95 H${x + 6} V60`
+      }),
+    )
+    .join(' ')
 
   return (
     <div className="tf-grafico">
@@ -28,6 +45,7 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, em
         intensidades={intensidades}
         rampas={rampas}
         emExecucao={emExecucao}
+        forma={forma}
       />
 
       <figure className="tf-grafico__item" aria-hidden="true">
@@ -47,12 +65,12 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, em
       <figure className="tf-grafico__item" aria-hidden="true">
         <svg viewBox="0 0 300 120" className="tf-grafico__svg">
           <line x1="0" y1="60" x2="300" y2="60" className="tf-grafico__eixo" />
-          <path d={trem} className="tf-grafico__linha" />
+          <path d={forma === 'burst' ? `M10 60 H290 ${rajadas}` : trem} className="tf-grafico__linha" />
           <text x="150" y="116" className="tf-grafico__rotulo" textAnchor="middle">
-            um pulso a cada {numero.format(periodo)} ms
+            {forma === 'burst' ? 'uma rajada a cada 500 ms' : `um pulso a cada ${numero.format(periodo)} ms`}
           </text>
         </svg>
-        <figcaption className="tf-grafico__legenda">Trem de pulsos: {numero.format(frequenciaHz)} por segundo</figcaption>
+        <figcaption className="tf-grafico__legenda">{forma === 'burst' ? 'Rajadas: 7 pulsos a 250 Hz, 2 rajadas por segundo (esquema)' : `Trem de pulsos: ${numero.format(frequenciaHz)} por segundo`}</figcaption>
       </figure>
 
     </div>

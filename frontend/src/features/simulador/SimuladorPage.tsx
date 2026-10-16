@@ -22,6 +22,7 @@ import {
   type Rampas,
 } from './calculos'
 import { GraficoPulso } from './GraficoPulso'
+import { BURST, valorInicialDoModo, type Forma } from './tracado'
 import { useFaixas } from './useFaixas'
 
 type CampoId = 'frequencia' | 'largura' | 'intensidade1' | 'intensidade2' | 'subida' | 'plato' | 'descida' | 'repouso'
@@ -44,7 +45,10 @@ const INICIAL: Record<Modalidade, Textos> = {
   FES: { frequencia: '35', largura: '300', intensidade1: '0', intensidade2: '0', subida: '2', plato: '6', descida: '2', repouso: '30' },
 }
 
-const MODO_PADRAO: Record<Modalidade, string> = { TENS: 'Convencional', FES: 'FES' }
+const MODO_PADRAO: Record<Modalidade, string> = { TENS: 'Convencional', FES: 'FES síncrono' }
+
+/** Nome na tela, de qual modo vêm as faixas e como os pulsos se distribuem no tempo. */
+type ModoDoSimulador = { nome: string; faixasDe: string; forma: Forma }
 
 const numero = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 })
 
@@ -54,12 +58,29 @@ function ler(texto: string): number | null {
   return Number.isNaN(valor) ? null : valor
 }
 
-/** Só entram os modos com frequência e largura documentadas no manual; o burst tem frequência fixa e fica de fora. */
-function modosSimulaveis(faixas: FaixaApi[]) {
+/**
+ * TENS: os modos com frequência e largura do manual (pulso contínuo) e o Burst, que tem frequência fixa e só a largura
+ * ajustável. FES: as mesmas faixas em dois modos do manual (cap. 8.2.5), síncrono e recíproco.
+ */
+function modosDoSimulador(modalidade: Modalidade, faixas: FaixaApi[]): ModoDoSimulador[] {
   const temAparelho = (modo: string, parametro: string) =>
     faixas.some((f) => f.modo === modo && f.parametro === parametro && f.origem === 'APARELHO')
-  return [...new Set(faixas.map((f) => f.modo))].filter((m) => temAparelho(m, 'Frequência') && temAparelho(m, 'Largura de pulso'))
+  if (modalidade === 'FES') {
+    if (!temAparelho('FES', 'Frequência')) return []
+    return [
+      { nome: 'FES síncrono', faixasDe: 'FES', forma: 'sincrono' },
+      { nome: 'FES recíproco', faixasDe: 'FES', forma: 'reciproco' },
+    ]
+  }
+  const continuos: ModoDoSimulador[] = [...new Set(faixas.map((f) => f.modo))]
+    .filter((m) => temAparelho(m, 'Frequência') && temAparelho(m, 'Largura de pulso'))
+    .map((m) => ({ nome: m, faixasDe: m, forma: 'continuo' }))
+  const burst: ModoDoSimulador[] = temAparelho('Burst', 'Largura de pulso') ? [{ nome: 'Burst', faixasDe: 'Burst', forma: 'burst' }] : []
+  return [...continuos, ...burst]
 }
+
+/** Links antigos usavam modo=FES. */
+const lerModoPedido = (valor: string | null) => (valor === 'FES' ? 'FES síncrono' : (valor ?? ''))
 
 function faixasDo(faixas: FaixaApi[], modo: string, parametro: string): FaixasDoCampo & { unidade: string; extenso: string } {
   const doCampo = faixas.filter((f) => f.modo === modo && f.parametro === parametro)
@@ -81,10 +102,37 @@ export function SimuladorPage() {
   const consulta = useFaixas(modalidade)
 
   const faixas = consulta.data ?? []
-  const modos = modosSimulaveis(faixas)
-  const pedido = params.get('modo') ?? ''
-  const modo = modos.includes(pedido) ? pedido : modos.includes(MODO_PADRAO[modalidade]) ? MODO_PADRAO[modalidade] : (modos[0] ?? '')
-  const modoIndisponivel = !consulta.isPending && pedido !== '' && !modos.includes(pedido) && modos.length > 0
+  const opcoes = modosDoSimulador(modalidade, faixas)
+  const nomes = opcoes.map((m) => m.nome)
+  const pedido = lerModoPedido(params.get('modo'))
+  const modo = nomes.includes(pedido) ? pedido : nomes.includes(MODO_PADRAO[modalidade]) ? MODO_PADRAO[modalidade] : (nomes[0] ?? '')
+  const atual = opcoes.find((m) => m.nome === modo)
+  const forma: Forma = atual?.forma ?? 'continuo'
+  const faixasDoModo = atual?.faixasDe ?? modo
+  const modoIndisponivel = !consulta.isPending && pedido !== '' && !nomes.includes(pedido) && nomes.length > 0
+
+  /** Frequência e largura no meio da faixa do modo (guia, seções 07 e 08), sempre dentro do que o aparelho aceita. */
+  function valoresDoModo(m: ModoDoSimulador) {
+    const freq = m.forma === 'burst' ? undefined : valorInicialDoModo(faixasDo(faixas, m.faixasDe, 'Frequência'))
+    const larg = valorInicialDoModo(faixasDo(faixas, m.faixasDe, 'Largura de pulso'))
+    return { frequencia: freq === undefined ? undefined : String(freq), largura: larg === undefined ? undefined : String(larg) }
+  }
+
+  // Ao abrir por link num modo que não é o padrão, os valores de partida (do modo padrão) ficariam fora da faixa.
+  const abriuNoModo = useRef(false)
+  useEffect(() => {
+    if (abriuNoModo.current || !atual) return
+    abriuNoModo.current = true
+    if (atual.nome === MODO_PADRAO[modalidade]) return
+    const v = valoresDoModo(atual)
+    setTextos((atuais) => {
+      const novos = { ...atuais, frequencia: v.frequencia ?? atuais.frequencia, largura: v.largura ?? atuais.largura }
+      confirmados.current = novos
+      return novos
+    })
+    // valoresDoModo depende de faixas, que chegam junto com atual.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atual])
 
   function escolherModalidade(nova: Modalidade) {
     if (nova === modalidade) return
@@ -95,14 +143,31 @@ export function SimuladorPage() {
     setAnuncio('')
   }
 
-  // Trocar de modo exige reiniciar a amplitude (guia, seção 13).
+  // Trocar de modo exige reiniciar a amplitude (guia, seção 13) e leva frequência e largura para a faixa do novo modo.
   function escolherModo(novo: string) {
+    const m = opcoes.find((o) => o.nome === novo)
+    if (!m) return
     setParams({ modalidade, modo: novo }, { replace: true })
     const zerados = (['intensidade1', 'intensidade2'] as const).filter((id) => (ler(textos[id]) ?? 0) !== 0)
-    setTextos((atuais) => ({ ...atuais, intensidade1: '0', intensidade2: '0' }))
-    confirmados.current = { ...confirmados.current, intensidade1: '0', intensidade2: '0' }
+    const v = valoresDoModo(m)
+    const frases = zerados.map((id) => mensagemDeAjuste(id, 0, ''))
+    if (v.frequencia !== undefined && ler(v.frequencia) !== ler(textos.frequencia)) {
+      frases.push(mensagemDeAjuste('frequencia', Number(v.frequencia), faixasDo(faixas, m.faixasDe, 'Frequência').extenso))
+    }
+    if (v.largura !== undefined && ler(v.largura) !== ler(textos.largura)) {
+      frases.push(mensagemDeAjuste('largura', Number(v.largura), faixasDo(faixas, m.faixasDe, 'Largura de pulso').extenso))
+    }
+    const novos = {
+      ...textos,
+      intensidade1: '0',
+      intensidade2: '0',
+      frequencia: v.frequencia ?? textos.frequencia,
+      largura: v.largura ?? textos.largura,
+    }
+    setTextos(novos)
+    confirmados.current = novos
     setAjustes({})
-    setAnuncio(zerados.map((id) => mensagemDeAjuste(id, 0, '')).join(' '))
+    setAnuncio(frases.join(' '))
   }
 
   function alternarSimulacao() {
@@ -126,7 +191,7 @@ export function SimuladorPage() {
 
   function travarNoAparelho(id: CampoId, parametro: string) {
     const valor = ler(textos[id])
-    const faixa = faixasDo(faixas, modo, parametro)
+    const faixa = faixasDo(faixas, faixasDoModo, parametro)
     if (valor === null || !faixa.aparelho) return
     const limite = limitarAoAparelho(valor, faixa.aparelho)
     anunciarAjuste(id, limite, faixa.extenso)
@@ -144,15 +209,16 @@ export function SimuladorPage() {
     }))
   }
 
-  const campos = CAMPOS.filter((c) => !c.soFes || modalidade === 'FES')
-  const valores = Object.fromEntries(campos.map((c) => [c.id, ler(textos[c.id])])) as Record<CampoId, number | null>
+  const campos = CAMPOS.filter((c) => (!c.soFes || modalidade === 'FES') && !(c.id === 'frequencia' && forma === 'burst'))
+  const valores = Object.fromEntries(CAMPOS.map((c) => [c.id, ler(textos[c.id])])) as Record<CampoId, number | null>
+  if (forma === 'burst') valores.frequencia = BURST.frequenciaInternaHz
   const rampas: Rampas | undefined =
     modalidade === 'FES' && [valores.subida, valores.plato, valores.descida, valores.repouso].every((v) => v !== null)
       ? { subida: valores.subida!, plato: valores.plato!, descida: valores.descida!, repouso: valores.repouso! }
       : undefined
   const intensidades: [number, number] = [valores.intensidade1 ?? 0, valores.intensidade2 ?? 0]
   const pulsoValido = (valores.frequencia ?? 0) > 0 && (valores.largura ?? 0) > 0 && (modalidade === 'TENS' || !!rampas)
-  const fontes = [...new Set(faixas.filter((f) => f.modo === modo).map((f) => f.fonte))]
+  const fontes = [...new Set(faixas.filter((f) => f.modo === faixasDoModo).map((f) => f.fonte))]
 
   const frequenciaHz = valores.frequencia ?? 0
   const larguraUs = valores.largura ?? 0
@@ -187,7 +253,7 @@ export function SimuladorPage() {
         <Alerta intencao="perigo" titulo="Não foi possível carregar as faixas">
           Sem as faixas do aparelho o simulador não confere os valores. Tente de novo em instantes.
         </Alerta>
-      ) : modos.length === 0 ? (
+      ) : nomes.length === 0 ? (
         <Alerta titulo="Selecione o aparelho para consultar os limites.">
           Sem as faixas de um aparelho o simulador não confere os valores.
         </Alerta>
@@ -210,13 +276,19 @@ export function SimuladorPage() {
             </Botao>
             <CampoSelecao
               rotulo="Modo"
-              opcoes={modos.map((m) => ({ valor: m, rotulo: m }))}
+              opcoes={nomes.map((m) => ({ valor: m, rotulo: m }))}
               value={modo}
               onChange={(e) => escolherModo(e.target.value)}
             />
+            {forma === 'burst' && (
+              <p className="tf-sub">
+                Rajadas de 250 Hz, 2 por segundo, fixas neste aparelho (manual, cap. 8.2.4). Só a largura de pulso é
+                ajustável. O manual não diz quantos pulsos há em cada rajada: o desenho usa 7, como esquema.
+              </p>
+            )}
             <div className="tf-simulador__campos">
               {campos.map((c) => {
-                const faixa = faixasDo(faixas, modo, c.parametro)
+                const faixa = faixasDo(faixas, faixasDoModo, c.parametro)
                 const mensagens =
                   ajustes[c.id] ?? mensagensDeSituacao({ campo: c.id, valor: valores[c.id], faixas: faixa })
                 return (
@@ -247,11 +319,12 @@ export function SimuladorPage() {
                 rampas={rampas}
                 intensidades={intensidades}
                 emExecucao={estado.emExecucao}
+                forma={forma}
               />
             )}
             <p className="tf-sub" data-testid="descricao-pulso" aria-live="polite">
               {pulsoValido
-                ? descreverPulso({ modalidade, modo, frequenciaHz: valores.frequencia!, larguraUs: valores.largura!, intensidadeMa: intensidades, rampas })
+                ? descreverPulso({ modalidade, modo, frequenciaHz: valores.frequencia!, larguraUs: valores.largura!, intensidadeMa: intensidades, rampas, forma })
                 : 'Ainda faltam dados para descrever o pulso.'}
             </p>
             {pulsoValido && (

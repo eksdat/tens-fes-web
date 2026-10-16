@@ -1,4 +1,4 @@
-import { caminhoDoTracado, envelopeEm, escalaDeTempo } from '@/features/simulador/tracado'
+import { BURST, caminhoDoTracado, envelopeDoCanal, envelopeEm, escalaDeTempo, instantesDosPulsos, valorInicialDoModo } from '@/features/simulador/tracado'
 
 const FES = { subida: 2, plato: 6, descida: 2, repouso: 30 }
 
@@ -64,5 +64,47 @@ describe('caminho do traçado', () => {
     const agora = caminhoDoTracado({ ...base, intensidadeMa: 50 })
     const depois = caminhoDoTracado({ ...base, intensidadeMa: 50, inicioMs: 3 })
     expect(depois).not.toBe(agora)
+  })
+})
+
+describe('modos com forma própria', () => {
+  test('deveAgruparOsPulsosEmRajadasNoBurst', () => {
+    const t = instantesDosPulsos({ forma: 'burst', frequenciaHz: 250, inicioMs: 0, janelaMs: 1000 })
+    expect(t).toHaveLength(2 * BURST.pulsosPorRajada)
+    expect(t.slice(0, 3)).toEqual([0, 4, 8])
+    expect(t[BURST.pulsosPorRajada]).toBe(500)
+  })
+
+  test('deveRepetirOPulsoNoPeriodoNoModoContinuo', () => {
+    expect(instantesDosPulsos({ forma: 'continuo', frequenciaHz: 80, inicioMs: 0, janelaMs: 50 })).toEqual([0, 12.5, 25, 37.5])
+  })
+
+  test('deveUsarAJanelaDeDuasRajadasEmTempoRealNoBurst', () => {
+    expect(escalaDeTempo(250, 'burst')).toEqual({ janelaMs: 1000, lentidao: 1 })
+  })
+
+  test('deveAlternarOsCanaisNoFesReciproco', () => {
+    expect(envelopeDoCanal(5, FES, 2, 'reciproco').fase).toBe('Repouso')
+    expect(envelopeDoCanal(15, FES, 2, 'reciproco').fase).toBe('Platô')
+    expect(envelopeDoCanal(15, FES, 1, 'reciproco').fase).toBe('Repouso')
+  })
+
+  test('deveManterOsCanaisJuntosNoFesSincrono', () => {
+    expect(envelopeDoCanal(5, FES, 2, 'sincrono').fase).toBe('Platô')
+  })
+})
+
+describe('valor inicial ao escolher o modo', () => {
+  test('deveUsarOMeioDaFaixaEducativaDentroDoAparelho', () => {
+    expect(valorInicialDoModo({ educativa: { minimo: 2, maximo: 4 }, aparelho: { minimo: 1, maximo: 10 } })).toBe(3)
+    expect(valorInicialDoModo({ educativa: { minimo: 100, maximo: 400 }, aparelho: { minimo: 150, maximo: 250 } })).toBe(250)
+  })
+
+  test('deveUsarOMeioDoAparelhoQuandoNaoHaFaixaEducativa', () => {
+    expect(valorInicialDoModo({ aparelho: { minimo: 0.5, maximo: 250 } })).toBe(125)
+  })
+
+  test('deveFicarSemValorSemNenhumaFaixa', () => {
+    expect(valorInicialDoModo({})).toBeUndefined()
   })
 })

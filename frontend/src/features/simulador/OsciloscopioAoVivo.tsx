@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Botao } from '../../shared/ui/Botao'
 import type { Rampas } from './calculos'
-import { caminhoDoTracado, envelopeEm, escalaDeTempo, type Envelope } from './tracado'
+import { caminhoDoTracado, envelopeDoCanal, escalaDeTempo, type Envelope, type Forma } from './tracado'
 
 const LARGURA = 300
 const ALTURA = 80
@@ -13,6 +13,7 @@ type Props = {
   intensidades: [number, number]
   rampas?: Rampas
   emExecucao: boolean
+  forma?: Forma
 }
 
 /**
@@ -36,7 +37,7 @@ const calcular = () => document.documentElement.dataset.movimento === 'reduzido'
  * O caminho é reescrito direto no SVG a cada quadro (sem re-render do React). Decorativo para o leitor de tela: a
  * descrição e a tabela do simulador trazem os mesmos valores.
  */
-export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, rampas, emExecucao }: Props) {
+export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, rampas, emExecucao, forma = 'continuo' }: Props) {
   const reduzido = useMovimentoReduzido()
   // A animação é o conteúdo do simulador, começa só pelo botão e tem pausa: com "reduzir movimento" ela fica parada,
   // mas a pessoa pode escolher animar mesmo assim.
@@ -47,13 +48,16 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
   const cursor = useRef<SVGLineElement>(null)
   const tempoSimulado = useRef(0)
   const tempoReal = useRef(0)
-  const [envelope, setEnvelope] = useState<Envelope | undefined>(() => (rampas ? envelopeEm(0, rampas) : undefined))
-  const { lentidao } = escalaDeTempo(frequenciaHz)
+  const envelopes = (tS: number): [Envelope, Envelope] | undefined =>
+    rampas ? [envelopeDoCanal(tS, rampas, 1, forma), envelopeDoCanal(tS, rampas, 2, forma)] : undefined
+  const [envelope, setEnvelope] = useState(() => envelopes(0))
+  const { lentidao } = escalaDeTempo(frequenciaHz, forma)
 
   useEffect(() => {
     function desenhar() {
-      const nivel = rampas ? envelopeEm(tempoReal.current / 1000, rampas).nivel : 1
+      const atuais = envelopes(tempoReal.current / 1000)
       canais.forEach((ref, i) => {
+        const nivel = atuais ? atuais[i].nivel : 1
         ref.current?.setAttribute(
           'd',
           caminhoDoTracado({
@@ -63,11 +67,12 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
             inicioMs: tempoSimulado.current,
             largura: LARGURA,
             altura: ALTURA,
+            forma,
           }),
         )
       })
-      if (rampas && cursor.current) {
-        const x = String(10 + 280 * envelopeEm(tempoReal.current / 1000, rampas).posicao)
+      if (atuais && cursor.current) {
+        const x = String(10 + 280 * atuais[0].posicao)
         cursor.current.setAttribute('x1', x)
         cursor.current.setAttribute('x2', x)
       }
@@ -83,13 +88,13 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
       tempoReal.current += dt
       tempoSimulado.current += dt / lentidao
       desenhar()
-      if (rampas) setEnvelope(envelopeEm(tempoReal.current / 1000, rampas))
+      if (rampas) setEnvelope(envelopes(tempoReal.current / 1000))
       quadro = requestAnimationFrame(passo)
     })
     return () => cancelAnimationFrame(quadro)
     // canais são refs estáveis; o efeito reage só ao que muda o desenho.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animar, frequenciaHz, larguraUs, intensidades[0], intensidades[1], rampas?.subida, rampas?.plato, rampas?.descida, rampas?.repouso, lentidao])
+  }, [animar, frequenciaHz, larguraUs, intensidades[0], intensidades[1], rampas?.subida, rampas?.plato, rampas?.descida, rampas?.repouso, lentidao, forma])
 
   const bloqueadoPeloMovimento = emExecucao && reduzido && !animarMesmoAssim
   const estado = bloqueadoPeloMovimento
@@ -117,11 +122,14 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
       {rampas && envelope && (
         <div className="tf-osciloscopio__canal" aria-hidden="true">
           <span className="tf-grafico__rotulo-canal">
-            {envelope.fase}: {numero.format(envelope.decorridoS)} s de {numero.format(envelope.duracaoS)}
+            {forma === 'reciproco'
+              ? `Canal 1: ${faseDita(envelope[0])} · Canal 2: ${faseDita(envelope[1])}`
+              : faseDita(envelope[0]).replace(' ', ': ')}
           </span>
           <svg viewBox="0 0 300 70" className="tf-grafico__svg">
             <line x1="0" y1="60" x2="300" y2="60" className="tf-grafico__eixo" />
-            <EnvoltoriaDoCiclo rampas={rampas} />
+            <EnvoltoriaDoCiclo rampas={rampas} canal={1} forma={forma} />
+            {forma === 'reciproco' && <EnvoltoriaDoCiclo rampas={rampas} canal={2} forma={forma} />}
             <line ref={cursor} x1="10" y1="4" x2="10" y2="66" className="tf-osciloscopio__cursor" />
           </svg>
         </div>
@@ -129,6 +137,7 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
 
       <figcaption className="tf-grafico__legenda tf-pilha">
         <span aria-hidden="true">{estado}</span>
+        {forma === 'burst' && <span>Cada bloco é uma rajada de 7 pulsos; o desenho de baixo mostra os pulsos de dentro.</span>}
         {semIntensidade && <span>Intensidade em zero: aumente a intensidade de um canal para ver os pulsos.</span>}
         {bloqueadoPeloMovimento && (
           <Botao variante="secundario" onClick={() => setAnimarMesmoAssim(true)}>
@@ -140,11 +149,15 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
   )
 }
 
-function EnvoltoriaDoCiclo({ rampas }: { rampas: Rampas }) {
+const faseDita = (e: Envelope) => `${e.fase} ${numero.format(e.decorridoS)} s de ${numero.format(e.duracaoS)}`
+
+/** Um ciclo inteiro do canal, amostrado: no recíproco o do canal 2 vem deslocado. */
+function EnvoltoriaDoCiclo({ rampas, canal, forma }: { rampas: Rampas; canal: 1 | 2; forma: Forma }) {
   const total = rampas.subida + rampas.plato + rampas.descida + rampas.repouso
-  const escala = (s: number) => (280 * s) / total
-  const x1 = 10 + escala(rampas.subida)
-  const x2 = x1 + escala(rampas.plato)
-  const x3 = x2 + escala(rampas.descida)
-  return <path d={`M10 60 L${x1} 12 H${x2} L${x3} 60 H290`} className="tf-grafico__linha tf-osciloscopio__envoltoria" />
+  const pontos = Array.from({ length: 141 }, (_, i) => {
+    const t = (total * i) / 140
+    const y = 60 - 48 * envelopeDoCanal(t, rampas, canal, forma).nivel
+    return `${i === 0 ? 'M' : 'L'}${(10 + 2 * i).toFixed(1)} ${y.toFixed(1)}`
+  }).join(' ')
+  return <path d={pontos} className={forma === 'reciproco' ? `tf-grafico__linha tf-osciloscopio__linha--c${canal}` : 'tf-grafico__linha tf-osciloscopio__envoltoria'} />
 }
