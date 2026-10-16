@@ -8,8 +8,6 @@ export type Fonte = { codigo: string; referencia: string; url: string }
 
 export type Material = { titulo: string; canal: string; url: string; formato: string }
 
-export type SecaoTexto = { titulo: string; paragrafos: string[] }
-
 export type ModoEstimulacao = {
   nome: string
   /** Sem valor quando o modo não tem faixa universal (ex.: modulado). */
@@ -40,11 +38,13 @@ export type ExemploEducativo = {
 export type Modulo = {
   /** Rota do módulo, sem barra final. */
   base: string
-  sigla: string
+  /** Também é a modalidade na API de conteúdo. */
+  sigla: 'TENS' | 'FES'
   numero: string
   titulo: string
   introducao: string
-  visaoGeral: { secoes: SecaoTexto[]; perguntas: ItemFaq[]; materiais?: Material[]; fontes: Fonte[] }
+  /** O texto da Visão geral vem da API (página padrão); aqui ficam perguntas, materiais e fontes com link. */
+  visaoGeral: { perguntas: ItemFaq[]; materiais?: Material[]; fontes: Fonte[] }
   aparelho?: ConteudoAparelho
   seguranca?: ConteudoSeguranca
   casos?: ConteudoCasos
