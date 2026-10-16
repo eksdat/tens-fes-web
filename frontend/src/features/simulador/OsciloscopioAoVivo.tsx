@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Botao } from '../../shared/ui/Botao'
 import type { Rampas } from './calculos'
 import { caminhoDoTracado, envelopeEm, escalaDeTempo, type Envelope } from './tracado'
 
@@ -45,7 +46,11 @@ function calcular() {
  */
 export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, rampas, emExecucao }: Props) {
   const reduzido = useMovimentoReduzido()
-  const animar = emExecucao && !reduzido
+  // A animação é o conteúdo do simulador, começa só pelo botão e tem pausa: com "reduzir movimento" ela fica parada,
+  // mas a pessoa pode escolher animar mesmo assim.
+  const [animarMesmoAssim, setAnimarMesmoAssim] = useState(false)
+  const animar = emExecucao && (!reduzido || animarMesmoAssim)
+  const semIntensidade = intensidades[0] === 0 && intensidades[1] === 0
   const canais = [useRef<SVGPathElement>(null), useRef<SVGPathElement>(null)]
   const cursor = useRef<SVGLineElement>(null)
   const tempoSimulado = useRef(0)
@@ -94,8 +99,9 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [animar, frequenciaHz, larguraUs, intensidades[0], intensidades[1], rampas?.subida, rampas?.plato, rampas?.descida, rampas?.repouso, lentidao])
 
-  const estado = reduzido
-    ? 'Animação desligada: reduzir movimento está ativo.'
+  const bloqueadoPeloMovimento = emExecucao && reduzido && !animarMesmoAssim
+  const estado = bloqueadoPeloMovimento
+    ? 'Animação parada porque "reduzir movimento" está ativo no sistema ou no painel de acessibilidade.'
     : emExecucao
       ? lentidao > 1
         ? `Em execução, em câmera lenta: ${numero.format(lentidao)}× mais lento que o real.`
@@ -103,9 +109,9 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
       : 'Parado. Clique em Iniciar simulação para ver os pulsos correndo.'
 
   return (
-    <figure className="tf-grafico__item tf-osciloscopio" aria-hidden="true">
+    <figure className="tf-grafico__item tf-osciloscopio">
       {[0, 1].map((i) => (
-        <div key={i} className="tf-osciloscopio__canal">
+        <div key={i} className="tf-osciloscopio__canal" aria-hidden="true">
           <span className="tf-grafico__rotulo-canal">
             Canal {i + 1} · {numero.format(intensidades[i])} mA
           </span>
@@ -117,7 +123,7 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
       ))}
 
       {rampas && envelope && (
-        <div className="tf-osciloscopio__canal">
+        <div className="tf-osciloscopio__canal" aria-hidden="true">
           <span className="tf-grafico__rotulo-canal">
             {envelope.fase}: {numero.format(envelope.decorridoS)} s de {numero.format(envelope.duracaoS)}
           </span>
@@ -129,7 +135,15 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
         </div>
       )}
 
-      <figcaption className="tf-grafico__legenda">{estado}</figcaption>
+      <figcaption className="tf-grafico__legenda tf-pilha">
+        <span aria-hidden="true">{estado}</span>
+        {semIntensidade && <span>Intensidade em zero: aumente a intensidade de um canal para ver os pulsos.</span>}
+        {bloqueadoPeloMovimento && (
+          <Botao variante="secundario" onClick={() => setAnimarMesmoAssim(true)}>
+            Animar mesmo assim
+          </Botao>
+        )}
+      </figcaption>
     </figure>
   )
 }

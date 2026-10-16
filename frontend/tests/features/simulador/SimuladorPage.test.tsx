@@ -361,14 +361,23 @@ describe('osciloscópio ao vivo', () => {
     expect(await screen.findByText('Subida: 0 s de 2')).toBeInTheDocument()
   })
 
-  test('deveDesligarAAnimacaoComReduzirMovimento', async () => {
+  test('deveDesligarAAnimacaoComReduzirMovimentoEDeixarAnimarMesmoAssim', async () => {
     document.documentElement.dataset.movimento = 'reduzido'
     renderizarComEstado()
     const usuario = userEvent.setup()
 
     await usuario.click(await screen.findByRole('button', { name: 'Iniciar simulação' }))
+    expect(screen.getByText(/Animação parada porque "reduzir movimento" está ativo/)).toBeInTheDocument()
 
-    expect(screen.getByText('Animação desligada: reduzir movimento está ativo.')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Animar mesmo assim' }))
+    expect(screen.getByText(/Em execução, em câmera lenta/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Animar mesmo assim' })).not.toBeInTheDocument()
     delete document.documentElement.dataset.movimento
+  })
+
+  test('deveAvisarQueSemIntensidadeNaoHaPulsoParaVer', async () => {
+    renderizarComEstado()
+
+    expect(await screen.findByText('Intensidade em zero: aumente a intensidade de um canal para ver os pulsos.')).toBeInTheDocument()
   })
 })

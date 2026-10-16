@@ -7,7 +7,7 @@ type Props = { frequenciaHz: number; larguraUs: number; rampas?: Rampas; intensi
 
 /**
  * Osciloscópio ao vivo e, abaixo, os desenhos parados de um pulso e do trem, sem escala de intensidade: forma quadrática simétrica bifásica (manual do Neurodyn, cap. 8.2.4).
- * São decorativos para o leitor de tela; a tabela e a descrição ao lado trazem os mesmos valores.
+ * Os desenhos são decorativos para o leitor de tela; a tabela e a descrição ao lado trazem os mesmos valores.
  */
 export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, emExecucao }: Props) {
   const periodo = periodoMs(frequenciaHz)
@@ -21,7 +21,7 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, em
   }).join(' ')
 
   return (
-    <div className="tf-grafico" aria-hidden="true">
+    <div className="tf-grafico">
       <OsciloscopioAoVivo
         frequenciaHz={frequenciaHz}
         larguraUs={larguraUs}
@@ -30,7 +30,7 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, em
         emExecucao={emExecucao}
       />
 
-      <figure className="tf-grafico__item">
+      <figure className="tf-grafico__item" aria-hidden="true">
         <svg viewBox="0 0 300 120" className="tf-grafico__svg">
           <line x1="0" y1="60" x2="300" y2="60" className="tf-grafico__eixo" />
           <path d="M10 60 H70 V20 H150 V60 V100 H230 V60 H290" className="tf-grafico__linha" />
@@ -44,7 +44,7 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, em
         <figcaption className="tf-grafico__legenda">Um pulso: duas fases iguais, uma de cada lado</figcaption>
       </figure>
 
-      <figure className="tf-grafico__item">
+      <figure className="tf-grafico__item" aria-hidden="true">
         <svg viewBox="0 0 300 120" className="tf-grafico__svg">
           <line x1="0" y1="60" x2="300" y2="60" className="tf-grafico__eixo" />
           <path d={trem} className="tf-grafico__linha" />
