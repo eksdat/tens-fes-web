@@ -275,7 +275,7 @@ Em `src/shared/ui`, com testes de acessibilidade em `tests/shared/ui/ui.test.tsx
 | `Campo` | `rotulo`, `dica`, `erro`, `complemento` | Liga rótulo, dica e erro por `aria-describedby`; `aria-invalid` no erro |
 | `CampoSenha` | as do `Campo` | Botão "Mostrar/Ocultar" com `aria-pressed` |
 | `CampoSelecao` | `rotulo`, `opcoes`, `placeholder`, `dica`, `erro` | `<select>` nativo estilizado |
-| `CampoTextoLongo` | as do `Campo`, mais `rows` | `<textarea>` com o mesmo contrato do `Campo` (rótulo, dica e erro ligados) |
+| `CampoTextoLongo` | as do `Campo`, mais `rows` | `<textarea>` com o mesmo contrato do `Campo` (rótulo, dica e erro ligados). A caixa fica dentro de `.tf-control`: borda de 2 px, foco azul e altura mínima de 96 px, igual aos campos de uma linha |
 | `ErroDeCampo` | `id` | Mensagem com ícone, palavra "Erro" e `role="alert"` |
 | `EtapaProgresso` | `atual`, `total`, `titulo` | "Etapa 1 de 2 · Seus dados" com barras de progresso |
 | `AuthLayout` | `kicker`, `titulo`, `texto`, `faixa`, `voltarPara` ou `aoVoltar` | Layout das telas de autenticação (seção 6) |
@@ -482,6 +482,7 @@ Estrutura mínima de uma tela de autenticação:
 | Campo desalinhado na grade | Item de grid estica até a altura da linha e o rótulo desce | `.tf-form-grade` usa `align-items: start` |
 | Campo de data mais alto que os outros | O `input type=date` nativo tem altura e espaçamento próprios | `.tf-input[type=date]` com `min-height: 44px` e `padding-block: 0` |
 | Botões de opção espalhados na largura | `tf-linha` usa `space-between` | Para opções, use `.tf-grupo-botoes` |
+| Caixa de texto sem borda | `.tf-input` tem borda 0; a borda vem do `.tf-control` que o envolve | Todo `<textarea>` vai dentro de `.tf-control` (use `CampoTextoLongo`) |
 | Botão mais baixo que o campo ao lado | `.tf-btn` tem 44 px e `.tf-control` 48 px | Botão colado a campo (busca) recebe `min-height: 48px` |
 | Campo que aceita qualquer caractere | Validar só no envio deixa a pessoa digitar "112233445566778899" | Filtre ao digitar (máscara de telefone, identificador em maiúscula, nome sem dígito) com `placeholder` de exemplo e `maxLength`; valide de novo no backend |
 

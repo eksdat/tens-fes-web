@@ -8,7 +8,7 @@ export type CampoTextoLongoProps = TextareaHTMLAttributes<HTMLTextAreaElement> &
   ref?: Ref<HTMLTextAreaElement>
 }
 
-/** Mesmo contrato do Campo, para texto de várias linhas. */
+/** Mesmo contrato do Campo, para texto de várias linhas. A borda de 2 px vem do .tf-control, como nos outros campos. */
 export function CampoTextoLongo({ rotulo, dica, erro, id, ref, rows = 3, ...textarea }: CampoTextoLongoProps) {
   const gerado = useId()
   const idCampo = id ?? gerado
@@ -21,15 +21,17 @@ export function CampoTextoLongo({ rotulo, dica, erro, id, ref, rows = 3, ...text
       <label className="tf-field__label" htmlFor={idCampo}>
         {rotulo}
       </label>
-      <textarea
-        id={idCampo}
-        ref={ref}
-        rows={rows}
-        className="tf-input tf-textarea"
-        aria-invalid={erro ? true : undefined}
-        aria-describedby={descrito}
-        {...textarea}
-      />
+      <div className="tf-control tf-control--texto">
+        <textarea
+          id={idCampo}
+          ref={ref}
+          rows={rows}
+          className="tf-input tf-textarea"
+          aria-invalid={erro ? true : undefined}
+          aria-describedby={descrito}
+          {...textarea}
+        />
+      </div>
       {dica && (
         <p id={idDica} className="tf-field__hint">
           {dica}

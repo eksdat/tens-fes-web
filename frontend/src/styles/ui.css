@@ -2694,10 +2694,16 @@ fieldset.tf-captcha {
 }
 
 /* Avaliação: estados "não avaliado / ausente / presente" e texto longo */
+/* A caixa de texto longo usa o mesmo .tf-control (borda 2 px, foco azul) do campo de uma linha. */
+.tf-control--texto {
+  min-height: 96px;
+}
+
 .tf-textarea {
-  min-height: calc(var(--target-min) * 2);
+  min-height: 96px;
+  padding: var(--space-3) var(--space-4);
   resize: vertical;
-  font: inherit;
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
 }
 
 .tf-estado {
