@@ -20,6 +20,7 @@ const SECOES: SecaoLegal[] = [
     titulo: '3. Dados de pacientes',
     paragrafos: [
       'Nesta fase a plataforma é um ambiente de ensino. Use somente dados fictícios ou anonimizados. Não registre nome, documento, contato ou imagem de pessoas reais.',
+      'Só o profissional que cadastrou um paciente vê os dados dele. Paciente excluído some da lista na hora e é apagado de vez 90 dias depois.',
     ],
   },
   {

@@ -260,6 +260,136 @@
   border-color: var(--danger);
 }
 
+/* Unidade fixa ao lado do valor (CampoParametro do design system). */
+.tf-control__unidade {
+  display: inline-flex;
+  align-items: center;
+  min-width: 48px;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  border-left: 2px solid var(--ink);
+  background: var(--surface-300);
+  color: var(--ink);
+  font: 400 var(--fs-sm) / 1 var(--font-mono);
+}
+
+/* =========================================================
+ * Simulador
+ * ========================================================= */
+
+.tf-simulador__corpo {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.tf-simulador__modalidade {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tf-simulador__campos {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.tf-simulador__campo {
+  gap: var(--space-1);
+}
+
+.tf-simulador__mensagens {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tf-simulador__mensagem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--warning);
+  font-size: var(--fs-sm);
+}
+
+.tf-simulador__mensagem .tf-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.tf-simulador__mensagem--fora-aparelho,
+.tf-simulador__mensagem--unidade {
+  color: var(--danger);
+}
+
+.tf-grafico {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tf-grafico__item {
+  margin: 0;
+  padding: var(--space-3);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--surface-100);
+}
+
+.tf-grafico__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.tf-grafico__eixo {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.tf-grafico__linha {
+  fill: none;
+  stroke: var(--brand-strong);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.tf-grafico__rotulo {
+  fill: var(--ink);
+  font: 400 11px var(--font-mono);
+}
+
+.tf-grafico__legenda {
+  margin-top: var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+}
+
+.tf-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tf-tabela th,
+.tf-tabela td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.tf-tabela td {
+  font-family: var(--font-mono);
+}
+
+@media (min-width: 960px) {
+  .tf-simulador__corpo {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
 .tf-field__erro {
   display: flex;
   align-items: flex-start;
@@ -2395,4 +2525,140 @@ fieldset.tf-captcha {
   background: var(--brand-tint);
   border: 2px solid var(--brand);
   border-radius: var(--radius-md);
+}
+
+/* =========================================================
+ * Pacientes: lista ordenável e formulário
+ * ========================================================= */
+
+.tf-pacientes__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.tf-pacientes__busca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.tf-pacientes__busca .tf-field {
+  flex: 1 1 260px;
+}
+
+.tf-pacientes__vazio {
+  display: block;
+}
+
+.tf-tabela__rolagem {
+  overflow-x: auto;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  background: var(--surface-200);
+}
+
+.tf-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tf-tabela th,
+.tf-tabela td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line-strong);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tf-tabela tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tf-tabela th {
+  padding: 0;
+}
+
+.tf-tabela__ordenar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tf-tabela__ordenar:hover {
+  background: var(--brand-tint);
+}
+
+.tf-tabela__seta {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+}
+
+.tf-tabela__mono {
+  font-family: var(--font-mono);
+}
+
+.tf-paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.tf-form-grade {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 720px) {
+  .tf-form-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tf-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* Avaliação: estados "não avaliado / ausente / presente" e texto longo */
+.tf-textarea {
+  min-height: calc(var(--target-min) * 2);
+  resize: vertical;
+  font: inherit;
+}
+
+.tf-estado {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tf-estado__legenda {
+  padding: 0;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tf-estado__opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
 }

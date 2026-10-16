@@ -1,12 +1,15 @@
 import { useId, useState } from 'react'
-import { Botao } from '../../shared/ui/Botao'
+import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import type { Caso, ConteudoCasos } from '../casos/conteudoCasos'
 import { PaginaTecnica } from './PaginaTecnica'
 
-export function PaginaCasos({ dados }: { dados: ConteudoCasos }) {
+export function PaginaCasos({ dados, simulador }: { dados: ConteudoCasos; simulador: string }) {
   return (
     <PaginaTecnica titulo="Casos" fontes={dados.fontes}>
       <p className="tf-sub">{dados.introducao}</p>
+      <div className="tf-linha">
+        <BotaoLink to={simulador}>Testar no simulador</BotaoLink>
+      </div>
       <ul className="tf-casos">
         {dados.casos.map((caso) => (
           <li key={caso.titulo}>

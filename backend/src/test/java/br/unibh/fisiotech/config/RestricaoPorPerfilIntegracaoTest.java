@@ -53,7 +53,7 @@ class RestricaoPorPerfilIntegracaoTest {
     void setUp() {
         sub = UUID.randomUUID().toString();
         when(jwtDecoder.decode(anyString())).thenAnswer(i -> Jwt.withTokenValue(i.getArgument(0))
-                .header("alg", "ES256").subject(i.getArgument(0))
+                .header("alg", "ES256").subject(i.getArgument(0)).claim("aal", "aal2")
                 .issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(60)).build());
     }
 
@@ -70,7 +70,7 @@ class RestricaoPorPerfilIntegracaoTest {
         cadastrar(PROFISSIONAL);
 
         mvc.perform(get("/api/v1/pacientes").header(HttpHeaders.AUTHORIZATION, bearer()))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
     }
 
     private void cadastrar(String json) throws Exception {

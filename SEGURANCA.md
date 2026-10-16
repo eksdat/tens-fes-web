@@ -70,7 +70,7 @@ Configurar em *Authentication*:
 | Expiração do access token | 3600 s (padrão) |
 | Provedores sociais | Só Google. "Allow users without an email" e "Skip nonce checks" desligados |
 | Login anônimo | Desligado |
-| MFA (TOTP) | Habilitado. **Obrigatório para PROFISSIONAL** antes de dado real. O frontend já força: sem autenticador, o profissional é levado a `/mfa/ativar`; com autenticador, o login pede o código em `/mfa/verificar`. Estudante pode ativar e desativar na tela inicial. A API ainda não exige `aal2` (entra com os endpoints de paciente) |
+| MFA (TOTP) | Habilitado. **Obrigatório para PROFISSIONAL** antes de dado real. O frontend já força: sem autenticador, o profissional é levado a `/mfa/ativar`; com autenticador, o login pede o código em `/mfa/verificar`. Estudante pode ativar e desativar na tela inicial. A API exige `aal2` em `/api/v1/pacientes/**` (`SecurityConfig`, `SESSAO_COM_MFA`) |
 
 Regras:
 
@@ -98,7 +98,7 @@ Regras:
 4. **Posse:** toda consulta a paciente passa por `PacienteService.buscarDoResponsavel`. Paciente de outro profissional: **404**, nunca 403.
 5. **Sem IDOR:** id da URL nunca é confiado sozinho. A consulta sempre filtra pelo responsável (`findByIdAndResponsavelId`).
 6. Autor não aprova o próprio material (regra no Service, com teste).
-7. Com MFA obrigatório: endpoints de paciente exigem `aal = aal2` no token.
+7. Endpoints de paciente, avaliação e sessão exigem `aal = aal2` no token; sem isso, 403.
 
 ### Entrada e saída
 
@@ -116,7 +116,7 @@ Regras:
 - **Nunca logar** token, senha, corpo de requisição de paciente, avaliação ou sessão.
 - O Hibernate 7 loga a URL JDBC com a senha (`HHH10001005`). O `application.yml` sobe `org.hibernate.orm.connections.pooling` para `WARN`. Não remover; ao trocar versão, conferir o log de inicialização.
 - Log de acesso guarda: id do usuário, rota, status, horário.
-- `Paciente`, `Avaliacao` e `Sessao` com Hibernate Envers (`@Audited`): quem, quando, o quê.
+- `Paciente`, `Avaliacao` e `Sessao` guardam `criado_em`, `criado_por`, `alterado_em` e `alterado_por` (Spring Data Auditing, usuário do token). Sem histórico campo a campo: Envers entra se surgir esse requisito (`decisoes.md`, 2026-10-16).
 
 ### Rede
 

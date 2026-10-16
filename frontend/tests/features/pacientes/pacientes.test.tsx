@@ -1,0 +1,207 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { Outlet, Route } from 'react-router'
+import { axe } from 'vitest-axe'
+import { renderComRotas } from '../../renderComRotas'
+import { PacientesPage } from '@/features/pacientes/PacientesPage'
+import { PacienteFormPage } from '@/features/pacientes/PacienteFormPage'
+import * as api from '@/features/pacientes/api'
+import * as apiAvaliacao from '@/features/avaliacao/api'
+import * as apiSessao from '@/features/sessao/api'
+
+const MARIA: api.Paciente = {
+  id: 'a1',
+  nome: 'Maria',
+  sobrenome: 'Silva',
+  identificador: 'A-001',
+  telefone: '(31) 99999-0000',
+  email: null,
+  dataNascimento: '1980-05-10',
+  criadoEm: '2026-10-16T10:00:00Z',
+  criadoPor: 'u1',
+  alteradoEm: '2026-10-16T10:00:00Z',
+  alteradoPor: 'u1',
+}
+
+function pagina(itens: api.Paciente[], extra: Partial<api.Pagina<api.Paciente>> = {}): api.Pagina<api.Paciente> {
+  return { itens, pagina: 0, tamanho: 20, totalItens: itens.length, totalPaginas: 1, ...extra }
+}
+
+function renderizarLista(rota = '/pacientes') {
+  return renderComRotas(
+    <Route element={<main><Outlet /></main>}>
+      <Route path="/pacientes" element={<PacientesPage />} />
+      <Route path="/pacientes/:id" element={<p>detalhe</p>} />
+    </Route>,
+    rota,
+  )
+}
+
+beforeEach(() => {
+  vi.restoreAllMocks()
+})
+
+describe('lista de pacientes', () => {
+  test('deveMostrarOAvisoDeDadosFicticios', async () => {
+    vi.spyOn(api, 'listarPacientes').mockResolvedValue(pagina([]))
+    renderizarLista()
+
+    expect(screen.getByText('Ambiente acadêmico: use apenas dados fictícios.')).toBeInTheDocument()
+  })
+
+  test('deveListarNomeIdentificadorENascimento', async () => {
+    vi.spyOn(api, 'listarPacientes').mockResolvedValue(pagina([MARIA]))
+    renderizarLista()
+
+    const linha = (await screen.findByRole('link', { name: 'Maria Silva' })).closest('tr') as HTMLElement
+    expect(within(linha).getByText('A-001')).toBeInTheDocument()
+    expect(within(linha).getByText('10/05/1980')).toBeInTheDocument()
+  })
+
+  test('deveOrdenarPelaColunaClicadaEInverterNoSegundoClique', async () => {
+    const listar = vi.spyOn(api, 'listarPacientes').mockResolvedValue(pagina([MARIA]))
+    renderizarLista()
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: /Nascimento/ }))
+    await waitFor(() => expect(listar).toHaveBeenLastCalledWith(expect.objectContaining({ ordenar: 'dataNascimento', direcao: 'asc' })))
+    expect(screen.getByRole('columnheader', { name: /Nascimento/ })).toHaveAttribute('aria-sort', 'ascending')
+
+    await usuario.click(screen.getByRole('button', { name: /Nascimento/ }))
+    await waitFor(() => expect(listar).toHaveBeenLastCalledWith(expect.objectContaining({ ordenar: 'dataNascimento', direcao: 'desc' })))
+    expect(screen.getByRole('columnheader', { name: /Nascimento/ })).toHaveAttribute('aria-sort', 'descending')
+  })
+
+  test('deveBuscarPeloTextoDigitado', async () => {
+    const listar = vi.spyOn(api, 'listarPacientes').mockResolvedValue(pagina([]))
+    renderizarLista()
+    const usuario = userEvent.setup()
+
+    await usuario.type(screen.getByRole('searchbox', { name: 'Buscar por nome ou identificador' }), 'jose')
+    await usuario.click(screen.getByRole('button', { name: 'Buscar' }))
+
+    await waitFor(() => expect(listar).toHaveBeenLastCalledWith(expect.objectContaining({ busca: 'jose', pagina: 0 })))
+    expect(await screen.findByText('Nenhum paciente encontrado para "jose".')).toBeInTheDocument()
+  })
+
+  test('deveLerOrdenacaoEPaginaDaUrl', async () => {
+    const listar = vi.spyOn(api, 'listarPacientes').mockResolvedValue(pagina([MARIA]))
+    renderizarLista('/pacientes?ordenar=identificador&direcao=desc&pagina=2')
+
+    await waitFor(() =>
+      expect(listar).toHaveBeenCalledWith({ busca: '', ordenar: 'identificador', direcao: 'desc', pagina: 2 }),
+    )
+  })
+
+  test('deveSerAcessivelSemViolacoes', async () => {
+    vi.spyOn(api, 'listarPacientes').mockResolvedValue(pagina([MARIA]))
+    renderizarLista()
+    await screen.findByRole('table')
+
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+})
+
+describe('formulário de paciente', () => {
+  function renderizarForm(rota = '/pacientes/novo') {
+    return renderComRotas(
+      <Route element={<main><Outlet /></main>}>
+        <Route path="/pacientes" element={<p>lista</p>} />
+        <Route path="/pacientes/novo" element={<PacienteFormPage />} />
+        <Route path="/pacientes/:id" element={<PacienteFormPage />} />
+      </Route>,
+      rota,
+    )
+  }
+
+  async function preencher(usuario: ReturnType<typeof userEvent.setup>) {
+    await usuario.type(screen.getByLabelText('Nome'), 'Maria')
+    await usuario.type(screen.getByLabelText('Sobrenome'), 'Silva')
+    await usuario.type(screen.getByLabelText('Identificador interno'), 'A-001')
+    await usuario.type(screen.getByLabelText('Telefone'), '(31) 99999-0000')
+    await usuario.type(screen.getByLabelText('Data de nascimento'), '1980-05-10')
+  }
+
+  test('deveCriarPacienteSemEmailEVoltarParaALista', async () => {
+    const criar = vi.spyOn(api, 'criarPaciente').mockResolvedValue(MARIA)
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await preencher(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Cadastrar paciente' }))
+
+    await waitFor(() =>
+      expect(criar).toHaveBeenCalledWith({
+        nome: 'Maria',
+        sobrenome: 'Silva',
+        identificador: 'A-001',
+        telefone: '(31) 99999-0000',
+        email: null,
+        dataNascimento: '1980-05-10',
+      }),
+    )
+    expect(await screen.findByText('lista')).toBeInTheDocument()
+  })
+
+  test('deveMostrarErroDosCamposObrigatorios', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await usuario.click(screen.getByRole('button', { name: 'Cadastrar paciente' }))
+
+    expect(await screen.findByText('Informe o nome.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Nome')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Nome')).toHaveFocus()
+  })
+
+  test('deveRecusarNascimentoNoFuturo', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await preencher(usuario)
+    await usuario.clear(screen.getByLabelText('Data de nascimento'))
+    await usuario.type(screen.getByLabelText('Data de nascimento'), '2999-01-01')
+    await usuario.click(screen.getByRole('button', { name: 'Cadastrar paciente' }))
+
+    expect(await screen.findByText('A data de nascimento não pode estar no futuro.')).toBeInTheDocument()
+  })
+
+  test('deveMostrarNoCampoOIdentificadorRepetido', async () => {
+    const erro = Object.assign(new Error('409'), {
+      isAxiosError: true,
+      response: { status: 409, data: { detail: 'Você já tem um paciente com este identificador.' } },
+    })
+    vi.spyOn(api, 'criarPaciente').mockRejectedValue(erro)
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await preencher(usuario)
+    await usuario.click(screen.getByRole('button', { name: 'Cadastrar paciente' }))
+
+    expect(await screen.findAllByText('Você já tem um paciente com este identificador.')).not.toHaveLength(0)
+    expect(screen.getByLabelText('Identificador interno')).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  test('deveEditarEExcluirComConfirmacao', async () => {
+    vi.spyOn(api, 'buscarPaciente').mockResolvedValue(MARIA)
+    vi.spyOn(apiAvaliacao, 'listarAvaliacoes').mockResolvedValue([])
+    vi.spyOn(apiSessao, 'listarSessoes').mockResolvedValue([])
+    const excluir = vi.spyOn(api, 'excluirPaciente').mockResolvedValue()
+    renderizarForm('/pacientes/a1')
+    const usuario = userEvent.setup()
+
+    expect(await screen.findByDisplayValue('Maria')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Excluir paciente' }))
+    const dialogo = await screen.findByRole('dialog')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Excluir' }))
+
+    await waitFor(() => expect(excluir).toHaveBeenCalledWith('a1'))
+    expect(await screen.findByText('lista')).toBeInTheDocument()
+  })
+
+  test('deveSerAcessivelSemViolacoes', async () => {
+    renderizarForm()
+
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+})

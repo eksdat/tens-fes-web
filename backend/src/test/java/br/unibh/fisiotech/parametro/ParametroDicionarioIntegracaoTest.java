@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import br.unibh.fisiotech.TestcontainersConfiguration;
 
-/** Flyway carrega os 11 parâmetros do guia; a API devolve na ordem da tela, com busca. */
+/** Flyway carrega os 12 parâmetros do guia (o platô entra na V7); a API devolve na ordem da tela, com busca. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
@@ -35,7 +35,7 @@ class ParametroDicionarioIntegracaoTest {
     void deveListarOsParametrosDoGuia() throws Exception {
         mvc.perform(get("/api/v1/parametros").with(estudante()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(11)))
+                .andExpect(jsonPath("$", hasSize(12)))
                 .andExpect(jsonPath("$[0].grupo").value("AJUSTE_BASICO"))
                 .andExpect(jsonPath("$[0].unidadeExtenso").value("hertz"));
     }
