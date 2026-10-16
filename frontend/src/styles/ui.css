@@ -1358,10 +1358,42 @@ fieldset.tf-captcha {
   }
 }
 
-.tf-auth__acessibilidade {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--space-3) var(--space-4) 0;
+/* Botão flutuante no canto inferior direito, acima do conteúdo e abaixo do diálogo (z-index 50). */
+.tf-acessibilidade {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+  z-index: 30;
+  width: var(--target-min);
+  min-height: var(--target-min);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface-200);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+/* No app logado, no celular, a barra de abas ocupa a base da tela: o botão sobe acima dela. */
+.tf-menu .tf-acessibilidade {
+  bottom: calc(var(--target-min) + var(--space-3) + 2px + var(--space-3) + env(safe-area-inset-bottom));
+}
+
+/* Na tela de entrada, o cartão ganha folga na base para o botão nunca cobrir o último controle. */
+.tf-auth__conteudo {
+  padding-bottom: calc(var(--target-min) + var(--space-5) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 880px) {
+  .tf-acessibilidade,
+  .tf-menu .tf-acessibilidade {
+    right: var(--space-5);
+    bottom: var(--space-5);
+    width: 48px;
+    min-height: 48px;
+  }
+
+  .tf-auth__conteudo {
+    padding-bottom: var(--space-5);
+  }
 }
 
 .tf-ajustes {
