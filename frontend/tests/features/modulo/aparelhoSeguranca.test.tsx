@@ -182,6 +182,62 @@ test('deveManterOVideoSobreTensSoNoTens', () => {
   expect(screen.queryByRole('link', { name: /TENS na dor crônica/ })).not.toBeInTheDocument()
 })
 
+describe('lista textual dos controles', () => {
+  const item = (nome: RegExp) => screen.getByRole('button', { name: nome }).closest('li') as HTMLElement
+
+  test('deveMostrarNomeFuncaoUnidadeEValorAtualDeCadaControle', () => {
+    renderizar(TENS, '/tens/aparelho')
+
+    const itens = within(screen.getByRole('list', { name: 'Controles do aparelho' })).getAllByRole('listitem')
+    expect(itens).toHaveLength(14)
+    for (const li of itens) {
+      expect(within(li).getByText(/^Unidade: /)).toBeInTheDocument()
+      expect(within(li).getByText(/^Valor atual: /)).toBeInTheDocument()
+    }
+    expect(within(item(/Teclas UP e DOWN/)).getByText('Unidade: mA')).toBeInTheDocument()
+    expect(within(item(/Teclas UP e DOWN/)).getByText('Valor atual: Canal 1: 0 mA · Canal 2: 0 mA')).toBeInTheDocument()
+    expect(within(item(/Teclas SET/)).getByText('Valor atual: 80 Hz · 100 µs')).toBeInTheDocument()
+  })
+
+  test('deveAbrirAExplicacaoComEstadoEReferenciaDoManual', async () => {
+    renderizar(TENS, '/tens/aparelho')
+    const usuario = userEvent.setup()
+    const botao = screen.getByRole('button', { name: /Tecla START\/STOP/ })
+
+    await usuario.click(botao)
+
+    expect(botao).toHaveAttribute('aria-expanded', 'true')
+    const painel = document.getElementById(botao.getAttribute('aria-controls') as string) as HTMLElement
+    expect(within(painel).getByText('Estado: Simulação pausada')).toBeInTheDocument()
+    expect(within(painel).getByText(/Manual do Neurodyn \(M1\)/)).toBeInTheDocument()
+  })
+
+  test('deveDevolverOFocoAoControleAoFecharPeloBotaoDaExplicacao', async () => {
+    renderizar(TENS, '/tens/aparelho')
+    const usuario = userEvent.setup()
+    const botao = screen.getByRole('button', { name: /Tecla START\/STOP/ })
+
+    await usuario.click(botao)
+    await usuario.click(screen.getByRole('button', { name: 'Fechar explicação' }))
+
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    expect(botao).toHaveFocus()
+  })
+
+  test('deveDevolverOFocoAoControleAoFecharComEsc', async () => {
+    renderizar(TENS, '/tens/aparelho')
+    const usuario = userEvent.setup()
+    const botao = screen.getByRole('button', { name: /Display de parâmetros/ })
+
+    await usuario.click(botao)
+    await usuario.tab()
+    await usuario.keyboard('{Escape}')
+
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    expect(botao).toHaveFocus()
+  })
+})
+
 describe('painel interativo do aparelho', () => {
   test('deveDescreverOControleEscolhidoNaLista', async () => {
     renderizar(TENS, '/tens/aparelho')
@@ -189,7 +245,7 @@ describe('painel interativo do aparelho', () => {
 
     await usuario.click(screen.getByRole('button', { name: /Tecla START\/STOP/ }))
 
-    expect(screen.getByRole('button', { name: /Tecla START\/STOP/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /Tecla START\/STOP/ })).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText(/Controle 6: Tecla START\/STOP\. Inicia ou interrompe o tratamento\./)).toBeInTheDocument()
   })
 
@@ -199,7 +255,7 @@ describe('painel interativo do aparelho', () => {
 
     await usuario.click(document.querySelector('[data-controle="3"]') as HTMLElement)
 
-    expect(screen.getByRole('button', { name: /Display de parâmetros/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /Display de parâmetros/ })).toHaveAttribute('aria-expanded', 'true')
   })
 
   test('deveDesmarcarAoClicarDeNovo', async () => {
@@ -210,7 +266,7 @@ describe('painel interativo do aparelho', () => {
     await usuario.click(controle)
     await usuario.click(controle)
 
-    expect(controle).toHaveAttribute('aria-pressed', 'false')
+    expect(controle).toHaveAttribute('aria-expanded', 'false')
   })
 
   test('deveAvisarQueOsControlesDeNoveACatorzeFicamEmOutrasFaces', () => {

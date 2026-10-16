@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Alerta } from '../../shared/ui/Alerta'
 import { Botao } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
 import { CampoSelecao } from '../../shared/ui/CampoSelecao'
 import { IconeAtencao } from '../../shared/ui/Icones'
+import { useEstadoDoAparelho } from '../aparelho/useEstadoDoAparelho'
+import { mensagemDeAjuste } from '../aparelho/valores'
 import type { FaixaApi, Modalidade } from './api'
 import {
   cargaFaseMicroC,
@@ -73,25 +75,40 @@ export function SimuladorPage() {
   const modalidade: Modalidade = params.get('modalidade') === 'FES' ? 'FES' : 'TENS'
   const [textos, setTextos] = useState<Textos>(() => INICIAL[modalidade])
   const [ajustes, setAjustes] = useState<Partial<Record<CampoId, Mensagem[]>>>({})
+  const [anuncio, setAnuncio] = useState('')
+  const confirmados = useRef<Textos>(textos)
+  const { estado, atualizar } = useEstadoDoAparelho()
   const consulta = useFaixas(modalidade)
 
   const faixas = consulta.data ?? []
   const modos = modosSimulaveis(faixas)
   const pedido = params.get('modo') ?? ''
   const modo = modos.includes(pedido) ? pedido : modos.includes(MODO_PADRAO[modalidade]) ? MODO_PADRAO[modalidade] : (modos[0] ?? '')
+  const modoIndisponivel = !consulta.isPending && pedido !== '' && !modos.includes(pedido) && modos.length > 0
 
   function escolherModalidade(nova: Modalidade) {
     if (nova === modalidade) return
     setParams({ modalidade: nova, modo: MODO_PADRAO[nova] }, { replace: true })
     setTextos(INICIAL[nova])
+    confirmados.current = INICIAL[nova]
     setAjustes({})
+    setAnuncio('')
   }
 
   // Trocar de modo exige reiniciar a amplitude (guia, seção 13).
   function escolherModo(novo: string) {
     setParams({ modalidade, modo: novo }, { replace: true })
+    const zerados = (['intensidade1', 'intensidade2'] as const).filter((id) => (ler(textos[id]) ?? 0) !== 0)
     setTextos((atuais) => ({ ...atuais, intensidade1: '0', intensidade2: '0' }))
+    confirmados.current = { ...confirmados.current, intensidade1: '0', intensidade2: '0' }
     setAjustes({})
+    setAnuncio(zerados.map((id) => mensagemDeAjuste(id, 0, '')).join(' '))
+  }
+
+  function alternarSimulacao() {
+    const proximo = !estado.emExecucao
+    atualizar({ emExecucao: proximo })
+    setAnuncio(proximo ? 'Simulação iniciada.' : 'Simulação pausada.')
   }
 
   function mudar(id: CampoId, texto: string) {
@@ -99,11 +116,20 @@ export function SimuladorPage() {
     setAjustes((atuais) => ({ ...atuais, [id]: undefined }))
   }
 
+  /** Só anuncia o valor confirmado ao sair do campo, e só se mudou: anunciar a cada tecla seria ruído para o leitor de tela. */
+  function anunciarAjuste(id: CampoId, valor: number, extenso: string) {
+    const final = String(valor).replace('.', ',')
+    if (ler(confirmados.current[id]) === valor) return
+    confirmados.current = { ...confirmados.current, [id]: final }
+    setAnuncio(mensagemDeAjuste(id, valor, extenso))
+  }
+
   function travarNoAparelho(id: CampoId, parametro: string) {
     const valor = ler(textos[id])
     const faixa = faixasDo(faixas, modo, parametro)
     if (valor === null || !faixa.aparelho) return
     const limite = limitarAoAparelho(valor, faixa.aparelho)
+    anunciarAjuste(id, limite, faixa.extenso)
     if (limite === valor) return
     setTextos((atuais) => ({ ...atuais, [id]: String(limite).replace('.', ',') }))
     setAjustes((atuais) => ({
@@ -128,6 +154,14 @@ export function SimuladorPage() {
   const pulsoValido = (valores.frequencia ?? 0) > 0 && (valores.largura ?? 0) > 0 && (modalidade === 'TENS' || !!rampas)
   const fontes = [...new Set(faixas.filter((f) => f.modo === modo).map((f) => f.fonte))]
 
+  const frequenciaHz = valores.frequencia ?? 0
+  const larguraUs = valores.largura ?? 0
+  useEffect(() => {
+    atualizar({ modalidade, modo, frequenciaHz, larguraUs, intensidade1: intensidades[0], intensidade2: intensidades[1] })
+    // intensidades é um par novo a cada render; as duas posições estão na lista.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atualizar, modalidade, modo, frequenciaHz, larguraUs, intensidades[0], intensidades[1]])
+
   return (
     <div className="tf-pagina tf-pilha tf-simulador">
       <header className="tf-pilha">
@@ -137,11 +171,25 @@ export function SimuladorPage() {
       </header>
 
 
+      <output className="tf-sr-only" aria-label="Avisos do simulador">
+        {anuncio}
+      </output>
+
+      {modoIndisponivel && (
+        <Alerta titulo="Recurso não disponível neste modelo.">
+          O modo {pedido} não é simulado. O simulador abriu o modo {modo}.
+        </Alerta>
+      )}
+
       {consulta.isPending ? (
         <p className="tf-sub">Carregando as faixas do aparelho…</p>
       ) : consulta.isError ? (
         <Alerta intencao="perigo" titulo="Não foi possível carregar as faixas">
           Sem as faixas do aparelho o simulador não confere os valores. Tente de novo em instantes.
+        </Alerta>
+      ) : modos.length === 0 ? (
+        <Alerta titulo="Selecione o aparelho para consultar os limites.">
+          Sem as faixas de um aparelho o simulador não confere os valores.
         </Alerta>
       ) : (
         <div className="tf-simulador__corpo">
@@ -157,6 +205,9 @@ export function SimuladorPage() {
                 </Botao>
               ))}
             </fieldset>
+            <Botao variante="secundario" aria-pressed={estado.emExecucao} onClick={alternarSimulacao}>
+              {estado.emExecucao ? 'Pausar simulação' : 'Iniciar simulação'}
+            </Botao>
             <CampoSelecao
               rotulo="Modo"
               opcoes={modos.map((m) => ({ valor: m, rotulo: m }))}

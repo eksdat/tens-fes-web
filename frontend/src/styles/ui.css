@@ -2427,23 +2427,35 @@ fieldset.tf-captcha {
 .tf-controles {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: 1fr;
+  align-items: start;
   gap: var(--space-2) var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* O cartão é o item da lista: o botão fica no topo e a leitura (unidade, valor, estado) logo abaixo. */
+.tf-controles > li {
+  display: grid;
+  background: var(--surface-200);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.tf-controles > li:has(> .tf-controle[aria-expanded='true']) {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+
 .tf-controle {
   display: flex;
   align-items: flex-start;
-  height: 100%;
   gap: var(--space-3);
   width: 100%;
   min-height: var(--target-min);
   padding: var(--space-2) var(--space-3);
-  background: var(--surface-200);
-  border: 2px solid var(--line);
+  background: transparent;
+  border: 0;
   border-radius: var(--radius-md);
   color: var(--ink);
   font: inherit;
@@ -2453,11 +2465,6 @@ fieldset.tf-captcha {
 
 .tf-controle:hover {
   background: var(--brand-tint);
-}
-
-.tf-controle[aria-pressed='true'] {
-  border-color: var(--ink);
-  box-shadow: var(--shadow-card);
 }
 
 .tf-controle__numero {
@@ -2749,4 +2756,26 @@ fieldset.tf-captcha {
   to {
     transform: rotate(360deg);
   }
+}
+
+.tf-controle__leitura {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-1) calc(var(--space-3) * 2 + 32px);
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+}
+
+.tf-controle__explicacao {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding: var(--space-1) var(--space-3) var(--space-3) calc(var(--space-3) * 2 + 32px);
+}
+
+.tf-controle__explicacao .tf-controle__leitura {
+  padding: 0;
+}
+
+.tf-controle__explicacao[hidden] {
+  display: none;
 }

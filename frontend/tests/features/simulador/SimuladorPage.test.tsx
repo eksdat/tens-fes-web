@@ -6,6 +6,8 @@ import * as apiSimulador from '@/features/simulador/api'
 import type { FaixaApi } from '@/features/simulador/api'
 import { SimuladorPage } from '@/features/simulador/SimuladorPage'
 import { renderComRotas } from '../../renderComRotas'
+import { EstadoDoAparelhoProvider } from '@/features/aparelho/EstadoDoAparelhoProvider'
+import { useEstadoDoAparelho } from '@/features/aparelho/useEstadoDoAparelho'
 
 function faixa(modalidade: string, modo: string, parametro: string, unidade: string, extenso: string, origem: FaixaApi['origem'], minimo: number, maximo: number): FaixaApi {
   return { modalidade, modo, parametro, unidade, unidadeExtenso: extenso, origem, minimo, maximo, fonte: 'teste' }
@@ -199,4 +201,138 @@ test('deveSerAcessivelSemViolacoes', async () => {
   await screen.findByRole('textbox', { name: 'Frequência' })
 
   expect(await axe(document.body)).toHaveNoViolations()
+})
+
+function Lido() {
+  const { estado } = useEstadoDoAparelho()
+  return (
+    <p data-testid="estado-lido">
+      {estado.frequenciaHz} Hz · canal 1 {estado.intensidade1} mA · {estado.emExecucao ? 'executando' : 'parado'}
+    </p>
+  )
+}
+
+function renderizarComEstado(rota = '/simulador') {
+  return renderComRotas(
+    <Route
+      path="/simulador"
+      element={
+        <EstadoDoAparelhoProvider>
+          <main>
+            <SimuladorPage />
+            <Lido />
+          </main>
+        </EstadoDoAparelhoProvider>
+      }
+    />,
+    rota,
+  )
+}
+
+const anuncio = () => screen.getByRole('status', { name: 'Avisos do simulador' })
+
+describe('anúncio ao ajustar um controle', () => {
+  test('deveAnunciarOValorNovoDaFrequenciaAoConfirmar', async () => {
+    renderizar()
+    const usuario = userEvent.setup()
+    const frequencia = await screen.findByRole('textbox', { name: 'Frequência' })
+
+    await usuario.clear(frequencia)
+    await usuario.type(frequencia, '90')
+    expect(anuncio()).toHaveTextContent('')
+    await usuario.tab()
+
+    expect(anuncio()).toHaveTextContent('Frequência alterada para 90 hertz.')
+  })
+
+  test('deveAnunciarIntensidadeZeroComAFraseDoGuia', async () => {
+    renderizar()
+    const usuario = userEvent.setup()
+    const canal1 = await screen.findByRole('textbox', { name: 'Intensidade do canal 1' })
+
+    await usuario.clear(canal1)
+    await usuario.type(canal1, '12')
+    await usuario.tab()
+    expect(anuncio()).toHaveTextContent('Intensidade do canal 1 alterada para 12 miliampères.')
+
+    await usuario.clear(canal1)
+    await usuario.type(canal1, '0')
+    await usuario.tab()
+    expect(anuncio()).toHaveTextContent('Canal 1: intensidade zero.')
+  })
+
+  test('deveAnunciarOValorLimitadoNoAparelhoENaoOQueFoiDigitado', async () => {
+    renderizar()
+    const usuario = userEvent.setup()
+    const largura = await screen.findByRole('textbox', { name: 'Largura de pulso' })
+
+    await usuario.clear(largura)
+    await usuario.type(largura, '2000')
+    await usuario.tab()
+
+    expect(anuncio()).toHaveTextContent('Largura de pulso alterada para 150 microssegundos.')
+  })
+
+  test('deveFicarEmSilencioSeOValorNaoMudou', async () => {
+    renderizar()
+    const usuario = userEvent.setup()
+    const frequencia = await screen.findByRole('textbox', { name: 'Frequência' })
+
+    await usuario.click(frequencia)
+    await usuario.tab()
+
+    expect(anuncio()).toHaveTextContent('')
+  })
+
+  test('deveAnunciarAIntensidadeZeradaAoTrocarDeModo', async () => {
+    renderizar()
+    const usuario = userEvent.setup()
+    const canal1 = await screen.findByRole('textbox', { name: 'Intensidade do canal 1' })
+    await usuario.clear(canal1)
+    await usuario.type(canal1, '12')
+    await usuario.tab()
+
+    await usuario.selectOptions(screen.getByRole('combobox', { name: 'Modo' }), 'Acupuntura')
+
+    expect(anuncio()).toHaveTextContent('Canal 1: intensidade zero.')
+    expect(anuncio()).not.toHaveTextContent('Canal 2')
+  })
+
+  test('deveAnunciarSimulacaoPausada', async () => {
+    renderizarComEstado()
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Iniciar simulação' }))
+    expect(anuncio()).toHaveTextContent('Simulação iniciada.')
+    await usuario.click(screen.getByRole('button', { name: 'Pausar simulação' }))
+
+    expect(anuncio()).toHaveTextContent('Simulação pausada.')
+  })
+
+  test('deveAnunciarRecursoNaoDisponivelParaModoQueOSimuladorNaoTem', async () => {
+    renderizar('/simulador?modalidade=TENS&modo=Burst')
+
+    expect(await screen.findByText('Recurso não disponível neste modelo.')).toBeInTheDocument()
+  })
+
+  test('deveMandarSelecionarOAparelhoQuandoNaoHaLimites', async () => {
+    vi.spyOn(apiSimulador, 'buscarFaixas').mockResolvedValue([])
+    renderizar()
+
+    expect(await screen.findByText('Selecione o aparelho para consultar os limites.')).toBeInTheDocument()
+  })
+})
+
+describe('estado compartilhado com a lista do aparelho', () => {
+  test('devePublicarOsValoresAjustadosParaALista', async () => {
+    renderizarComEstado()
+    const usuario = userEvent.setup()
+    const frequencia = await screen.findByRole('textbox', { name: 'Frequência' })
+
+    await usuario.clear(frequencia)
+    await usuario.type(frequencia, '90')
+    await usuario.click(screen.getByRole('button', { name: 'Iniciar simulação' }))
+
+    expect(screen.getByTestId('estado-lido')).toHaveTextContent('90 Hz · canal 1 0 mA · executando')
+  })
 })
