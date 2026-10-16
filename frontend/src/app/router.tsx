@@ -13,6 +13,8 @@ import { TENS } from '../features/tens/conteudoTens'
 import { rotasDoModulo } from '../features/modulo/rotasDoModulo'
 import { InicioPage } from '../features/inicio/InicioPage'
 import { PerfilPage } from '../features/perfil/PerfilPage'
+import { PacienteFormPage } from '../features/pacientes/PacienteFormPage'
+import { PacientesPage } from '../features/pacientes/PacientesPage'
 import { EmConstrucao } from './EmConstrucao'
 import { LayoutLogado } from './LayoutLogado'
 import { RaizApp } from './RaizApp'
@@ -59,7 +61,14 @@ export const router = createBrowserRouter([
               rotasDoModulo(FES),
               emConstrucao('/criar-conteudo', 'Criar conteúdo'),
               { path: '/perfil', handle: { titulo: 'Meu perfil' }, element: <PerfilPage /> },
-              { element: <ProtectedRoute perfil="PROFISSIONAL" />, children: [emConstrucao('/pacientes', 'Pacientes')] },
+              {
+                element: <ProtectedRoute perfil="PROFISSIONAL" />,
+                children: [
+                  { path: '/pacientes', handle: { titulo: 'Pacientes' }, element: <PacientesPage /> },
+                  { path: '/pacientes/novo', handle: { titulo: 'Novo paciente' }, element: <PacienteFormPage /> },
+                  { path: '/pacientes/:id', handle: { titulo: 'Paciente' }, element: <PacienteFormPage /> },
+                ],
+              },
             ],
           },
         ],

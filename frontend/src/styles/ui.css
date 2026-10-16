@@ -2332,3 +2332,112 @@ fieldset.tf-captcha {
   border: 2px solid var(--brand);
   border-radius: var(--radius-md);
 }
+
+/* =========================================================
+ * Pacientes: lista ordenável e formulário
+ * ========================================================= */
+
+.tf-pacientes__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.tf-pacientes__busca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.tf-pacientes__busca .tf-field {
+  flex: 1 1 260px;
+}
+
+.tf-pacientes__vazio {
+  display: block;
+}
+
+.tf-tabela__rolagem {
+  overflow-x: auto;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  background: var(--surface-200);
+}
+
+.tf-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tf-tabela th,
+.tf-tabela td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line-strong);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tf-tabela tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tf-tabela th {
+  padding: 0;
+}
+
+.tf-tabela__ordenar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tf-tabela__ordenar:hover {
+  background: var(--brand-tint);
+}
+
+.tf-tabela__seta {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+}
+
+.tf-tabela__mono {
+  font-family: var(--font-mono);
+}
+
+.tf-paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.tf-form-grade {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 720px) {
+  .tf-form-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tf-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
