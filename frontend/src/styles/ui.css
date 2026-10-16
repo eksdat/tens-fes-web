@@ -229,6 +229,17 @@
   color: var(--ink);
 }
 
+/* O campo de data nativo tem altura e espaçamento próprios: ficava mais alto que os outros campos. */
+.tf-input[type='date'],
+.tf-input[type='datetime-local'] {
+  min-height: 44px;
+  padding-block: 0;
+}
+
+.tf-input::-webkit-datetime-edit {
+  padding: 0;
+}
+
 .tf-input:focus {
   outline: none;
 }
@@ -280,12 +291,6 @@
 .tf-simulador__corpo {
   display: grid;
   gap: var(--space-5);
-}
-
-.tf-simulador__modalidade {
-  margin: 0;
-  padding: 0;
-  border: 0;
 }
 
 .tf-simulador__campos {
@@ -2152,7 +2157,9 @@ fieldset.tf-captcha {
   box-shadow: 0 0 0 3px var(--ink);
 }
 
-.tf-regioes {
+/* Grupo de botões de alternância lado a lado (regiões do atlas, modalidade do simulador); o escolhido fica escuro. */
+.tf-regioes,
+.tf-grupo-botoes {
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -2162,7 +2169,8 @@ fieldset.tf-captcha {
   gap: var(--space-3);
 }
 
-.tf-regioes .tf-btn[aria-pressed='true'] {
+.tf-regioes .tf-btn[aria-pressed='true'],
+.tf-grupo-botoes .tf-btn[aria-pressed='true'] {
   background: var(--ink);
   color: var(--surface-100);
 }
@@ -2661,8 +2669,10 @@ fieldset.tf-captcha {
   gap: var(--space-3);
 }
 
+/* align-items: start: sem isso o campo ao lado de um com dica estica e o rótulo desce. */
 .tf-form-grade {
   display: grid;
+  align-items: start;
   gap: var(--space-4);
 }
 

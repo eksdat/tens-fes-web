@@ -149,7 +149,7 @@ export function SimuladorPage() {
             <h2 id="titulo-ajustes" className="tf-subtitulo">
               Ajustes
             </h2>
-            <fieldset className="tf-linha tf-simulador__modalidade">
+            <fieldset className="tf-grupo-botoes">
               <legend className="tf-sr-only">Modalidade</legend>
               {(['TENS', 'FES'] as const).map((m) => (
                 <Botao key={m} variante="secundario" aria-pressed={modalidade === m} onClick={() => escolherModalidade(m)}>

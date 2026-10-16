@@ -275,6 +275,7 @@ Em `src/shared/ui`, com testes de acessibilidade em `tests/shared/ui/ui.test.tsx
 | `Campo` | `rotulo`, `dica`, `erro`, `complemento` | Liga rótulo, dica e erro por `aria-describedby`; `aria-invalid` no erro |
 | `CampoSenha` | as do `Campo` | Botão "Mostrar/Ocultar" com `aria-pressed` |
 | `CampoSelecao` | `rotulo`, `opcoes`, `placeholder`, `dica`, `erro` | `<select>` nativo estilizado |
+| `CampoTextoLongo` | as do `Campo`, mais `rows` | `<textarea>` com o mesmo contrato do `Campo` (rótulo, dica e erro ligados) |
 | `ErroDeCampo` | `id` | Mensagem com ícone, palavra "Erro" e `role="alert"` |
 | `EtapaProgresso` | `atual`, `total`, `titulo` | "Etapa 1 de 2 · Seus dados" com barras de progresso |
 | `AuthLayout` | `kicker`, `titulo`, `texto`, `faixa`, `voltarPara` ou `aoVoltar` | Layout das telas de autenticação (seção 6) |
@@ -298,6 +299,13 @@ Padrões que nasceram nas features (em `src/features`):
 | Aceite dos termos | `auth/CampoAceiteTermos` | Caixa de seleção com links que abrem em outra aba para não perder o formulário |
 | Cartões de opção | `auth/PerfilCampos` | Botões de rádio em cartões (Estudante ou Profissional) com descrição |
 | Documento longo | `termos/DocumentoLegal` | Termos e Privacidade: título, aviso "Versão preliminar", seções numeradas |
+| Grupo de botões de alternância | `.tf-grupo-botoes` (`atlas`: `.tf-regioes`) | `fieldset` com legenda (pode ser `tf-sr-only`) e `Botao variante="secundario"` com `aria-pressed`, **lado a lado, alinhados à esquerda**, com `space-3` entre eles. O escolhido fica com fundo `ink`. Use para escolher uma opção entre poucas (modalidade TENS/FES, região do atlas). Nunca espalhe os botões com `justify-content: space-between` |
+| Grade de formulário | `.tf-form-grade` | Uma coluna no celular, duas a partir de 720 px, `align-items: start`: o campo ao lado de um com dica não estica |
+| Campo com unidade | `Campo` + `complemento=<span className="tf-control__unidade" aria-hidden>` | Unidade fixa colada ao campo (Hz, µs, mA, min); a unidade por extenso vai no rótulo ("Frequência, em hertz") |
+| Tabela ordenável | `.tf-tabela` em `.tf-tabela__rolagem` | Cabeçalho é botão dentro do `th` com `aria-sort` e seta; o segundo clique inverte; `caption` (pode ser `tf-sr-only`) diz a ordem atual |
+| Estado de três valores | `.tf-estado` | "Não avaliado / Ausente / Presente" em rádios, começando em "Não avaliado" |
+| Checklist de segurança | `seguranca/ChecklistSeguranca` | Antes, Durante e Depois em `fieldset`; controlado (`marcados`, `aoAlternar`) quando precisa salvar |
+| Aviso de dados fictícios | `pacientes/AvisoDadosFicticios` | `Alerta` de atenção "Ambiente acadêmico: use apenas dados fictícios." em toda tela de paciente, avaliação e sessão |
 
 Exemplo de formulário com os componentes do app:
 
@@ -320,6 +328,7 @@ Exemplo de formulário com os componentes do app:
 | até 719 px | Uma coluna; cartão sem borda nem sombra, ocupando a largura; painel verde reduzido a uma **faixa** no topo (login) ou só cabeçalho com marca e "Voltar" |
 | a partir de 720 px | Cartão com borda de 2 px e sombra rígida |
 | a partir de 880 px | **Duas colunas**: painel verde à esquerda (título de destaque e texto) e o cartão à direita |
+| a partir de 1024 px | Telas do app logado (`.tf-pagina`) vão até **1200 px** de largura, com margem `space-7`/`space-6`. Termos e Privacidade (`.tf-documento`) ficam em 720 px, medida de leitura |
 
 Regras do layout de autenticação (`AuthLayout`):
 
@@ -470,5 +479,8 @@ Estrutura mínima de uma tela de autenticação:
 | Título repetido no leitor de tela | O painel verde também tem título grande | O `h1` é só o do cartão; o título do painel é decorativo |
 | Cópia dos tokens gerados do design system | O `tokens.css` de origem está desatualizado | Copie os valores do `src/styles/tokens.css` do app |
 | Dois botões primários na mesma tela | Ação principal não definida | Um `primario` por contexto; o resto é `secundario` ou `ghost` |
+| Campo desalinhado na grade | Item de grid estica até a altura da linha e o rótulo desce | `.tf-form-grade` usa `align-items: start` |
+| Campo de data mais alto que os outros | O `input type=date` nativo tem altura e espaçamento próprios | `.tf-input[type=date]` com `min-height: 44px` e `padding-block: 0` |
+| Botões de opção espalhados na largura | `tf-linha` usa `space-between` | Para opções, use `.tf-grupo-botoes` |
 
 Veja também: `../../README.md` (arquitetura, autenticação e testes) e `../../../SEGURANCA.md`.
