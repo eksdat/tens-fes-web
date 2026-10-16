@@ -3,9 +3,16 @@ import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { OndaFes, OndaTens } from '../../shared/ui/Icones'
 import { CorpoEsquematico } from './CorpoEsquematico'
 import { DesenhoRegiao } from './DesenhoRegiao'
-import { CREDITO_DA_ILUSTRACAO, FIGURAS, MONTAGENS, NOTAS_DO_ATLAS, type Modalidade, type Montagem } from './montagens'
+import { CREDITO_DA_ILUSTRACAO, FIGURAS, MONTAGENS, NOTAS_DO_ATLAS, type Lado, type Modalidade, type Montagem } from './montagens'
 
 type Vista = 'todas' | 'anterior' | 'posterior'
+
+const ROTULO_LADO: Record<Lado, string> = {
+  esquerdo: 'Esquerdo',
+  direito: 'Direito',
+  bilateral: 'Bilateral (um par de cada lado)',
+  central: 'Central',
+}
 
 const MODALIDADES: { valor: Modalidade | 'todas'; rotulo: string }[] = [
   { valor: 'todas', rotulo: 'Todos' },
@@ -204,6 +211,13 @@ function DetalheDaRegiao({ montagem }: { montagem: Montagem }) {
       </section>
 
       <dl className="tf-dados">
+        <dt>Lado</dt>
+        <dd>{ROTULO_LADO[montagem.lado]}</dd>
+        <dt>Eletrodos</dt>
+        <dd>
+          {montagem.caracteristicasEletrodos.tipo}, {montagem.caracteristicasEletrodos.larguraCm} cm ×{' '}
+          {montagem.caracteristicasEletrodos.alturaCm} cm
+        </dd>
         <dt>Objetivo</dt>
         <dd>{montagem.objetivo}</dd>
         <dt>Marcos</dt>
