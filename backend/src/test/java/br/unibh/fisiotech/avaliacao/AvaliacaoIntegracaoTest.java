@@ -38,7 +38,7 @@ import br.unibh.fisiotech.TestcontainersConfiguration;
 class AvaliacaoIntegracaoTest {
 
     private static final String COMPLETA = """
-            {"dataAvaliacao":"2026-10-10","queixa":"Dor no joelho esquerdo ao subir escada.",
+            {"queixa":"Dor no joelho","objetivo":"Comparar a dor","dataAvaliacao":"2026-10-10","queixa":"Dor no joelho esquerdo ao subir escada.",
              "historico":"Sem cirurgias.","dorEscala":6,"dorContexto":"Subir escada","dorTarefa":"Subir 10 degraus",
              "dorMomento":"Antes da sessão","objetivo":"Comparar dor na mesma tarefa.","plano":"TENS convencional.",
              "triagem":{"GESTACAO":"AUSENTE","DISPOSITIVO_IMPLANTADO":"AUSENTE"},
@@ -94,7 +94,7 @@ class AvaliacaoIntegracaoTest {
     @Test
     void deveGravarAchadoSemEstadoComoNaoAvaliado() throws Exception {
         criar(profissionalA, pacienteDeA, """
-                {"dataAvaliacao":"2026-10-10","achados":[{"bloco":"FUNCAO_MOTORA","descricao":"Força de quadríceps",
+                {"queixa":"Dor no joelho","objetivo":"Comparar a dor","dataAvaliacao":"2026-10-10","achados":[{"bloco":"FUNCAO_MOTORA","descricao":"Força de quadríceps",
                   "lado":"DIREITO","regiao":"Coxa","metodo":"Teste manual"}]}
                 """).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.achados[0].estado").value("NAO_AVALIADO"));
@@ -102,7 +102,7 @@ class AvaliacaoIntegracaoTest {
 
     @Test
     void deveDeixarDorNaoInformadaNulaENuncaZero() throws Exception {
-        criar(profissionalA, pacienteDeA, "{\"dataAvaliacao\":\"2026-10-10\"}")
+        criar(profissionalA, pacienteDeA, "{\"queixa\":\"Dor\",\"objetivo\":\"Comparar\",\"dataAvaliacao\":\"2026-10-10\"}")
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.dorEscala").value(nullValue()));
     }
@@ -110,21 +110,49 @@ class AvaliacaoIntegracaoTest {
     @Test
     void deveExigirLadoRegiaoEMetodoEmCadaAchado() throws Exception {
         criar(profissionalA, pacienteDeA, """
-                {"dataAvaliacao":"2026-10-10","achados":[{"bloco":"FUNCAO_MOTORA","descricao":"Força"}]}
+                {"queixa":"Dor no joelho","objetivo":"Comparar a dor","dataAvaliacao":"2026-10-10","achados":[{"bloco":"FUNCAO_MOTORA","descricao":"Força"}]}
                 """).andExpect(status().isBadRequest());
     }
 
     @Test
+    void deveExigirQueixaEObjetivo() throws Exception {
+        criar(profissionalA, pacienteDeA, "{\"dataAvaliacao\":\"2026-10-10\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.queixa").exists())
+                .andExpect(jsonPath("$.erros.objetivo").exists());
+    }
+
+    @Test
+    void deveExigirTarefaEMomentoQuandoADorFoiInformada() throws Exception {
+        criar(profissionalA, pacienteDeA, COMPLETA.replace("\"dorTarefa\":\"Subir 10 degraus\",", ""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.dorComTarefaEMomento").exists());
+    }
+
+    @Test
+    void deveRecusarDataAntesDoNascimentoDoPaciente() throws Exception {
+        criar(profissionalA, pacienteDeA, COMPLETA.replace("2026-10-10", "1979-01-01"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.dataAvaliacao").value("A avaliação não pode ser antes do nascimento do paciente."));
+    }
+
+    @Test
+    void deveRecusarDataAntesDe1900() throws Exception {
+        criar(profissionalA, pacienteDeA, COMPLETA.replace("2026-10-10", "1850-01-01"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void deveRecusarDorForaDeZeroADez() throws Exception {
-        criar(profissionalA, pacienteDeA, "{\"dataAvaliacao\":\"2026-10-10\",\"dorEscala\":11}")
+        criar(profissionalA, pacienteDeA, "{\"queixa\":\"Dor\",\"objetivo\":\"Comparar\",\"dataAvaliacao\":\"2026-10-10\",\"dorEscala\":11}")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erros.dorEscala").exists());
     }
 
     @Test
     void deveListarVariasAvaliacoesDaMaisRecenteParaAMaisAntiga() throws Exception {
-        criar(profissionalA, pacienteDeA, "{\"dataAvaliacao\":\"2026-09-01\"}");
-        criar(profissionalA, pacienteDeA, "{\"dataAvaliacao\":\"2026-10-01\"}");
+        criar(profissionalA, pacienteDeA, "{\"queixa\":\"Dor\",\"objetivo\":\"Comparar\",\"dataAvaliacao\":\"2026-09-01\"}");
+        criar(profissionalA, pacienteDeA, "{\"queixa\":\"Dor\",\"objetivo\":\"Comparar\",\"dataAvaliacao\":\"2026-10-01\"}");
 
         listar(profissionalA, pacienteDeA, "")
                 .andExpect(jsonPath("$", hasSize(2)))

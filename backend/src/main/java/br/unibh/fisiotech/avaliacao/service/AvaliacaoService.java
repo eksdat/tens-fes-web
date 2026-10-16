@@ -19,6 +19,8 @@ import br.unibh.fisiotech.avaliacao.enums.EstadoAchado;
 import br.unibh.fisiotech.avaliacao.enums.ItemTriagem;
 import br.unibh.fisiotech.avaliacao.repository.AvaliacaoRepository;
 import br.unibh.fisiotech.paciente.service.PacienteService;
+import br.unibh.fisiotech.paciente.entity.Paciente;
+import br.unibh.fisiotech.shared.exception.DadoInvalidoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
 
 @Service
@@ -43,7 +45,7 @@ public class AvaliacaoService {
 
     @Transactional
     public AvaliacaoResponse criar(UUID pacienteId, UUID responsavelId, AvaliacaoRequest req) {
-        pacientes.buscarDoResponsavel(pacienteId, responsavelId);
+        conferirData(pacientes.buscarDoResponsavel(pacienteId, responsavelId), req);
         var avaliacao = new Avaliacao(pacienteId);
         preencher(avaliacao, req);
         return AvaliacaoResponse.de(repository.saveAndFlush(avaliacao));
@@ -52,6 +54,7 @@ public class AvaliacaoService {
     @Transactional
     public AvaliacaoResponse atualizar(UUID pacienteId, UUID avaliacaoId, UUID responsavelId, AvaliacaoRequest req) {
         var avaliacao = buscarDoResponsavel(pacienteId, avaliacaoId, responsavelId);
+        conferirData(pacientes.buscarDoResponsavel(pacienteId, responsavelId), req);
         preencher(avaliacao, req);
         return AvaliacaoResponse.de(repository.saveAndFlush(avaliacao));
     }
@@ -60,6 +63,12 @@ public class AvaliacaoService {
         pacientes.buscarDoResponsavel(pacienteId, responsavelId);
         return repository.findByIdAndPacienteId(avaliacaoId, pacienteId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Avaliação não encontrada."));
+    }
+
+    private static void conferirData(Paciente paciente, AvaliacaoRequest req) {
+        if (req.dataAvaliacao().isBefore(paciente.getDataNascimento())) {
+            throw new DadoInvalidoException("dataAvaliacao", "A avaliação não pode ser antes do nascimento do paciente.");
+        }
     }
 
     private static void preencher(Avaliacao a, AvaliacaoRequest req) {

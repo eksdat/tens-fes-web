@@ -6,6 +6,7 @@ import { renderComRotas } from '../../renderComRotas'
 import { AvaliacaoFormPage } from '@/features/avaliacao/AvaliacaoFormPage'
 import { AvaliacoesDoPaciente } from '@/features/avaliacao/AvaliacoesDoPaciente'
 import * as api from '@/features/avaliacao/api'
+import * as apiPacientes from '@/features/pacientes/api'
 
 const AVALIACAO: api.Avaliacao = {
   id: 'av1',
@@ -45,7 +46,27 @@ function renderizarForm(rota = '/pacientes/p1/avaliacoes/nova') {
   )
 }
 
-beforeEach(() => vi.restoreAllMocks())
+beforeEach(() => {
+  vi.restoreAllMocks()
+  vi.spyOn(apiPacientes, 'buscarPaciente').mockResolvedValue({
+    id: 'p1',
+    nome: 'Maria',
+    sobrenome: 'Silva',
+    identificador: 'A-1',
+    email: null,
+    dataNascimento: '1980-05-10',
+    criadoEm: '2026-10-01T10:00:00Z',
+    criadoPor: 'u1',
+    alteradoEm: '2026-10-01T10:00:00Z',
+    alteradoPor: 'u1',
+  })
+})
+
+async function preencherMinimo(usuario: ReturnType<typeof userEvent.setup>) {
+  await usuario.type(screen.getByLabelText('Data da avaliação'), '2026-10-10')
+  await usuario.type(screen.getByLabelText('Descreva a queixa'), 'Dor no joelho')
+  await usuario.type(screen.getByLabelText('Objetivo mensurável'), 'Comparar a dor na mesma tarefa')
+}
 
 describe('formulário de avaliação', () => {
   test('deveTerOsSeteBlocosDoGuia', () => {
@@ -69,7 +90,7 @@ describe('formulário de avaliação', () => {
     renderizarForm()
     const usuario = userEvent.setup()
 
-    await usuario.type(screen.getByLabelText('Data da avaliação'), '2026-10-10')
+    await preencherMinimo(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Salvar avaliação' }))
 
     await waitFor(() => expect(criar).toHaveBeenCalled())
@@ -107,6 +128,64 @@ describe('formulário de avaliação', () => {
 
     expect(await screen.findByDisplayValue('Dor no joelho')).toBeInTheDocument()
     expect(within(screen.getByRole('group', { name: 'Dispositivo eletrônico implantado' })).getByRole('radio', { name: 'Ausente' })).toBeChecked()
+  })
+
+  test('deveExigirQueixaEObjetivo', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await usuario.type(screen.getByLabelText('Data da avaliação'), '2026-10-10')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar avaliação' }))
+
+    expect(await screen.findByText('Descreva a queixa.')).toBeInTheDocument()
+    expect(screen.getByText('Informe o objetivo mensurável.')).toBeInTheDocument()
+  })
+
+  test('deveAceitarSoDigitosNaDorComNoMaximoDoisCaracteres', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+    const dor = screen.getByLabelText(/Dor de 0 a 10/)
+
+    await usuario.type(dor, 'x7a')
+    expect(dor).toHaveValue('7')
+    await usuario.clear(dor)
+    await usuario.type(dor, '105')
+    expect(dor).toHaveValue('10')
+  })
+
+  test('deveExigirTarefaEMomentoQuandoADorFoiInformada', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await preencherMinimo(usuario)
+    await usuario.type(screen.getByLabelText(/Dor de 0 a 10/), '6')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar avaliação' }))
+
+    expect(await screen.findByText('Com a dor informada, registre a tarefa.')).toBeInTheDocument()
+    expect(screen.getByText('Com a dor informada, registre o momento.')).toBeInTheDocument()
+  })
+
+  test('deveRecusarDataAntesDoNascimentoDoPaciente', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await preencherMinimo(usuario)
+    await usuario.clear(screen.getByLabelText('Data da avaliação'))
+    await usuario.type(screen.getByLabelText('Data da avaliação'), '1979-01-01')
+    await usuario.click(screen.getByRole('button', { name: 'Salvar avaliação' }))
+
+    expect(await screen.findByText('A avaliação não pode ser antes do nascimento do paciente.')).toBeInTheDocument()
+  })
+
+  test('deveMostrarExemploNosCampos', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    expect(screen.getByLabelText(/Dor de 0 a 10/)).toHaveAttribute('placeholder', '0 a 10')
+    expect(screen.getByLabelText('Tarefa')).toHaveAttribute('placeholder', 'Subir 10 degraus')
+    await usuario.click(screen.getByRole('button', { name: 'Adicionar achado de pele e sensibilidade' }))
+    expect(screen.getByLabelText('Região')).toHaveAttribute('placeholder', 'Joelho')
+    expect(screen.getByLabelText('Método')).toHaveAttribute('placeholder', 'Inspeção')
   })
 
   test('deveSerAcessivelSemViolacoes', async () => {
