@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import br.unibh.fisiotech.TestcontainersConfiguration;
 import br.unibh.fisiotech.conteudo.entity.Conteudo;
+import br.unibh.fisiotech.conteudo.enums.Bloco;
 import br.unibh.fisiotech.conteudo.enums.EstadoEditorial;
 import br.unibh.fisiotech.conteudo.enums.Modalidade;
 import br.unibh.fisiotech.conteudo.enums.Secao;
@@ -73,6 +74,40 @@ class ConteudoIntegracaoTest {
 
         mvc.perform(get("/api/v1/conteudos/{id}", salvo.getId()).with(estudante()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveDistribuirAVisaoGeralDeTensEFesNosCincoBlocos() {
+        for (var modalidade : new Modalidade[] { Modalidade.TENS, Modalidade.FES }) {
+            assertThat(repository.findByModalidadeAndSecaoAndBlocoIsNotNull(modalidade, Secao.VISAO_GERAL))
+                    .extracting(Conteudo::getBloco)
+                    .containsExactlyInAnyOrder(Bloco.values());
+        }
+    }
+
+    @Test
+    void deveManterAPaginaFechadaEnquantoOGuiaEstaEmRevisao() throws Exception {
+        mvc.perform(get("/api/v1/conteudos/pagina").param("modalidade", "TENS").param("secao", "VISAO_GERAL")
+                .with(estudante()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.liberada").value(false))
+                .andExpect(jsonPath("$.blocos", hasSize(0)));
+    }
+
+    @Test
+    void deveLiberarAPaginaQuandoOsCincoBlocosForemAprovados() throws Exception {
+        for (var bloco : Bloco.values()) {
+            repository.save(new Conteudo(bloco.name(), Modalidade.NMES, Secao.VISAO_GERAL, bloco, "texto", "[R3]",
+                    EstadoEditorial.APROVADO, LocalDate.of(2026, 10, 1)));
+        }
+
+        mvc.perform(get("/api/v1/conteudos/pagina").param("modalidade", "NMES").param("secao", "VISAO_GERAL")
+                .with(estudante()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.liberada").value(true))
+                .andExpect(jsonPath("$.blocos", hasSize(5)))
+                .andExpect(jsonPath("$.blocos[0].bloco").value("O_QUE_E"))
+                .andExpect(jsonPath("$.blocos[4].bloco").value("CUIDADOS"));
     }
 
     private static RequestPostProcessor estudante() {

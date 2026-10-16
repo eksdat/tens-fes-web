@@ -6,6 +6,8 @@ import { FES } from '@/features/fes/conteudoFes'
 import { rotasDoModulo } from '@/features/modulo/rotasDoModulo'
 import { TENS } from '@/features/tens/conteudoTens'
 
+vi.mock('@/features/modulo/usePaginaTecnica', () => import('./paginaTecnicaFalsa'))
+
 function renderizar(modulo: typeof TENS, rota: string) {
   const roteador = createMemoryRouter([{ element: <main><Outlet /></main>, children: [rotasDoModulo(modulo)] }], {
     initialEntries: [rota],

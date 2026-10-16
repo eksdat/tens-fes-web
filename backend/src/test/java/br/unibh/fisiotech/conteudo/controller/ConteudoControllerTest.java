@@ -22,7 +22,10 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import br.unibh.fisiotech.config.SecurityConfig;
 
+import br.unibh.fisiotech.conteudo.dto.BlocoResponse;
 import br.unibh.fisiotech.conteudo.dto.ConteudoResponse;
+import br.unibh.fisiotech.conteudo.dto.PaginaTecnicaResponse;
+import br.unibh.fisiotech.conteudo.enums.Bloco;
 import br.unibh.fisiotech.conteudo.enums.Modalidade;
 import br.unibh.fisiotech.conteudo.enums.Secao;
 import br.unibh.fisiotech.conteudo.service.ConteudoService;
@@ -98,6 +101,28 @@ class ConteudoControllerTest {
     @Test
     void deveResponder400ComIdInvalido() throws Exception {
         mvc.perform(get("/api/v1/conteudos/{id}", "abc").with(estudante()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deveDevolverAPaginaTecnicaPorModalidadeESecao() throws Exception {
+        when(service.paginaTecnica(Modalidade.TENS, Secao.VISAO_GERAL)).thenReturn(new PaginaTecnicaResponse(
+                Modalidade.TENS, Secao.VISAO_GERAL, true,
+                List.of(new BlocoResponse(Bloco.O_QUE_E, "O que é TENS", "texto", "[R1]")), List.of("[R1]"),
+                LocalDate.of(2026, 10, 1)));
+
+        mvc.perform(get("/api/v1/conteudos/pagina").param("modalidade", "TENS").param("secao", "VISAO_GERAL")
+                .with(estudante()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.liberada").value(true))
+                .andExpect(jsonPath("$.blocos[0].bloco").value("O_QUE_E"))
+                .andExpect(jsonPath("$.dataRevisao").value("2026-10-01"));
+    }
+
+    @Test
+    void deveResponder400ComSecaoInvalidaNaPagina() throws Exception {
+        mvc.perform(get("/api/v1/conteudos/pagina").param("modalidade", "TENS").param("secao", "XYZ")
+                .with(estudante()))
                 .andExpect(status().isBadRequest());
     }
 

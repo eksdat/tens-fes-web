@@ -16,46 +16,6 @@ export const FES: Modulo = {
   introducao:
     'Conteúdo organizado em torno do movimento e da função. A nomenclatura e os recursos devem corresponder ao manual do modelo.',
   visaoGeral: {
-    secoes: [
-      {
-        titulo: 'O que é FES',
-        paragrafos: [
-          'FES significa estimulação elétrica funcional. A estimulação produz ativação muscular coordenada com uma tarefa, como elevar o antepé na marcha ou abrir a mão para soltar um objeto.',
-        ],
-      },
-      {
-        titulo: 'NMES e FES',
-        paragrafos: [
-          'NMES (EENM), estimulação elétrica neuromuscular: procura produzir contração para objetivos como ativação e treino muscular. Exemplo: contrações do quadríceps em exercício isolado.',
-          'FES (EEF): uso funcional da estimulação neuromuscular, organizado no tempo da atividade. Exemplo: estimulação dos dorsiflexores coordenada à fase de balanço da marcha.',
-        ],
-      },
-      {
-        titulo: 'O “FES” do aparelho',
-        paragrafos: [
-          'No aparelho, “FES” pode ser só o nome comercial de um programa muscular. No Neurodyn Portable TENS/FES, por exemplo, FES Sinc e FES Rec são modos de corrente (síncrono e recíproco nos canais 1 e 2; manual, cap. 8.2.5). O nome do modo não garante sincronização com uma tarefa: isso depende de coordenar a estimulação ao tempo da atividade.',
-          'A revisão de Nussbaum et al. (R3) aborda NMES em diferentes condições; os protocolos não devem ser transferidos indiscriminadamente entre populações.',
-        ],
-      },
-      {
-        titulo: 'Alvos funcionais',
-        paragrafos: [
-          'Dorsiflexão: elevação do antepé.',
-          'Extensão de joelho: endireitamento do joelho.',
-          'Extensão do punho e dos dedos: movimento de abrir ou posicionar a mão.',
-          'Descreva a tarefa com início, término, assistência e resposta.',
-        ],
-      },
-      {
-        titulo: 'Limites que mudam a decisão',
-        paragrafos: [
-          'A estimulação usual de superfície depende de via motora periférica responsiva.',
-          'Fraqueza por lesão central e desnervação periférica não são equivalentes.',
-          'A ausência de contração não autoriza aumentar a corrente indefinidamente.',
-          'Na marcha, sistemas dedicados podem usar sensores e temporização própria (R3, R5).',
-        ],
-      },
-    ],
     perguntas: [
       {
         pergunta: 'FES e NMES são a mesma coisa?',
