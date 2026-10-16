@@ -65,7 +65,6 @@ test('deveMostrarMensagemObrigatoriaEFormularioParaEstudante', () => {
   expect(screen.getByLabelText('UF do registro')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Salvar registro profissional' })).toBeInTheDocument()
 
-  // Critério 5: Não mostra selo de profissional verificado
   expect(screen.queryByText(/verificado/i)).not.toBeInTheDocument()
 })
 
@@ -136,13 +135,11 @@ test('deveMostrarDadosDoProfissionalSemFormularioNemSeloDeVerificado', () => {
   expect(screen.getByText('654321-F / MG')).toBeInTheDocument()
   expect(screen.getByText(/UFMG \(10º período\)/)).toBeInTheDocument()
 
-  // Não exibe formulário de transição nem texto de estudante formado
   expect(
     screen.queryByText('Após a formação, atualize seu perfil e informe seu registro profissional.'),
   ).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Salvar registro profissional' })).not.toBeInTheDocument()
 
-  // Critério 5: Não exibe selo de profissional verificado
   expect(screen.queryByText(/verificado/i)).not.toBeInTheDocument()
 })
 

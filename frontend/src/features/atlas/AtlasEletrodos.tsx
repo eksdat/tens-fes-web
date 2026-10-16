@@ -29,7 +29,6 @@ const VISTAS: { valor: Vista; rotulo: string }[] = [
 const vistaDe = (m: Montagem): Exclude<Vista, 'todas'> => (m.ponto.figura === 'frente' ? 'anterior' : 'posterior')
 
 type Props = {
-  /** Modalidade que abre selecionada. */
   modalidade: Modalidade
   /** Rota da aba Eletrodos do módulo, usada pelos links do modo compacto. */
   base: string

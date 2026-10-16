@@ -40,11 +40,9 @@ export type Montagem = {
   montagem: string[]
   resposta: string
   cuidados: string[]
-  /** Explica o que a ilustração mostra nesta região. */
   legendaDesenho: string[]
   descricao: string
   fonte: string
-  /** Trecho da placa anatômica que ilustra a região. */
   recorte: { x: number; y: number; w: number; h: number }
   eletrodos: Eletrodo[]
   /** Ponto clicável no corpo, em coordenadas da placa. */

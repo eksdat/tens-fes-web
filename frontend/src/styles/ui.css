@@ -284,9 +284,7 @@
   font: 400 var(--fs-sm) / 1 var(--font-mono);
 }
 
-/* =========================================================
- * Simulador
- * ========================================================= */
+/* Simulador */
 
 .tf-simulador__corpo {
   display: grid;
@@ -1258,17 +1256,7 @@ fieldset.tf-captcha {
   margin: 0;
 }
 
-/* =========================================================
- * Diálogo (Dialog / AlertDialog do Radix UI)
- * ---------------------------------------------------------
- * .tf-dialogo-overlay  — camada escura atrás do painel
- * .tf-dialogo          — painel de conteúdo
- * .tf-dialogo__cabecalho — título e botão de fechar
- * .tf-dialogo__titulo  — <h2> do diálogo
- * .tf-dialogo__corpo   — área de conteúdo
- * .tf-dialogo__rodape  — área de ações (botões)
- * .tf-dialogo__fechar  — botão X
- * ========================================================= */
+/* Diálogo (Radix UI) */
 
 .tf-dialogo-overlay {
   position: fixed;
@@ -1448,9 +1436,7 @@ fieldset.tf-captcha {
 
 
 
-/* =========================================================
- * Painel de acessibilidade (BotaoAcessibilidade)
- * ========================================================= */
+/* Painel de acessibilidade */
 
 .tf-menu__icone,
 .tf-acessibilidade {
@@ -2577,9 +2563,7 @@ fieldset.tf-captcha {
   border-radius: var(--radius-md);
 }
 
-/* =========================================================
- * Pacientes: lista ordenável e formulário
- * ========================================================= */
+/* Pacientes: lista ordenável e formulário */
 
 .tf-pacientes__topo {
   display: flex;
