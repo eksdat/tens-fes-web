@@ -1,20 +1,29 @@
 import { DropdownMenu } from 'radix-ui'
+import type { ReactNode } from 'react'
 import { Link, NavLink } from 'react-router'
-import { ROTULO_PERFIL, useUsuarioAtual, type Usuario } from '../features/usuario/useUsuarioAtual'
+import { ROTULO_PERFIL, useUsuarioAtual } from '../features/usuario/useUsuarioAtual'
+import { BotaoAcessibilidade } from '../shared/acessibilidade/BotaoAcessibilidade'
 import { useAuth } from '../shared/auth/useAuth'
-import { IconePessoa, IconeSeta } from '../shared/ui/Icones'
+import {
+  IconeCriar,
+  IconeFes,
+  IconeInicio,
+  IconePacientes,
+  IconePessoa,
+  IconeSeta,
+  IconeTens,
+} from '../shared/ui/Icones'
 import { Marca } from '../shared/ui/Marca'
+import { ABAS, type Aba } from './abas'
+import { BuscaRapida } from './BuscaRapida'
 
-type Aba = { rotulo: string; para: string; perfil?: Usuario['perfil'] }
-
-/** Nomes, ordem e posição nunca mudam entre telas (Card 22). */
-const ABAS: Aba[] = [
-  { rotulo: 'Início', para: '/' },
-  { rotulo: 'TENS', para: '/tens' },
-  { rotulo: 'FES', para: '/fes' },
-  { rotulo: 'Criar conteúdo', para: '/criar-conteudo' },
-  { rotulo: 'Pacientes', para: '/pacientes', perfil: 'PROFISSIONAL' },
-]
+const ICONES: Record<string, ReactNode> = {
+  '/': <IconeInicio />,
+  '/tens': <IconeTens />,
+  '/fes': <IconeFes />,
+  '/criar-conteudo': <IconeCriar />,
+  '/pacientes': <IconePacientes />,
+}
 
 export function MenuPrincipal({ abas = ABAS }: { abas?: Aba[] }) {
   const { sair } = useAuth()
@@ -29,12 +38,16 @@ export function MenuPrincipal({ abas = ABAS }: { abas?: Aba[] }) {
           .map((aba) => (
             <li key={aba.para}>
               <NavLink className="tf-menu__link" to={aba.para} end={aba.para === '/'}>
-                {aba.rotulo}
+                {ICONES[aba.para]}
+                <span>{aba.rotulo}</span>
               </NavLink>
             </li>
           ))}
       </ul>
-      {usuario && (
+      <div className="tf-menu__acoes">
+        <BuscaRapida perfil={usuario?.perfil} aoSair={() => void sair()} />
+        <BotaoAcessibilidade />
+        {usuario && (
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger className="tf-menu__conta">
             <IconePessoa />
@@ -55,7 +68,8 @@ export function MenuPrincipal({ abas = ABAS }: { abas?: Aba[] }) {
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
-      )}
+        )}
+      </div>
     </nav>
   )
 }
