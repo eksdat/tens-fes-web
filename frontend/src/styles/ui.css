@@ -2779,3 +2779,48 @@ fieldset.tf-captcha {
 .tf-controle__explicacao[hidden] {
   display: none;
 }
+
+/* Osciloscópio do simulador: canal 1 azul e canal 2 âmbar, como no atlas; o rótulo diz o canal, a cor não é a única pista. */
+.tf-osciloscopio {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tf-osciloscopio__canal {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.tf-osciloscopio__tela {
+  height: 80px;
+  background: var(--surface-200);
+  border-radius: var(--radius-sm);
+}
+
+.tf-grafico__rotulo-canal {
+  color: var(--ink);
+  font: 700 var(--fs-sm) / 1.4 var(--font-mono);
+}
+
+.tf-osciloscopio__linha--c1 {
+  stroke: var(--info);
+}
+
+.tf-osciloscopio__linha--c2 {
+  stroke: var(--warning);
+}
+
+.tf-osciloscopio__envoltoria {
+  stroke: var(--brand-strong);
+}
+
+.tf-osciloscopio__cursor {
+  stroke: var(--danger);
+  stroke-width: 2;
+}
+
+/* A tela estica na largura (preserveAspectRatio="none"); sem isto a linha engrossaria nas bordas verticais. */
+.tf-osciloscopio__tela line,
+.tf-osciloscopio__tela path {
+  vector-effect: non-scaling-stroke;
+}

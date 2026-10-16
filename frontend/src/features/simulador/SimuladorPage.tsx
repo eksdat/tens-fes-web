@@ -240,7 +240,15 @@ export function SimuladorPage() {
             <h2 id="titulo-pulso" className="tf-subtitulo">
               Pulso
             </h2>
-            {pulsoValido && <GraficoPulso frequenciaHz={valores.frequencia!} larguraUs={valores.largura!} rampas={rampas} />}
+            {pulsoValido && (
+              <GraficoPulso
+                frequenciaHz={valores.frequencia!}
+                larguraUs={valores.largura!}
+                rampas={rampas}
+                intensidades={intensidades}
+                emExecucao={estado.emExecucao}
+              />
+            )}
             <p className="tf-sub" data-testid="descricao-pulso" aria-live="polite">
               {pulsoValido
                 ? descreverPulso({ modalidade, modo, frequenciaHz: valores.frequencia!, larguraUs: valores.largura!, intensidadeMa: intensidades, rampas })

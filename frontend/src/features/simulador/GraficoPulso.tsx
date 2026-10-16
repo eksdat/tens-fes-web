@@ -1,14 +1,15 @@
-import { periodoMs, tempoOn, type Rampas } from './calculos'
+import { periodoMs, type Rampas } from './calculos'
+import { OsciloscopioAoVivo } from './OsciloscopioAoVivo'
 
 const numero = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 })
 
-type Props = { frequenciaHz: number; larguraUs: number; rampas?: Rampas }
+type Props = { frequenciaHz: number; larguraUs: number; rampas?: Rampas; intensidades: [number, number]; emExecucao: boolean }
 
 /**
- * Desenhos esquemáticos, sem escala de intensidade: forma quadrática simétrica bifásica (manual do Neurodyn, cap. 8.2.4).
+ * Osciloscópio ao vivo e, abaixo, os desenhos parados de um pulso e do trem, sem escala de intensidade: forma quadrática simétrica bifásica (manual do Neurodyn, cap. 8.2.4).
  * São decorativos para o leitor de tela; a tabela e a descrição ao lado trazem os mesmos valores.
  */
-export function GraficoPulso({ frequenciaHz, larguraUs, rampas }: Props) {
+export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, emExecucao }: Props) {
   const periodo = periodoMs(frequenciaHz)
   // Fração do período ocupada pelo pulso (duas fases); mínimo visível de 2% para pulsos muito curtos.
   const ocupacao = Math.max(0.02, Math.min(0.9, (2 * larguraUs) / 1000 / periodo))
@@ -21,6 +22,14 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas }: Props) {
 
   return (
     <div className="tf-grafico" aria-hidden="true">
+      <OsciloscopioAoVivo
+        frequenciaHz={frequenciaHz}
+        larguraUs={larguraUs}
+        intensidades={intensidades}
+        rampas={rampas}
+        emExecucao={emExecucao}
+      />
+
       <figure className="tf-grafico__item">
         <svg viewBox="0 0 300 120" className="tf-grafico__svg">
           <line x1="0" y1="60" x2="300" y2="60" className="tf-grafico__eixo" />
@@ -46,30 +55,7 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas }: Props) {
         <figcaption className="tf-grafico__legenda">Trem de pulsos: {numero.format(frequenciaHz)} por segundo</figcaption>
       </figure>
 
-      {rampas && <Envelope rampas={rampas} />}
     </div>
   )
 }
 
-function Envelope({ rampas }: { rampas: Rampas }) {
-  const total = tempoOn(rampas) + rampas.repouso
-  const escala = (s: number) => (280 * s) / total
-  const x1 = 10 + escala(rampas.subida)
-  const x2 = x1 + escala(rampas.plato)
-  const x3 = x2 + escala(rampas.descida)
-  return (
-    <figure className="tf-grafico__item">
-      <svg viewBox="0 0 300 120" className="tf-grafico__svg">
-        <line x1="0" y1="95" x2="300" y2="95" className="tf-grafico__eixo" />
-        <path d={`M10 95 L${x1} 25 H${x2} L${x3} 95 H290`} className="tf-grafico__linha" />
-        <text x={(x1 + x2) / 2} y="16" className="tf-grafico__rotulo" textAnchor="middle">
-          platô {numero.format(rampas.plato)} s
-        </text>
-        <text x={(x3 + 290) / 2} y="112" className="tf-grafico__rotulo" textAnchor="middle">
-          repouso {numero.format(rampas.repouso)} s
-        </text>
-      </svg>
-      <figcaption className="tf-grafico__legenda">Um ciclo: subida, platô, descida e repouso</figcaption>
-    </figure>
-  )
-}

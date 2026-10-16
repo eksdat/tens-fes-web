@@ -336,3 +336,39 @@ describe('estado compartilhado com a lista do aparelho', () => {
     expect(screen.getByTestId('estado-lido')).toHaveTextContent('90 Hz · canal 1 0 mA · executando')
   })
 })
+
+describe('osciloscópio ao vivo', () => {
+  test('deveMostrarOsDoisCanaisComAIntensidadeEParadoAntesDeIniciar', async () => {
+    renderizarComEstado()
+
+    expect(await screen.findByText('Canal 1 · 0 mA')).toBeInTheDocument()
+    expect(screen.getByText('Canal 2 · 0 mA')).toBeInTheDocument()
+    expect(screen.getByText(/Parado\. Clique em Iniciar simulação/)).toBeInTheDocument()
+  })
+
+  test('deveAvisarACameraLentaAoIniciarUmPulsoRapido', async () => {
+    renderizarComEstado()
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Iniciar simulação' }))
+
+    expect(screen.getByText('Em execução, em câmera lenta: 40× mais lento que o real.')).toBeInTheDocument()
+  })
+
+  test('deveMostrarAFaseDoCicloNoFes', async () => {
+    renderizarComEstado('/simulador?modalidade=FES')
+
+    expect(await screen.findByText('Subida: 0 s de 2')).toBeInTheDocument()
+  })
+
+  test('deveDesligarAAnimacaoComReduzirMovimento', async () => {
+    document.documentElement.dataset.movimento = 'reduzido'
+    renderizarComEstado()
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Iniciar simulação' }))
+
+    expect(screen.getByText('Animação desligada: reduzir movimento está ativo.')).toBeInTheDocument()
+    delete document.documentElement.dataset.movimento
+  })
+})
