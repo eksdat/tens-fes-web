@@ -6,6 +6,7 @@ import { LoginPage } from '../features/auth/login/LoginPage'
 import { PoliticaPrivacidadePage } from '../features/termos/PoliticaPrivacidadePage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { TermosDeUsoPage } from '../features/termos/TermosDeUsoPage'
+import { AceitarTermosPage } from '../features/termos/AceitarTermosPage'
 import { AtivarMfaPage } from '../features/mfa/AtivarMfaPage'
 import { VerificarMfaPage } from '../features/mfa/VerificarMfaPage'
 import { FES } from '../features/fes/conteudoFes'
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
         children: [
           { path: '/mfa/ativar', handle: { titulo: 'Ativar verificação em duas etapas' }, element: <AtivarMfaPage /> },
           { path: '/mfa/verificar', handle: { titulo: 'Verificar código' }, element: <VerificarMfaPage /> },
+          { path: '/termos/aceitar', handle: { titulo: 'Termos atualizados' }, element: <AceitarTermosPage /> },
         ],
       },
       {

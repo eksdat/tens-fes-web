@@ -144,4 +144,31 @@ class UsuarioIntegracaoTest {
                 .andExpect(jsonPath("$.instituicao").value("UniBH"))
                 .andExpect(jsonPath("$.periodo").value(5));
     }
+
+    @Test
+    void devePedirNovoAceiteQuandoOsTermosMudamEDeixarDePedirDepoisDoAceite() throws Exception {
+        mvc.perform(post("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer())
+                .contentType(MediaType.APPLICATION_JSON).content(ESTUDANTE));
+        mvc.perform(get("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(jsonPath("$.termosPendentes").value(false));
+
+        jdbc.update("update usuario set termos_versao = '2000-01-01' where id = ?::uuid", sub);
+        mvc.perform(get("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(jsonPath("$.termosPendentes").value(true));
+
+        mvc.perform(post("/api/v1/usuarios/me/termos").header(HttpHeaders.AUTHORIZATION, bearer())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"aceite\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.termosPendentes").value(false));
+    }
+
+    @Test
+    void deveRecusarAceiteDeTermosSemMarcarOAceite() throws Exception {
+        mvc.perform(post("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer())
+                .contentType(MediaType.APPLICATION_JSON).content(ESTUDANTE));
+
+        mvc.perform(post("/api/v1/usuarios/me/termos").header(HttpHeaders.AUTHORIZATION, bearer())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"aceite\":false}"))
+                .andExpect(status().isBadRequest());
+    }
 }

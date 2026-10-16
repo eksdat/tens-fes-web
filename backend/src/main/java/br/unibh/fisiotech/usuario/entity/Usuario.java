@@ -36,6 +36,12 @@ import br.unibh.fisiotech.usuario.enums.Uf;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Usuario implements Persistable<UUID> {
 
+    /**
+     * Versão vigente dos Termos de uso e da Política de privacidade (data da publicação). Mudou o texto das páginas
+     * /termos ou /privacidade: troque aqui. Quem aceitou outra versão precisa aceitar de novo no próximo acesso.
+     */
+    public static final String VERSAO_TERMOS = "2026-10-16";
+
     @Id
     private UUID id;
 
@@ -106,6 +112,10 @@ public class Usuario implements Persistable<UUID> {
         this.categoria = categoria;
         this.registro = registro;
         this.uf = uf;
+    }
+
+    public boolean termosPendentes() {
+        return !VERSAO_TERMOS.equals(termosVersao);
     }
 
     @Override

@@ -64,7 +64,7 @@ class UsuarioControllerTest {
     @Test
     void deveDevolverOUsuarioLogado() throws Exception {
         var usuario = new UsuarioResponse(ID, "Ana Souza", Perfil.ESTUDANTE, false, "UniBH", (short) 5,
-                null, null, null);
+                null, null, null, false);
         when(service.buscar(ID)).thenReturn(Optional.of(usuario));
 
         mvc.perform(get("/api/v1/usuarios/me").with(jwt().jwt(j -> j.subject(ID.toString()))))
@@ -75,7 +75,7 @@ class UsuarioControllerTest {
     @Test
     void deveCriarCadastroComStatus201() throws Exception {
         var criado = new UsuarioResponse(ID, "Ana Souza", Perfil.ESTUDANTE, false, "UniBH", (short) 5,
-                null, null, null);
+                null, null, null, false);
         when(service.cadastrar(eq(ID), any())).thenReturn(criado);
 
         mvc.perform(post("/api/v1/usuarios/me").with(jwt().jwt(j -> j.subject(ID.toString())))
@@ -120,7 +120,7 @@ class UsuarioControllerTest {
     @Test
     void deveAtualizarPerfilProfissionalComStatus200() throws Exception {
         var atualizado = new UsuarioResponse(ID, "Ana Souza", Perfil.PROFISSIONAL, false, "UniBH", (short) 5,
-                br.unibh.fisiotech.usuario.enums.Categoria.FISIOTERAPEUTA, "123456-F", br.unibh.fisiotech.usuario.enums.Uf.MG);
+                br.unibh.fisiotech.usuario.enums.Categoria.FISIOTERAPEUTA, "123456-F", br.unibh.fisiotech.usuario.enums.Uf.MG, false);
         when(service.atualizarPerfilProfissional(eq(ID), any())).thenReturn(atualizado);
 
         mvc.perform(put("/api/v1/usuarios/me/perfil").with(jwt().jwt(j -> j.subject(ID.toString())))

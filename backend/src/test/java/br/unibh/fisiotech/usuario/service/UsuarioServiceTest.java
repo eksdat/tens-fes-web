@@ -49,7 +49,7 @@ class UsuarioServiceTest {
 
         var salvo = ArgumentCaptor.forClass(Usuario.class);
         verify(repository).saveAndFlush(salvo.capture());
-        assertThat(salvo.getValue().getTermosVersao()).isEqualTo(UsuarioService.VERSAO_TERMOS);
+        assertThat(salvo.getValue().getTermosVersao()).isEqualTo(Usuario.VERSAO_TERMOS);
         assertThat(salvo.getValue().getTermosAceitosEm()).isBetween(antes, Instant.now());
     }
 
