@@ -214,9 +214,9 @@ O design system do protótipo documenta sete componentes. A coluna "No app" diz 
 | **Marca** | Folha com linha de pulso e o nome em caixa alta | `Marca` |
 | **Botão** | Retangular, borda 2 px, sombra rígida de 3 px | `Botao`, `BotaoLink` |
 | **Alerta** | Ícone, título em palavras e texto, em quatro intenções | `Alerta` |
-| **Campo de parâmetro** | Valor numérico com unidade fixa ao lado | `Campo` (sem o sufixo de unidade, que ainda não é usado) |
-| **Cartão de módulo** | Entrada dos módulos TENS e FES | a implementar |
-| **Navegação** | Cabeçalho com marca, abas fixas e chip de perfil | a implementar |
+| **Campo de parâmetro** | Valor numérico com unidade fixa ao lado | `Campo` com `complemento` de unidade (`tf-control__unidade`), na sessão e no simulador |
+| **Cartão de módulo** | Entrada dos módulos TENS e FES | `tf-modulo-cartao` em `InicioPage` |
+| **Navegação** | Cabeçalho com marca, abas fixas e chip de perfil | `MenuPrincipal` (`tf-menu`), sem o chip |
 | **Amostra de início** | Trecho da tela inicial para avaliar o estilo | só referência (não é especificação de layout) |
 
 ### Marca
@@ -228,7 +228,7 @@ Folha de cantos opostos arredondados com uma linha de pulso dentro, seguida do n
 - `primario` (fundo `accent`, texto `on-accent`): a ação principal da tela, **uma por contexto**.
 - `secundario` (fundo `surface-200`): alternativas.
 - `ghost` (texto sublinhado, sem borda): ações discretas.
-- O design system prevê ainda `danger` (só para interromper ou descartar) e `outline-deep` (sobre `brand-deep`); **ainda não implementados**.
+- `perigo` (o `danger` do design system): só para interromper ou descartar, dentro de `Dialogo` de confirmação. `outline-deep` (sobre `brand-deep`) **ainda não existe**.
 - Altura mínima `target-min` (44 px). O rótulo é um verbo claro.
 - Indisponível: `aria-disabled="true"` com borda tracejada e sem sombra, e o motivo explicado no texto ao lado.
 - Sobre `brand-deep`, o botão fica dentro de `.tf-on-deep`: borda e sombra passam a `on-deep` e o foco a `accent`.
@@ -244,20 +244,20 @@ Folha de cantos opostos arredondados com uma linha de pulso dentro, seguida do n
 - Rótulo visível, dica e erro com ícone. Erro com `role="alert"`, ícone e a palavra "Erro"; o campo recebe `aria-invalid` e `aria-describedby`. A borda `danger` é só reforço.
 - Para valores com unidade: guarde a unidade junto ao valor, nunca converta em silêncio ("Confira a unidade") e dê à unidade um `aria-label` por extenso. Intensidade começa em zero e **nunca** traz valor sugerido.
 
-### Cartão de módulo (a implementar)
+### Cartão de módulo
 
-Etiqueta de painel com a onda dentro (TENS em `brand-tint`, FES em `accent`, distintos também pelo **texto** e pela forma da onda), número do módulo, título em caixa alta, texto com o objetivo, linha de unidades e uma ação. Borda de 2 px, canto `radius-lg` e `shadow-card`. O título diz o objetivo ("Alívio da dor", "Movimento e função") antes do nome técnico e **não promete cura**. Disponha vários lado a lado em uma grade que quebra de linha (`tf-grid` no design system, ainda **não existe** no CSS do app: crie junto com o componente).
+Etiqueta de painel com a onda dentro (TENS em `brand-tint`, FES em `accent`, distintos também pelo **texto** e pela forma da onda), número do módulo, título em caixa alta, texto com o objetivo, linha de unidades e uma ação. Borda de 2 px, canto `radius-lg` e `shadow-card`. O título diz o objetivo ("Alívio da dor", "Movimento e função") antes do nome técnico e **não promete cura**. No app: `tf-lista-cartoes` e `tf-modulo-cartao`, na tela inicial.
 
-### Navegação (a implementar)
+### Navegação
 
-Cabeçalho com marca, abas fixas e chip do perfil atual. Abas: **Início, TENS e FES, Criar conteúdo, Pacientes, Meu perfil**, sempre com o mesmo nome e na mesma posição. "Pacientes" aparece só para o perfil profissional. A aba atual usa `aria-current="page"`, negrito, `brand-strong` e sublinhado de 3 px. O chip mostra o perfil por extenso ("Perfil: Estudante"). Cada aba tem no mínimo `target-min` de altura e quebra de linha em telas estreitas, **sem rolagem horizontal**. A rota permitida por perfil vem do `ProtectedRoute`; esconder aba é conforto, a regra real fica na API.
+Cabeçalho com marca e abas fixas (`MenuPrincipal`, abas em `src/app/abas.ts`). Abas no app: **Início, TENS, FES, Criar conteúdo, Pacientes**, sempre com o mesmo nome e na mesma posição. "Pacientes" aparece só para o perfil profissional; "Meu perfil" e "Sair" ficam no menu da conta. O chip de perfil do design system ainda não existe. A aba atual usa `aria-current="page"`, negrito, `brand-strong` e sublinhado de 3 px. O chip mostra o perfil por extenso ("Perfil: Estudante"). Cada aba tem no mínimo `target-min` de altura e quebra de linha em telas estreitas, **sem rolagem horizontal**. A rota permitida por perfil vem do `ProtectedRoute`; esconder aba é conforto, a regra real fica na API.
 
 ### Hero e etiqueta de painel
 
 - **Hero** (`brand-deep`, texto `on-deep`, botões `accent`, canto `radius-lg`): título de até `heading-xl`, texto de `body-lg`; as folhas laterais são decorativas e somem em telas estreitas (abaixo de 720 px o texto ocupa a largura toda).
 - **Etiqueta** (`tf-tag`, `tf-tag--tens` e `tf-tag--fes` no design system; ainda **não existem** no CSS do app): quadrada (`radius-sm`), caixa alta, fonte mono, com a onda dentro.
 
-> As classes `tf-card`, `tf-grid`, `tf-tag`, `tf-hero` e `tf-nav` do design system ainda não foram portadas para `ui.css`; ao implementar o componente, copie o comportamento do `bundle.css` de origem usando os tokens do app.
+> `tf-hero` já está em `ui.css` (tela inicial). Cartão e navegação ganharam nomes próprios (`tf-modulo-cartao`, `tf-menu`). `tf-tag` e `tf-grid` ainda não existem; ao implementar, copie o comportamento do `bundle.css` de origem usando os tokens do app.
 >
 > Nomes de classe do design system versus os do app: o app usa nomes em português. `tf-btn--primary` → `tf-btn--primario`, `tf-btn--secondary` → `tf-btn--secundario`, `tf-alert--warn` → `tf-alert--atencao`, `tf-alert--danger` → `tf-alert--perigo`, `tf-alert--ok` → `tf-alert--sucesso`, `tf-field--error` → `tf-field--erro`, `tf-field__error` → `tf-field__erro`. Ao implementar um componente novo, siga o português.
 
@@ -283,9 +283,9 @@ Em `src/shared/ui`, com testes de acessibilidade em `tests/shared/ui/ui.test.tsx
 | `FolhasDecorativas` | `className` | Folhas do painel verde, `aria-hidden` |
 | `TelaCarregando` | — | `<output>` "Carregando…" |
 | `Dialogo` | `gatilho`, `titulo`, `descricao?`, `acoes?`, `aberto?`, `aoFechar?` | **Radix UI Dialog**: captura foco, ESC fecha, `aria-labelledby`/`aria-describedby`, overlay inerte, animação com `prefers-reduced-motion` |
-| `BotaoAcessibilidade` | nenhuma | Botão com ícone de acesso universal que abre `Dialogo` com tamanho do texto (100/125/150 % na raiz), alto contraste (`data-contraste="alto"` em `tokens.css`) e reduzir movimento (`data-movimento="reduzido"`). Padrão vem de `prefers-contrast` e `prefers-reduced-motion`; escolha fica em `localStorage`. Está no `MenuPrincipal` e no `AuthLayout`. Lógica em `src/shared/acessibilidade/preferencias.ts` |
+| `BotaoAcessibilidade` | nenhuma | Botão com ícone de acesso universal que abre `Dialogo` com tamanho do texto (100/125/150 % na raiz), alto contraste (`data-contraste="alto"` em `tokens.css`) e reduzir movimento (`data-movimento="reduzido"`). Padrão vem de `prefers-contrast` e `prefers-reduced-motion`; escolha fica em `localStorage`. Montado no `MenuPrincipal` e no `AuthLayout`, **flutua** no canto inferior direito (`.tf-acessibilidade`: `position: fixed`, `z-index` 30, abaixo do diálogo). Lógica em `src/shared/acessibilidade/preferencias.ts` |
 | `BuscaRapida` | `perfil`, `aoSair` | Lupa no menu (e Ctrl/Cmd+K) abre `Dialogo` com campo de busca e lista de botões. Enter abre o primeiro resultado; Tab percorre os demais. Atalhos em `src/app/atalhos.ts`: módulos vêm de `src/app/abas.ts`, filtrados por perfil, mais ações que existem de verdade (Meu perfil, Sair). Ignora acento e caixa; exige todas as palavras digitadas |
-| `ModuloLayout` / `PaginaTecnica` | `modulo` (dados do módulo) | Entrada do módulo (kicker, título, aviso educativo) e as 6 abas fixas (Visão geral, Aparelho, Eletrodos, Parâmetros, Segurança, Casos), cada uma uma rota (`/tens/parametros`). `PaginaTecnica` é a página padrão: corpo mais rodapé "Fonte e data de revisão". Conteúdo em `features/<modulo>/conteudo*.ts`; abas sem conteúdo mostram "Conteúdo ainda não liberado". Em `src/features/modulo/` |
+| `ModuloLayout` / `PaginaTecnica` | `modulo` (dados do módulo) | Entrada do módulo (kicker, título, aviso educativo) e as 6 abas fixas (Visão geral, Aparelho, Eletrodos, Parâmetros, Segurança, Casos), cada uma uma rota (`/tens/parametros`). `PaginaTecnica` é a página padrão: corpo mais rodapé "Fonte e data de revisão". A Visão geral vem da API (`usePaginaTecnica`): cinco blocos com `h3` e corpo em Markdown (`CorpoMarkdown`, sem HTML cru); página não liberada mostra o aviso de conteúdo pendente. As demais abas usam `features/<modulo>/conteudo*.ts`. Em `src/features/modulo/` |
 | `PerguntasFrequentes` | `itens` (`pergunta`, `destaque`, `detalhe?`, `alerta?`, `acao?`), `fonteHref` | Acordeão em gaveta do design system: seta para baixo fechada e para cima aberta, cabeçalho aberto escuro com `shadow-card`, altura animada por grid (220 ms). Botão dentro de `h4` com `aria-expanded`/`aria-controls`; resposta em `section` ligada por `aria-labelledby`. A primeira vem aberta, várias podem ficar abertas; Enter e Espaço alternam, setas, Home e End percorrem. Resposta em três camadas: destaque, detalhe e rodapé com ação e "Fonte e data de revisão". Alerta de segurança com `role="note"` |
 | `AtlasEletrodos` | `modalidade`, `base`, `compacto?` | Placa anatômica (músculos de frente e de costas, CC BY-SA 4.0) com pontos clicáveis e lista de regiões (o controle acessível); cada região recorta a placa e mostra os eletrodos em escala. Completo: detalhe com desenho ampliado, eletrodos por canal com códigos 1A/1B/2A/2B (cor é redundante), montagem, cuidados e fonte; a região vive em `?regiao=`. Compacto (Visão geral): só corpo e links para a aba Eletrodos. Dados em `features/atlas/montagens.ts` (guia, seções 11A–11E) |
 
@@ -306,6 +306,9 @@ Padrões que nasceram nas features (em `src/features`):
 | Estado de três valores | `.tf-estado` | "Não avaliado / Ausente / Presente" em rádios, começando em "Não avaliado" |
 | Checklist de segurança | `seguranca/ChecklistSeguranca` | Antes, Durante e Depois em `fieldset`; controlado (`marcados`, `aoAlternar`) quando precisa salvar |
 | Operação em andamento | `Botao carregando` + `.tf-espere` | Ação que demora (excluir, salvar): o botão vira "Excluindo…", fica desabilitado com `aria-busy`, o botão de cancelar também, o diálogo não fecha por ESC nem clique fora, e um `<output class="tf-espere">` mostra o ícone girando e o texto, que o leitor de tela anuncia. O ícone para com "reduzir movimento" |
+| Cartão de controle do aparelho | `aparelho/PainelDoAparelho` (`.tf-controles`) | Cada controle é um `li` em cartão: botão no topo (número, nome, função) com `aria-expanded`/`aria-controls` e, logo abaixo, a leitura `tf-controle__leitura` (unidade, valor atual, estado). O cartão aberto ganha borda `ink` e `shadow-card`; a explicação (`tf-controle__explicacao`) fecha por botão ou Esc e devolve o foco ao controle |
+| Osciloscópio | `simulador/OsciloscopioAoVivo` (`.tf-osciloscopio`) | Uma tela por canal com rótulo escrito "Canal N · X mA"; canal 1 em `info`, canal 2 em `warning` (as cores do atlas). No FES, envoltória em `brand-strong` e cursor do instante em `danger`. Legenda diz a câmera lenta ("N× mais lento que o real"). Desenho `aria-hidden`; a descrição e a tabela estão ao lado. Parado com "reduzir movimento", com o botão "Animar mesmo assim" |
+| Aviso de triagem | `sessao/AvisoTriagem` | `Alerta` de atenção no topo da sessão: sem avaliação, pede para concluí-la; com avaliação, lista o que está presente e o que nunca foi avaliado. Some quando nada está presente nem pendente |
 | Aviso de dados fictícios | `pacientes/AvisoDadosFicticios` | `Alerta` de atenção "Ambiente acadêmico: use apenas dados fictícios." em toda tela de paciente, avaliação e sessão |
 
 Exemplo de formulário com os componentes do app:
@@ -364,11 +367,11 @@ Nome, e-mail, senha com **checklist de requisitos em tempo real**, confirmação
 
 Código de 6 dígitos em caixas separadas, botão primário "Verificar" e "Sair". O mesmo padrão de caixas é usado ao ativar o autenticador e na nova senha.
 
-### Tela inicial provisória (`/`)
+### Tela inicial (`/`)
 
-![Tela inicial provisória](img/implementado/inicio-provisoria.png)
+![Tela inicial, versão antiga](img/implementado/inicio-provisoria.png)
 
-Provisória, "em construção". Mostra o nome do usuário em título, o perfil e as ações (verificação em duas etapas, sair). A tela inicial final segue o protótipo (seção 8).
+*Captura desatualizada: mostra a versão provisória.* Hoje a tela segue o protótipo (seção 8): hero verde "Aprenda TENS e FES" com o primeiro nome, cartões dos módulos TENS e FES e a seção de ferramentas (Simulador).
 
 ### Termos de uso e Política de privacidade (`/termos`, `/privacidade`)
 
@@ -377,6 +380,16 @@ Provisória, "em construção". Mostra o nome do usuário em título, o perfil e
 ![Política de privacidade](img/implementado/politica-de-privacidade.png)
 
 Documentos longos: título em caixa alta, alerta informativo "Versão preliminar", seções numeradas com subtítulo e parágrafos em coluna estreita, link para o outro documento e botões "Voltar ao cadastro" e "Ir para entrar". Os textos são preliminares, a revisar antes de usar dados reais.
+
+### Telas sem captura
+
+Ainda sem imagem nesta pasta; a rota de cada uma está no README do frontend, seção 10.
+
+- **Módulo TENS e FES**: título, aviso educativo e 6 abas. Visão geral com os blocos da API, atlas compacto e perguntas frequentes; Aparelho com o painel e a lista de cartões de controle; Eletrodos com o atlas completo; Segurança com o checklist.
+- **Simulador**: grupo de botões TENS/FES, modo, campos com unidade e faixa, osciloscópio ao vivo, pulso e mensagens prontas. Aviso quando a intensidade está em zero.
+- **Pacientes**: busca, tabela ordenável e paginada, aviso de dados fictícios. Formulário em grade de duas colunas; no detalhe, listas de avaliações e sessões e "Excluir paciente" com diálogo de confirmação.
+- **Avaliação**: blocos com campos de texto longo, dor de 0 a 10 com tarefa e momento, triagem e achados em três estados.
+- **Sessão**: aviso de triagem, 6 blocos, parâmetros por canal com unidade, checklist, revisão antes de salvar e confirmação.
 
 ---
 
@@ -427,7 +440,7 @@ Meta: **WCAG 2.2 AA**. O design system já embute as regras; o app as segue e as
 - **Informação nunca só por cor**: estado de requisito, tipo de alerta e botão indisponível têm forma ou texto próprio.
 - **Alvos de toque** de no mínimo 44 px (campos com 48 px, caixas do código com 56 px).
 - **Rolagem horizontal inexistente** e zoom do navegador respeitado.
-- **Movimento reduzido** (`prefers-reduced-motion`).
+- **Movimento reduzido**: vale o painel de acessibilidade (`data-movimento="reduzido"` no `html`), que parte de `prefers-reduced-motion`. Animação que a pessoa precisa ver (osciloscópio) para e oferece "Animar mesmo assim".
 - **Elementos decorativos** (folhas, ícones ao lado de texto) com `aria-hidden`.
 - **Elementos de terceiros**, como o CAPTCHA, ficam em um grupo com legenda e têm o resultado anunciado.
 - **Anúncios sem ruído**: o checklist da senha fala só quando o número de requisitos atendidos muda, não a cada tecla.
@@ -486,6 +499,8 @@ Estrutura mínima de uma tela de autenticação:
 | Caixa de texto sem borda | `.tf-input` tem borda 0; a borda vem do `.tf-control` que o envolve | Todo `<textarea>` vai dentro de `.tf-control` (use `CampoTextoLongo`) |
 | Redirecionamento demora depois de excluir | `await invalidateQueries` rebusca o registro excluído, dá 404 e o React Query repete a chamada por segundos | Tire o registro do cache (`removeQueries`), navegue já e invalide a lista sem esperar (`void`) |
 | Botão mais baixo que o campo ao lado | `.tf-btn` tem 44 px e `.tf-control` 48 px | Botão colado a campo (busca) recebe `min-height: 48px` |
-| Campo que aceita qualquer caractere | Validar só no envio deixa a pessoa digitar "112233445566778899" | Filtre ao digitar (máscara de telefone, identificador em maiúscula, nome sem dígito) com `placeholder` de exemplo e `maxLength`; valide de novo no backend |
+| Traço do osciloscópio grosso nas bordas | O SVG estica na largura (`preserveAspectRatio="none"`) e escala também a linha | `vector-effect: non-scaling-stroke` nas linhas da tela |
+| Animação parada sem motivo aparente | O sistema pede movimento reduzido e o painel herda isso | Siga só o `data-movimento` do painel e mostre "Animar mesmo assim" onde a animação ensina algo |
+| Campo que aceita qualquer caractere | Validar só no envio deixa a pessoa digitar "112233445566778899" | Filtre ao digitar (identificador em maiúscula, nome sem dígito) com `placeholder` de exemplo e `maxLength`; valide de novo no backend |
 
 Veja também: `../../README.md` (arquitetura, autenticação e testes) e `../../../SEGURANCA.md`.

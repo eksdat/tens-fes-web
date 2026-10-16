@@ -94,18 +94,19 @@ Regras:
 
 1. **Negar por padrão.** `anyRequest().authenticated()`. Endpoint público só com liberação explícita na `SecurityConfig`.
 2. **Perfil vem do banco**, pelo `sub` do token. Usuário com token válido e sem linha em `usuario` só acessa `POST /api/v1/usuarios/me` (completar cadastro).
-3. `@PreAuthorize("hasRole('PROFISSIONAL')")` em todo endpoint de paciente, avaliação e sessão. `ESTUDANTE` recebe **403**. Segunda barreira na `SecurityConfig`: `/api/v1/pacientes/**` exige `PROFISSIONAL` (testes em `RestricaoPorPerfilTest` e `RestricaoPorPerfilIntegracaoTest`).
-4. **Posse:** toda consulta a paciente passa por `PacienteService.buscarDoResponsavel`. Paciente de outro profissional: **404**, nunca 403.
+3. `@PreAuthorize("hasRole('PROFISSIONAL')")` em todo endpoint de paciente, avaliação e sessão. `ESTUDANTE` recebe **403**. Segunda barreira na `SecurityConfig`: `/api/v1/pacientes/**` exige `PROFISSIONAL` e `aal2` (testes em `RestricaoPorPerfilTest` e `RestricaoPorPerfilIntegracaoTest`).
+4. **Posse:** toda consulta a paciente, avaliação ou sessão passa por `PacienteService.buscarDoResponsavel`. Paciente de outro profissional ou excluído: **404**, nunca 403.
 5. **Sem IDOR:** id da URL nunca é confiado sozinho. A consulta sempre filtra pelo responsável (`findByIdAndResponsavelId`).
 6. Autor não aprova o próprio material (regra no Service, com teste).
-7. Endpoints de paciente, avaliação e sessão exigem `aal = aal2` no token; sem isso, 403.
+7. Endpoints de paciente, avaliação e sessão exigem `aal = aal2` no token; sem isso, 403. **Ativo** desde 2026-10-16 (`SecurityConfig.SESSAO_COM_MFA`).
 
 ### Entrada e saída
 
 - `@Valid` em todo DTO, com `@Size` em todo texto. Sem campo livre sem limite.
 - Entidade nunca sai como JSON. Sempre DTO.
 - Erro sai como `ProblemDetail`, sem stack trace e sem mensagem de SQL.
-- Erro do framework (parâmetro inválido, JSON malformado) sai com texto fixo "Requisição inválida."; exceção não tratada sai como 500 "Erro interno.", detalhe só no log. Só as exceções de domínio mantêm a própria mensagem (`GlobalExceptionHandler`).
+- Erro do framework (parâmetro inválido, JSON malformado) sai com texto fixo "Requisição inválida."; exceção não tratada sai como 500 "Erro interno.", detalhe só no log. Só as exceções de domínio mantêm a própria mensagem (`GlobalExceptionHandler`): `RecursoNaoEncontradoException` (404), `ConflitoException` (409) e `DadoInvalidoException` (400 com `erros` por campo, para regra que depende do banco).
+- Dado de paciente mínimo: sem telefone (removido na `V11`), sem CPF (o identificador recusa 11 dígitos), e-mail opcional.
 - Todo parâmetro de texto livre leva `@Size` (ex.: `busca` até 100).
 - Upload (`Anexo`): só PDF, PNG e JPEG; até 10 MB (`spring.servlet.multipart.max-file-size=10MB`); conferir o tipo pelos primeiros bytes do arquivo, não pela extensão; nome do arquivo gerado pelo servidor.
 - Arquivos em bucket **privado** do Supabase Storage, acessado só pelo backend. Download por URL assinada de curta duração (5 min).
@@ -168,19 +169,22 @@ Regras:
 
 ## 8. Testes de segurança obrigatórios
 
-Cada regra abaixo tem teste de integração no backend:
+Cada regra abaixo precisa de teste no backend. Estado em 2026-10-16:
 
-| Teste | Esperado |
-|---|---|
-| Requisição sem token | 401 |
-| Token com assinatura inválida ou expirado | 401 |
-| ESTUDANTE em `/api/v1/pacientes` | 403 |
-| PROFISSIONAL A busca paciente de B | 404 |
-| PROFISSIONAL A cria sessão em paciente de B | 404 |
-| Autor aprova o próprio material | 403 |
-| Upload de `.exe` renomeado para `.pdf` | 400 |
-| Upload de 11 MB | 413 |
-| Token válido sem linha em `usuario` acessando outra rota | 403 |
+| Teste | Esperado | Onde |
+|---|---|---|
+| Requisição sem token | 401 | `RestricaoPorPerfilTest` |
+| Token com assinatura inválida ou expirado | 401 | **Falta** |
+| ESTUDANTE em `/api/v1/pacientes` | 403 | `RestricaoPorPerfilTest`, `RestricaoPorPerfilIntegracaoTest`, `PacienteIntegracaoTest.deveNegarPacientesParaEstudante` |
+| PROFISSIONAL sem `aal2` em `/api/v1/pacientes` | 403 | `PacienteIntegracaoTest.deveExigirVerificacaoEmDuasEtapas`, `RestricaoPorPerfilTest` |
+| PROFISSIONAL A busca, altera ou exclui paciente de B | 404 | `PacienteIntegracaoTest.deveResponder404QuandoOutroProfissionalBuscaAlteraOuExcluiOPaciente` |
+| PROFISSIONAL A cria ou lê avaliação em paciente de B | 404 | `AvaliacaoIntegracaoTest.deveResponder404AOutroProfissionalAoCriarListarVerOuAlterar` |
+| PROFISSIONAL A cria sessão em paciente de B | 404 | `SessaoIntegracaoTest.deveResponder404AOutroProfissionalAoRegistrarOuVerSessoes` |
+| Responsável enviado no corpo é ignorado | dono = `sub` | `PacienteIntegracaoTest.deveIgnorarResponsavelEnviadoNoCorpo` |
+| Autor aprova o próprio material | 403 | **Falta** (fluxo editorial ainda não existe) |
+| Upload de `.exe` renomeado para `.pdf` | 400 | **Falta** (upload ainda não existe) |
+| Upload de 11 MB | 413 | **Falta** (upload ainda não existe) |
+| Token válido sem linha em `usuario` acessando outra rota | 403 | `UsuarioIntegracaoTest.deveNegarRotaComPerfilParaQuemNaoCompletouCadastro` |
 
 E, no Supabase, depois de cada migration: chamar a Data API com a publishable key em qualquer tabela deve falhar.
 
@@ -206,10 +210,12 @@ Bloqueia o uso com pacientes reais até estar escrito e aprovado:
 
 | Item | Onde |
 |---|---|
-| Desligar Data API | Painel do Supabase |
+| Desligar Data API (conferir) | Painel do Supabase |
 | Configuração da seção 3 | Painel do Supabase |
-| Resource server + conversor de perfil | `backend/config/` |
+| Teste de token com assinatura inválida ou expirado | `backend/` (seção 8) |
+| Security Advisor depois das migrations V6 a V12 em produção | DEPLOY.md, seção 4 |
 | Papel próprio no banco para a aplicação | Antes de dado real |
+| Prazo legal de guarda do prontuário (hoje: remoção 90 dias após a exclusão, só com dado fictício) | Seção 9 |
 | Domínio próprio e DKIM/SPF/DMARC do e-mail | DEPLOY.md, seção 5 |
 | Rate limit (IA, upload) | `backend/` |
 | Dependabot e CI do frontend | `.github/` (o CI do backend já existe) |
