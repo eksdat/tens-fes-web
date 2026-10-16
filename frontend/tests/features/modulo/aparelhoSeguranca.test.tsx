@@ -74,20 +74,81 @@ describe.each([
     expect(within(secao).getByRole('heading', { name: 'Gestação' })).toBeInTheDocument()
   })
 
-  test('deveTrazerOChecklistDeSeisPerguntas', () => {
+  test('deveDividirOChecklistEmAntesDuranteEDepois', () => {
     renderizar(modulo, `${base}/seguranca`)
 
-    const secao = screen.getByRole('heading', { name: 'Checklist antes de começar' }).parentElement as HTMLElement
-    expect(within(secao).getAllByRole('listitem')).toHaveLength(6)
-    expect(within(secao).getByText('Intensidade em zero antes da conexão?')).toBeInTheDocument()
+    const checklist = screen.getByRole('region', { name: 'Checklist de segurança' })
+    for (const etapa of ['Antes', 'Durante', 'Depois']) {
+      expect(within(checklist).getByRole('group', { name: etapa })).toBeInTheDocument()
+    }
   })
 
-  test('deveTrazerOsCincoGatilhosComAMensagem', () => {
+  test('deveTrazerOsGruposDeCadaEtapa', () => {
     renderizar(modulo, `${base}/seguranca`)
 
-    expect(screen.getByText('Ardência ou queimação')).toBeInTheDocument()
-    expect(screen.getByText('Interrompa a estimulação e verifique pele, eletrodo e contato.')).toBeInTheDocument()
-    expect(screen.getByText(/Não aumente automaticamente a amplitude/)).toBeInTheDocument()
+    const antes = screen.getByRole('group', { name: 'Antes' })
+    for (const grupo of ['Avaliação', 'Contraindicações e precauções', 'Pele', 'Equipamento']) {
+      expect(within(antes).getByRole('heading', { name: grupo })).toBeInTheDocument()
+    }
+    const durante = screen.getByRole('group', { name: 'Durante' })
+    for (const grupo of ['Resposta', 'Desconforto', 'Critérios de interrupção']) {
+      expect(within(durante).getByRole('heading', { name: grupo })).toBeInTheDocument()
+    }
+    const depois = screen.getByRole('group', { name: 'Depois' })
+    for (const grupo of ['Pele', 'Intercorrências', 'Cuidados com o material']) {
+      expect(within(depois).getByRole('heading', { name: grupo })).toBeInTheDocument()
+    }
+  })
+
+  test('deveTrazerAsSeisPerguntasDoChecklistProntoDoGuia', () => {
+    renderizar(modulo, `${base}/seguranca`)
+
+    const antes = screen.getByRole('group', { name: 'Antes' })
+    for (const pergunta of [
+      'Objetivo definido?',
+      'Riscos avaliados?',
+      'Pele e sensibilidade examinadas?',
+      'Cabos e eletrodos íntegros?',
+      'Intensidade em zero antes da conexão?',
+      'Paciente orientado a relatar desconforto?',
+    ]) {
+      expect(within(antes).getByRole('checkbox', { name: pergunta })).toBeInTheDocument()
+    }
+  })
+
+  test('deveMarcarEDesmarcarUmItemAoClicar', async () => {
+    renderizar(modulo, `${base}/seguranca`)
+    const usuario = userEvent.setup()
+    const item = screen.getByRole('checkbox', { name: 'Objetivo definido?' })
+
+    await usuario.click(item)
+    expect(item).toBeChecked()
+    await usuario.click(item)
+    expect(item).not.toBeChecked()
+  })
+
+  test('deveTrazerOsCincoGatilhosComIconeETexto', () => {
+    renderizar(modulo, `${base}/seguranca`)
+
+    const gatilhos = screen.getByRole('region', { name: 'Quando interromper ou revisar' })
+    const titulos = within(gatilhos).getAllByText(
+      /^(Ardência ou queimação|Perda de resposta motora|Risco não esclarecido|Troca de eletrodos|Fim da sessão)$/,
+    )
+    expect(titulos).toHaveLength(5)
+    for (const titulo of titulos) {
+      expect(titulo.closest('.tf-alert')?.querySelector('svg')).not.toBeNull()
+    }
+    expect(within(gatilhos).getByText('Interrompa a estimulação e verifique pele, eletrodo e contato.')).toBeInTheDocument()
+  })
+
+  test('deveAnunciarDeImediatoSoOsAlertasUrgentes', () => {
+    renderizar(modulo, `${base}/seguranca`)
+
+    const urgentes = screen.getAllByRole('alert')
+    expect(urgentes.map((a) => within(a).getByText(/.+/, { selector: '.tf-alert__titulo' }).textContent)).toEqual([
+      'Ardência ou queimação',
+      'Risco não esclarecido',
+    ])
   })
 
   test('deveDizerOQueFicaForaDoEscopo', () => {

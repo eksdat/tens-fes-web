@@ -2318,22 +2318,50 @@ fieldset.tf-captcha {
 }
 
 /* Segurança: gatilhos */
-.tf-gatilhos {
-  gap: var(--space-3);
+.tf-checklist {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-4);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  background: var(--surface-200);
 }
 
-.tf-gatilho {
+.tf-checklist__etapa {
+  padding: 0 var(--space-2);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tf-checklist__grupo {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tf-checklist__itens {
   display: grid;
   gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
-  border-left: 4px solid var(--warning);
-  background: var(--warning-tint);
-  border-radius: var(--radius-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.tf-gatilho dt {
-  margin: 0;
-  color: var(--warning);
+.tf-checklist__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--target-min);
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.tf-checklist__item input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--brand);
 }
 
 @media (min-width: 640px) {
