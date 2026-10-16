@@ -206,6 +206,21 @@ class PacienteIntegracaoTest {
     }
 
     @Test
+    void deveRecusarTelefoneForaDoPadraoIdentificadorComCaraDeCpfENascimentoAntesDe1900() throws Exception {
+        criar(profissionalA, """
+                {"nome":"Maria2","sobrenome":"Silva","identificador":"123.456.789-01","telefone":"112233445566778899",
+                 "email":"joao@teste","dataNascimento":"1850-01-01"}
+                """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.nome", notNullValue()))
+                .andExpect(jsonPath("$.erros.telefone", notNullValue()))
+                .andExpect(jsonPath("$.erros.email", notNullValue()));
+        criar(profissionalA, paciente("Maria", "12345678901")).andExpect(status().isBadRequest());
+        criar(profissionalA, paciente("Maria", "A-070").replace("1980-05-10", "1850-01-01"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void deveAceitarPacienteSemEmail() throws Exception {
         criar(profissionalA, paciente("Maria", "A-060").replace("\"email\":\"maria@exemplo.com\",", ""))
                 .andExpect(status().isCreated());

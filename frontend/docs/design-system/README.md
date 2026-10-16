@@ -482,5 +482,7 @@ Estrutura mínima de uma tela de autenticação:
 | Campo desalinhado na grade | Item de grid estica até a altura da linha e o rótulo desce | `.tf-form-grade` usa `align-items: start` |
 | Campo de data mais alto que os outros | O `input type=date` nativo tem altura e espaçamento próprios | `.tf-input[type=date]` com `min-height: 44px` e `padding-block: 0` |
 | Botões de opção espalhados na largura | `tf-linha` usa `space-between` | Para opções, use `.tf-grupo-botoes` |
+| Botão mais baixo que o campo ao lado | `.tf-btn` tem 44 px e `.tf-control` 48 px | Botão colado a campo (busca) recebe `min-height: 48px` |
+| Campo que aceita qualquer caractere | Validar só no envio deixa a pessoa digitar "112233445566778899" | Filtre ao digitar (máscara de telefone, identificador em maiúscula, nome sem dígito) com `placeholder` de exemplo e `maxLength`; valide de novo no backend |
 
 Veja também: `../../README.md` (arquitetura, autenticação e testes) e `../../../SEGURANCA.md`.

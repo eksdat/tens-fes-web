@@ -182,6 +182,70 @@ describe('formulário de paciente', () => {
     expect(screen.getByLabelText('Identificador interno')).toHaveAttribute('aria-invalid', 'true')
   })
 
+  test('deveMascararOTelefoneEIgnorarLetras', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await usuario.type(screen.getByLabelText('Telefone'), '31a999990000999')
+
+    expect(screen.getByLabelText('Telefone')).toHaveValue('(31) 99999-0000')
+  })
+
+  test('deveDeixarOIdentificadorEmMaiusculaSemEspacoNemSimbolo', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await usuario.type(screen.getByLabelText('Identificador interno'), 'caso 01#')
+
+    expect(screen.getByLabelText('Identificador interno')).toHaveValue('CASO01')
+  })
+
+  test('deveImpedirDigitoNoNome', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await usuario.type(screen.getByLabelText('Nome'), 'Ma2ria')
+
+    expect(screen.getByLabelText('Nome')).toHaveValue('Maria')
+  })
+
+  test('deveMostrarExemploEmCadaCampo', () => {
+    renderizarForm()
+
+    expect(screen.getByLabelText('Telefone')).toHaveAttribute('placeholder', '(31) 99999-0000')
+    expect(screen.getByLabelText('E-mail (opcional)')).toHaveAttribute('placeholder', 'nome@exemplo.com')
+    expect(screen.getByLabelText('Identificador interno')).toHaveAttribute('placeholder', 'CASO-01')
+  })
+
+  test('deveRecusarTelefoneIncompletoIdentificadorComCaraDeCpfENascimentoAntigo', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await preencher(usuario)
+    await usuario.clear(screen.getByLabelText('Telefone'))
+    await usuario.type(screen.getByLabelText('Telefone'), '3199990')
+    await usuario.clear(screen.getByLabelText('Identificador interno'))
+    await usuario.type(screen.getByLabelText('Identificador interno'), '12345678901')
+    await usuario.clear(screen.getByLabelText('Data de nascimento'))
+    await usuario.type(screen.getByLabelText('Data de nascimento'), '1850-01-01')
+    await usuario.click(screen.getByRole('button', { name: 'Cadastrar paciente' }))
+
+    expect(await screen.findByText('Informe o telefone com DDD, como (31) 99999-0000.')).toBeInTheDocument()
+    expect(screen.getByText('Parece um documento (CPF). Use um código interno, como CASO-01.')).toBeInTheDocument()
+    expect(screen.getByText('Confira o ano: use uma data a partir de 1900.')).toBeInTheDocument()
+  })
+
+  test('deveRecusarEmailSemDominioCompleto', async () => {
+    renderizarForm()
+    const usuario = userEvent.setup()
+
+    await preencher(usuario)
+    await usuario.type(screen.getByLabelText('E-mail (opcional)'), 'joao@teste')
+    await usuario.click(screen.getByRole('button', { name: 'Cadastrar paciente' }))
+
+    expect(await screen.findByText('Informe um e-mail válido, como nome@exemplo.com.')).toBeInTheDocument()
+  })
+
   test('deveEditarEExcluirComConfirmacao', async () => {
     vi.spyOn(api, 'buscarPaciente').mockResolvedValue(MARIA)
     vi.spyOn(apiAvaliacao, 'listarAvaliacoes').mockResolvedValue([])

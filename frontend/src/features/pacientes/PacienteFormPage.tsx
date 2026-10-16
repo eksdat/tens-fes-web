@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router'
 import { z } from 'zod'
@@ -21,22 +21,35 @@ import {
   lerErroPaciente,
   type PacienteRequest,
 } from './api'
+import { limparIdentificador, limparNome, mascararTelefone, pareceDocumento, telefoneValido } from './formatar'
 
 const hoje = () => new Date().toISOString().slice(0, 10)
+const NOME = /^\p{L}[\p{L}\s'’-]*$/u
 
 /** Mesmas regras do PacienteRequest do backend; o backend continua sendo quem decide. */
 const schema = z.object({
-  nome: z.string().trim().min(1, 'Informe o nome.').max(80, 'Use até 80 caracteres.'),
-  sobrenome: z.string().trim().min(1, 'Informe o sobrenome.').max(120, 'Use até 120 caracteres.'),
-  identificador: z.string().trim().min(1, 'Informe o identificador.').max(40, 'Use até 40 caracteres.'),
-  telefone: z
+  nome: z.string().trim().min(1, 'Informe o nome.').max(80, 'Use até 80 caracteres.').regex(NOME, 'Use só letras.'),
+  sobrenome: z
     .string()
     .trim()
-    .regex(/^[0-9()+\- ]{8,20}$/, 'Use só números, espaço, parênteses, + e -, com 8 a 20 caracteres.'),
-  email: z.union([z.literal(''), z.email('E-mail inválido.').max(254, 'Use até 254 caracteres.')]),
+    .min(1, 'Informe o sobrenome.')
+    .max(120, 'Use até 120 caracteres.')
+    .regex(NOME, 'Use só letras.'),
+  identificador: z
+    .string()
+    .trim()
+    .min(1, 'Informe o identificador.')
+    .max(40, 'Use até 40 caracteres.')
+    .refine((v) => !pareceDocumento(v), 'Parece um documento (CPF). Use um código interno, como CASO-01.'),
+  telefone: z.string().refine(telefoneValido, 'Informe o telefone com DDD, como (31) 99999-0000.'),
+  email: z.union([
+    z.literal(''),
+    z.email('Informe um e-mail válido, como nome@exemplo.com.').max(254, 'Use até 254 caracteres.'),
+  ]),
   dataNascimento: z
     .string()
     .min(1, 'Informe a data de nascimento.')
+    .refine((v) => v >= '1900-01-01', 'Confira o ano: use uma data a partir de 1900.')
     .refine((v) => v <= hoje(), 'A data de nascimento não pode estar no futuro.'),
 })
 
@@ -64,6 +77,17 @@ export function PacienteFormPage() {
     resolver: zodResolver(schema),
     defaultValues: { nome: '', sobrenome: '', identificador: '', telefone: '', email: '', dataNascimento: '' },
   })
+
+  function comFiltro(campo: 'nome' | 'sobrenome' | 'identificador' | 'telefone', filtrar: (v: string) => string) {
+    const registrado = register(campo)
+    return {
+      ...registrado,
+      onChange: (e: ChangeEvent<HTMLInputElement>) => {
+        e.target.value = filtrar(e.target.value)
+        return registrado.onChange(e)
+      },
+    }
+  }
 
   useEffect(() => {
     if (paciente.data) reset({ ...paciente.data, email: paciente.data.email ?? '' })
@@ -128,27 +152,57 @@ export function PacienteFormPage() {
 
       <form className="tf-cartao tf-pilha" noValidate onSubmit={handleSubmit(salvar)}>
         <div className="tf-form-grade">
-          <Campo rotulo="Nome" autoComplete="off" erro={errors.nome?.message} {...register('nome')} />
-          <Campo rotulo="Sobrenome" autoComplete="off" erro={errors.sobrenome?.message} {...register('sobrenome')} />
+          <Campo
+            rotulo="Nome"
+            placeholder="Maria"
+            autoComplete="off"
+            maxLength={80}
+            erro={errors.nome?.message}
+            {...comFiltro('nome', limparNome)}
+          />
+          <Campo
+            rotulo="Sobrenome"
+            placeholder="Silva"
+            autoComplete="off"
+            maxLength={120}
+            erro={errors.sobrenome?.message}
+            {...comFiltro('sobrenome', limparNome)}
+          />
           <Campo
             rotulo="Identificador interno"
-            dica="Código que você usa para achar o caso, como CASO-01. Não use documento real."
+            placeholder="CASO-01"
+            dica="Letras, números e hífen. Não use documento real."
             autoComplete="off"
+            maxLength={40}
             erro={errors.identificador?.message}
-            {...register('identificador')}
+            {...comFiltro('identificador', limparIdentificador)}
           />
           <Campo
             rotulo="Data de nascimento"
             type="date"
+            min="1900-01-01"
             max={hoje()}
             erro={errors.dataNascimento?.message}
             {...register('dataNascimento')}
           />
-          <Campo rotulo="Telefone" type="tel" autoComplete="off" erro={errors.telefone?.message} {...register('telefone')} />
+          <Campo
+            rotulo="Telefone"
+            type="tel"
+            inputMode="numeric"
+            placeholder="(31) 99999-0000"
+            dica="Com DDD."
+            autoComplete="off"
+            maxLength={15}
+            erro={errors.telefone?.message}
+            {...comFiltro('telefone', mascararTelefone)}
+          />
           <Campo
             rotulo="E-mail (opcional)"
             type="email"
+            inputMode="email"
+            placeholder="nome@exemplo.com"
             autoComplete="off"
+            maxLength={254}
             erro={errors.email?.message}
             {...register('email')}
           />

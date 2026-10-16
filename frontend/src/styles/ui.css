@@ -2600,6 +2600,11 @@ fieldset.tf-captcha {
   flex: 1 1 260px;
 }
 
+/* Botão ao lado de um campo tem a altura do campo (48 px), não a do botão comum (44 px). */
+.tf-pacientes__busca .tf-btn {
+  min-height: 48px;
+}
+
 .tf-pacientes__vazio {
   display: block;
 }
