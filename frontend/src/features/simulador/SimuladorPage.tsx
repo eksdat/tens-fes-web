@@ -136,12 +136,6 @@ export function SimuladorPage() {
         <p className="tf-sub">Mude um parâmetro por vez e veja o pulso mudar. A intensidade começa em zero.</p>
       </header>
 
-      <Alerta titulo="Ambiente educativo">
-        Os ajustes aqui não acionam equipamentos nem geram prescrição automática.
-      </Alerta>
-      <Alerta intencao="atencao" titulo="Exemplo didático">
-        Exemplos didáticos não geram prescrição para pacientes reais.
-      </Alerta>
 
       {consulta.isPending ? (
         <p className="tf-sub">Carregando as faixas do aparelho…</p>

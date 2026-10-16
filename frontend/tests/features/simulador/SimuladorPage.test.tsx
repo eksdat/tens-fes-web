@@ -56,13 +56,6 @@ function renderizar(rota = '/simulador') {
   )
 }
 
-test('deveMostrarOsAvisosFixos', async () => {
-  renderizar()
-
-  expect(await screen.findByText('Exemplos didáticos não geram prescrição para pacientes reais.')).toBeInTheDocument()
-  expect(screen.getByText(/Os ajustes aqui não acionam equipamentos nem geram prescrição automática/)).toBeInTheDocument()
-})
-
 test('deveMostrarCadaControleComSuaUnidade', async () => {
   renderizar()
 
