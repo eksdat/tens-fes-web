@@ -16,6 +16,7 @@ import { InicioPage } from '../features/inicio/InicioPage'
 import { PerfilPage } from '../features/perfil/PerfilPage'
 import { PacienteFormPage } from '../features/pacientes/PacienteFormPage'
 import { PacientesPage } from '../features/pacientes/PacientesPage'
+import { AvaliacaoFormPage } from '../features/avaliacao/AvaliacaoFormPage'
 import { EmConstrucao } from './EmConstrucao'
 import { LayoutLogado } from './LayoutLogado'
 import { RaizApp } from './RaizApp'
@@ -69,6 +70,8 @@ export const router = createBrowserRouter([
                   { path: '/pacientes', handle: { titulo: 'Pacientes' }, element: <PacientesPage /> },
                   { path: '/pacientes/novo', handle: { titulo: 'Novo paciente' }, element: <PacienteFormPage /> },
                   { path: '/pacientes/:id', handle: { titulo: 'Paciente' }, element: <PacienteFormPage /> },
+                  { path: '/pacientes/:id/avaliacoes/nova', handle: { titulo: 'Avaliação inicial' }, element: <AvaliacaoFormPage /> },
+                  { path: '/pacientes/:id/avaliacoes/:avaliacaoId', handle: { titulo: 'Avaliação' }, element: <AvaliacaoFormPage /> },
                 ],
               },
             ],

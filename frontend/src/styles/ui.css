@@ -2441,3 +2441,30 @@ fieldset.tf-captcha {
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+/* Avaliação: estados "não avaliado / ausente / presente" e texto longo */
+.tf-textarea {
+  min-height: calc(var(--target-min) * 2);
+  resize: vertical;
+  font: inherit;
+}
+
+.tf-estado {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tf-estado__legenda {
+  padding: 0;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tf-estado__opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}

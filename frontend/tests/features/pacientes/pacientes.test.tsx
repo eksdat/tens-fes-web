@@ -6,6 +6,7 @@ import { renderComRotas } from '../../renderComRotas'
 import { PacientesPage } from '@/features/pacientes/PacientesPage'
 import { PacienteFormPage } from '@/features/pacientes/PacienteFormPage'
 import * as api from '@/features/pacientes/api'
+import * as apiAvaliacao from '@/features/avaliacao/api'
 
 const MARIA: api.Paciente = {
   id: 'a1',
@@ -182,6 +183,7 @@ describe('formulário de paciente', () => {
 
   test('deveEditarEExcluirComConfirmacao', async () => {
     vi.spyOn(api, 'buscarPaciente').mockResolvedValue(MARIA)
+    vi.spyOn(apiAvaliacao, 'listarAvaliacoes').mockResolvedValue([])
     const excluir = vi.spyOn(api, 'excluirPaciente').mockResolvedValue()
     renderizarForm('/pacientes/a1')
     const usuario = userEvent.setup()

@@ -9,6 +9,7 @@ import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
 import { Dialogo } from '../../shared/ui/Dialogo'
 import { TelaCarregando } from '../../shared/ui/TelaCarregando'
+import { AvaliacoesDoPaciente } from '../avaliacao/AvaliacoesDoPaciente'
 import { AvisoDadosFicticios } from './AvisoDadosFicticios'
 import {
   atualizarPaciente,
@@ -182,6 +183,8 @@ export function PacienteFormPage() {
           )}
         </div>
       </form>
+
+      {id && <AvaliacoesDoPaciente pacienteId={id} />}
     </section>
   )
 }
