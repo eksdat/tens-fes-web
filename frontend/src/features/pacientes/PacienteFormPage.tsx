@@ -63,6 +63,7 @@ export function PacienteFormPage() {
   const queryClient = useQueryClient()
   const [erroGeral, setErroGeral] = useState<string | null>(null)
   const [confirmarExclusao, setConfirmarExclusao] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
 
   const paciente = useQuery({ queryKey: [...CHAVE_PACIENTES, id], queryFn: () => buscarPaciente(id as string), enabled: editando })
 
@@ -128,11 +129,16 @@ export function PacienteFormPage() {
 
   async function excluir() {
     if (!id) return
+    setExcluindo(true)
     try {
       await excluirPaciente(id)
-      await queryClient.invalidateQueries({ queryKey: CHAVE_PACIENTES })
+      // Tirar do cache o paciente excluído e ir para a lista já: rebuscá-lo daria 404 e o React Query
+      // repetiria a chamada por segundos antes de liberar o redirecionamento. A lista rebusca sozinha.
+      queryClient.removeQueries({ queryKey: [...CHAVE_PACIENTES, id] })
+      void queryClient.invalidateQueries({ queryKey: CHAVE_PACIENTES })
       navigate('/pacientes')
     } catch (erro) {
+      setExcluindo(false)
       setConfirmarExclusao(false)
       setErroGeral(lerErroPaciente(erro).mensagem)
     }
@@ -210,7 +216,9 @@ export function PacienteFormPage() {
               titulo="Excluir paciente?"
               descricao="O cadastro some da sua lista agora e é apagado de vez em 90 dias."
               aberto={confirmarExclusao}
-              aoFechar={() => setConfirmarExclusao(false)}
+              aoFechar={() => {
+                if (!excluindo) setConfirmarExclusao(false)
+              }}
               gatilho={
                 <Botao variante="ghost" onClick={() => setConfirmarExclusao(true)}>
                   Excluir paciente
@@ -218,14 +226,24 @@ export function PacienteFormPage() {
               }
               acoes={
                 <>
-                  <Botao variante="secundario" onClick={() => setConfirmarExclusao(false)}>
+                  <Botao variante="secundario" disabled={excluindo} onClick={() => setConfirmarExclusao(false)}>
                     Cancelar
                   </Botao>
-                  <Botao onClick={() => void excluir()}>Excluir</Botao>
+                  <Botao carregando={excluindo} onClick={() => void excluir()}>
+                    {excluindo ? 'Excluindo…' : 'Excluir'}
+                  </Botao>
                 </>
               }
             >
               <p className="tf-sub">Esta ação não pode ser desfeita pela tela.</p>
+              <output className="tf-espere">
+                {excluindo && (
+                  <>
+                    <span className="tf-espere__icone" aria-hidden="true" />
+                    Excluindo o paciente. Aguarde…
+                  </>
+                )}
+              </output>
             </Dialogo>
           )}
         </div>

@@ -305,6 +305,7 @@ Padrões que nasceram nas features (em `src/features`):
 | Tabela ordenável | `.tf-tabela` em `.tf-tabela__rolagem` | Cabeçalho é botão dentro do `th` com `aria-sort` e seta; o segundo clique inverte; `caption` (pode ser `tf-sr-only`) diz a ordem atual |
 | Estado de três valores | `.tf-estado` | "Não avaliado / Ausente / Presente" em rádios, começando em "Não avaliado" |
 | Checklist de segurança | `seguranca/ChecklistSeguranca` | Antes, Durante e Depois em `fieldset`; controlado (`marcados`, `aoAlternar`) quando precisa salvar |
+| Operação em andamento | `Botao carregando` + `.tf-espere` | Ação que demora (excluir, salvar): o botão vira "Excluindo…", fica desabilitado com `aria-busy`, o botão de cancelar também, o diálogo não fecha por ESC nem clique fora, e um `<output class="tf-espere">` mostra o ícone girando e o texto, que o leitor de tela anuncia. O ícone para com "reduzir movimento" |
 | Aviso de dados fictícios | `pacientes/AvisoDadosFicticios` | `Alerta` de atenção "Ambiente acadêmico: use apenas dados fictícios." em toda tela de paciente, avaliação e sessão |
 
 Exemplo de formulário com os componentes do app:
@@ -483,6 +484,7 @@ Estrutura mínima de uma tela de autenticação:
 | Campo de data mais alto que os outros | O `input type=date` nativo tem altura e espaçamento próprios | `.tf-input[type=date]` com `min-height: 44px` e `padding-block: 0` |
 | Botões de opção espalhados na largura | `tf-linha` usa `space-between` | Para opções, use `.tf-grupo-botoes` |
 | Caixa de texto sem borda | `.tf-input` tem borda 0; a borda vem do `.tf-control` que o envolve | Todo `<textarea>` vai dentro de `.tf-control` (use `CampoTextoLongo`) |
+| Redirecionamento demora depois de excluir | `await invalidateQueries` rebusca o registro excluído, dá 404 e o React Query repete a chamada por segundos | Tire o registro do cache (`removeQueries`), navegue já e invalide a lista sem esperar (`void`) |
 | Botão mais baixo que o campo ao lado | `.tf-btn` tem 44 px e `.tf-control` 48 px | Botão colado a campo (busca) recebe `min-height: 48px` |
 | Campo que aceita qualquer caractere | Validar só no envio deixa a pessoa digitar "112233445566778899" | Filtre ao digitar (máscara de telefone, identificador em maiúscula, nome sem dígito) com `placeholder` de exemplo e `maxLength`; valide de novo no backend |
 

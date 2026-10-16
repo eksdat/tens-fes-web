@@ -236,6 +236,39 @@ describe('formulário de paciente', () => {
     expect(await screen.findByText('Informe um e-mail válido, como nome@exemplo.com.')).toBeInTheDocument()
   })
 
+  test('deveMostrarEspereEIrParaAListaSemEsperarARebuscaDoPacienteExcluido', async () => {
+    const buscar = vi.spyOn(api, 'buscarPaciente').mockResolvedValue(MARIA)
+    vi.spyOn(apiAvaliacao, 'listarAvaliacoes').mockResolvedValue([])
+    vi.spyOn(apiSessao, 'listarSessoes').mockResolvedValue([])
+    let concluir: () => void = () => {}
+    vi.spyOn(api, 'excluirPaciente').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          concluir = () => {
+            // Depois de excluído, rebuscar o paciente nunca responde: seria a espera de segundos antes do redirecionamento.
+            buscar.mockImplementation(() => new Promise(() => {}))
+            resolve()
+          }
+        }),
+    )
+    renderizarForm('/pacientes/a1')
+    const usuario = userEvent.setup()
+
+    expect(await screen.findByDisplayValue('Maria')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Excluir paciente' }))
+    const dialogo = await screen.findByRole('dialog')
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Excluir' }))
+
+    const excluindo = await within(dialogo).findByRole('button', { name: /Excluindo/ })
+    expect(excluindo).toBeDisabled()
+    expect(excluindo).toHaveAttribute('aria-busy', 'true')
+    expect(within(dialogo).getByRole('button', { name: 'Cancelar' })).toBeDisabled()
+    expect(within(dialogo).getByRole('status')).toHaveTextContent('Excluindo o paciente')
+
+    concluir()
+    expect(await screen.findByText('lista', {}, { timeout: 1000 })).toBeInTheDocument()
+  })
+
   test('deveEditarEExcluirComConfirmacao', async () => {
     vi.spyOn(api, 'buscarPaciente').mockResolvedValue(MARIA)
     vi.spyOn(apiAvaliacao, 'listarAvaliacoes').mockResolvedValue([])

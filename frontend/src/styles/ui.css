@@ -2737,3 +2737,32 @@ fieldset.tf-captcha {
     max-width: 720px;
   }
 }
+
+/* Aviso de operação em andamento (excluir, salvar): ícone girando e texto, para quem não vê a animação. */
+.tf-espere {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tf-espere:empty {
+  display: none;
+}
+
+.tf-espere__icone {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--brand-tint);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: tf-girar 800ms linear infinite;
+}
+
+@keyframes tf-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
