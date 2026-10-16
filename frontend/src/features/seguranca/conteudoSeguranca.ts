@@ -3,13 +3,15 @@ import type { Fonte } from '../modulo/tipos'
 
 /** Guia Técnico, seção 20 (segurança). Referência de segurança: Houghton et al. (R4). */
 
+/** Antes: perguntas do 'Checklist pronto' (seção 20). Durante e Depois: as orientações da seção 20, no imperativo. */
+export type EtapaChecklist = { etapa: 'Antes' | 'Durante' | 'Depois'; grupos: { titulo: string; itens: string[] }[] }
+
 export type ConteudoSeguranca = {
   introducao: string
   antes: { situacao: string; conduta: string }[]
-  checklist: string[]
-  durante: string[]
-  depois: string[]
-  gatilhos: { gatilho: string; mensagem: string }[]
+  checklist: EtapaChecklist[]
+  /** Urgente: o leitor de tela anuncia de imediato (role="alert"). */
+  gatilhos: { gatilho: string; mensagem: string; urgente: boolean }[]
   foraDoEscopo: { itens: string[]; nota: string }
   fontes: Fonte[]
 }
@@ -52,37 +54,76 @@ export const SEGURANCA: ConteudoSeguranca = {
     },
   ],
   checklist: [
-    'Objetivo definido?',
-    'Riscos avaliados?',
-    'Pele e sensibilidade examinadas?',
-    'Cabos e eletrodos íntegros?',
-    'Intensidade em zero antes da conexão?',
-    'Pessoa orientada a relatar desconforto?',
-  ],
-  durante: [
-    'Monitore o relato, a pele quando necessário, a qualidade do contato e a resposta.',
-    'Na estimulação motora, acompanhe movimento, compensações, fadiga e a segurança da tarefa.',
-    'Se houver queimação, dor inesperada, mal-estar, alteração cutânea relevante ou movimento inseguro, interrompa a saída e avalie antes de qualquer retomada.',
-  ],
-  depois: [
-    'Zere ou interrompa a saída antes de retirar os eletrodos, conforme o manual.',
-    'Observe a pele e registre a resposta, a dose efetivamente realizada e as intercorrências.',
-    'Higienização, descarte, armazenamento e reutilização dependem do acessório e das instruções do fabricante.',
+    {
+      etapa: 'Antes',
+      grupos: [
+        {
+          titulo: 'Avaliação',
+          itens: ['Objetivo definido?', 'Riscos avaliados?', 'Paciente orientado a relatar desconforto?'],
+        },
+        {
+          titulo: 'Contraindicações e precauções',
+          itens: ['Impedimentos da triagem descartados?', 'Precauções identificadas e registradas?'],
+        },
+        { titulo: 'Pele', itens: ['Pele e sensibilidade examinadas?'] },
+        { titulo: 'Equipamento', itens: ['Cabos e eletrodos íntegros?', 'Intensidade em zero antes da conexão?'] },
+      ],
+    },
+    {
+      etapa: 'Durante',
+      grupos: [
+        {
+          titulo: 'Resposta',
+          itens: [
+            'Monitore o relato, o contato dos eletrodos e a resposta.',
+            'Na estimulação motora, acompanhe movimento, compensações, fadiga e segurança da tarefa.',
+          ],
+        },
+        { titulo: 'Desconforto', itens: ['Observe a pele quando necessário.'] },
+        {
+          titulo: 'Critérios de interrupção',
+          itens: [
+            'Se houver queimação, dor inesperada, mal-estar, alteração cutânea relevante ou movimento inseguro, interrompa a saída e avalie antes de retomar.',
+          ],
+        },
+      ],
+    },
+    {
+      etapa: 'Depois',
+      grupos: [
+        { titulo: 'Pele', itens: ['Observe a pele depois da retirada.'] },
+        { titulo: 'Intercorrências', itens: ['Registre a resposta, a dose efetivamente realizada e as intercorrências.'] },
+        {
+          titulo: 'Cuidados com o material',
+          itens: [
+            'Zere ou interrompa a saída antes de retirar os eletrodos, conforme o manual.',
+            'Higienize, descarte ou guarde o material conforme as instruções do fabricante.',
+          ],
+        },
+      ],
+    },
   ],
   gatilhos: [
-    { gatilho: 'Ardência ou queimação', mensagem: 'Interrompa a estimulação e verifique pele, eletrodo e contato.' },
+    {
+      gatilho: 'Ardência ou queimação',
+      mensagem: 'Interrompa a estimulação e verifique pele, eletrodo e contato.',
+      urgente: true,
+    },
     {
       gatilho: 'Perda de resposta motora',
       mensagem: 'Revise fadiga, montagem e contexto. Não aumente automaticamente a amplitude.',
+      urgente: false,
     },
     {
       gatilho: 'Risco não esclarecido',
       mensagem: 'A avaliação de segurança está incompleta. Conclua a análise antes de registrar uma aplicação planejada.',
+      urgente: true,
     },
-    { gatilho: 'Troca de eletrodos', mensagem: 'Interrompa a saída antes de modificar a montagem.' },
+    { gatilho: 'Troca de eletrodos', mensagem: 'Interrompa a saída antes de modificar a montagem.', urgente: false },
     {
       gatilho: 'Fim da sessão',
       mensagem: 'Registre a condição da pele, a resposta e os ajustes realizados.',
+      urgente: false,
     },
   ],
   foraDoEscopo: {
