@@ -15,6 +15,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import br.unibh.fisiotech.avaliacao.enums.Lado;
@@ -46,7 +47,8 @@ public record SessaoRequest(
         @NotBlank(message = "Informe a condição da pele.") @Size(max = 300) String condicaoPele,
         @NotBlank(message = "Informe o motivo do término.") @Size(max = 300) String motivoTermino,
         @NotBlank(message = "Informe o plano de reavaliação.") @Size(max = 500) String planoReavaliacao,
-        @Size(max = 40) Set<@NotBlank @Size(max = 300) String> checklist) {
+        /** Código fixo do item ("antes.objetivo-definido"); o texto da pergunta vive no frontend. */
+        @Size(max = 40) Set<@Pattern(regexp = "^(antes|durante|depois)\\.[a-z0-9-]{1,60}$", message = "Item de checklist inválido.") String> checklist) {
 
     @JsonIgnore
     @AssertTrue(message = "Cada canal aparece uma vez.")

@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe'
 import { renderComRotas } from '../../renderComRotas'
 import { SessaoFormPage } from '@/features/sessao/SessaoFormPage'
 import * as api from '@/features/sessao/api'
+import * as apiAvaliacao from '@/features/avaliacao/api'
 
 vi.mock('@/features/usuario/useUsuarioAtual', () => ({
   CHAVE_USUARIO_ATUAL: ['usuario', 'me'],
@@ -72,6 +73,7 @@ async function preencherObrigatorios(usuario: ReturnType<typeof userEvent.setup>
 beforeEach(() => {
   vi.restoreAllMocks()
   vi.spyOn(api, 'listarSessoes').mockResolvedValue([])
+  vi.spyOn(apiAvaliacao, 'listarAvaliacoes').mockResolvedValue([])
 })
 
 test('deveTerOsSeisBlocosDoCard', () => {
@@ -166,7 +168,48 @@ test('deveSalvarOsItensMarcadosDoChecklist', async () => {
   await usuario.click(await screen.findByRole('button', { name: 'Salvar sessão' }))
 
   await waitFor(() => expect(registrar).toHaveBeenCalled())
-  expect(registrar.mock.calls[0][1].checklist).toEqual(['Antes:Objetivo definido?'])
+  expect(registrar.mock.calls[0][1].checklist).toEqual(['antes.objetivo-definido'])
+})
+
+const AVALIACAO: apiAvaliacao.Avaliacao = {
+  id: 'av1',
+  pacienteId: 'p1',
+  dataAvaliacao: '2026-10-10',
+  queixa: null,
+  historico: null,
+  dorEscala: null,
+  dorContexto: null,
+  dorTarefa: null,
+  dorMomento: null,
+  objetivo: null,
+  plano: null,
+  triagem: {
+    DISPOSITIVO_IMPLANTADO: 'AUSENTE',
+    GESTACAO: 'PRESENTE',
+    SUSPEITA_TROMBOSE: 'NAO_AVALIADO',
+    INFECCAO: 'PRESENTE',
+    ALTERACAO_PELE_SENSIBILIDADE: 'AUSENTE',
+    RESTRICOES: 'NAO_AVALIADO',
+  },
+  achados: [],
+  criadoEm: '2026-10-10T10:00:00Z',
+  criadoPor: 'u1',
+  alteradoEm: '2026-10-10T10:00:00Z',
+  alteradoPor: 'u1',
+}
+
+test('deveAvisarOsItensDaTriagemPresentesNaUltimaAvaliacao', async () => {
+  vi.spyOn(apiAvaliacao, 'listarAvaliacoes').mockResolvedValue([AVALIACAO])
+  renderizar()
+
+  expect(await screen.findByText('Triagem presente na avaliação de 10/10/2026: Gestação, Infecção.')).toBeInTheDocument()
+  expect(screen.getByText('Itens ainda não avaliados: Suspeita de trombose, Restrições.')).toBeInTheDocument()
+})
+
+test('deveAvisarQuandoOPacienteNaoTemAvaliacao', async () => {
+  renderizar()
+
+  expect(await screen.findByText('Este paciente ainda não tem avaliação inicial.')).toBeInTheDocument()
 })
 
 test('deveSerAcessivelSemViolacoes', async () => {

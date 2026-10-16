@@ -12,6 +12,7 @@ import { CampoTextoLongo } from '../../shared/ui/CampoTextoLongo'
 import { ROTULO_LADO, type Lado } from '../avaliacao/api'
 import { MONTAGENS, type Lado as LadoDaPrancha } from '../atlas/montagens'
 import { AvisoDadosFicticios } from '../pacientes/AvisoDadosFicticios'
+import { AvisoTriagem } from './AvisoTriagem'
 import { ChecklistSeguranca } from '../seguranca/ChecklistSeguranca'
 import { SEGURANCA } from '../seguranca/conteudoSeguranca'
 import { useUsuarioAtual } from '../usuario/useUsuarioAtual'
@@ -215,11 +216,11 @@ export function SessaoFormPage() {
     setValue('marcos', prancha.marcos)
   }
 
-  function alternarItem(chave: string) {
+  function alternarItem(codigo: string) {
     setChecklist((atuais) => {
       const novos = new Set(atuais)
-      if (novos.has(chave)) novos.delete(chave)
-      else novos.add(chave)
+      if (novos.has(codigo)) novos.delete(codigo)
+      else novos.add(codigo)
       return novos
     })
   }
@@ -248,6 +249,7 @@ export function SessaoFormPage() {
         <p className="tf-sub">Documente os parâmetros efetivos, os eletrodos, a resposta e a duração real.</p>
       </div>
       <AvisoDadosFicticios />
+      <AvisoTriagem pacienteId={pacienteId} />
 
       <output className="tf-sessao__confirmacao">
         {etapa === 'salva' && (

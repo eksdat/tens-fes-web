@@ -4,7 +4,10 @@ import type { Fonte } from '../modulo/tipos'
 /** Guia Técnico, seção 20 (segurança). Referência de segurança: Houghton et al. (R4). */
 
 /** Antes: perguntas do 'Checklist pronto' (seção 20). Durante e Depois: as orientações da seção 20, no imperativo. */
-export type EtapaChecklist = { etapa: 'Antes' | 'Durante' | 'Depois'; grupos: { titulo: string; itens: string[] }[] }
+/** O código é o que a sessão grava (nunca muda); o texto pode ser reescrito sem alterar registros antigos. */
+export type ItemChecklist = { codigo: string; texto: string }
+
+export type EtapaChecklist = { etapa: 'Antes' | 'Durante' | 'Depois'; grupos: { titulo: string; itens: ItemChecklist[] }[] }
 
 export type ConteudoSeguranca = {
   introducao: string
@@ -59,14 +62,14 @@ export const SEGURANCA: ConteudoSeguranca = {
       grupos: [
         {
           titulo: 'Avaliação',
-          itens: ['Objetivo definido?', 'Riscos avaliados?', 'Paciente orientado a relatar desconforto?'],
+          itens: [{ codigo: 'antes.objetivo-definido', texto: 'Objetivo definido?' }, { codigo: 'antes.riscos-avaliados', texto: 'Riscos avaliados?' }, { codigo: 'antes.paciente-orientado', texto: 'Paciente orientado a relatar desconforto?' }],
         },
         {
           titulo: 'Contraindicações e precauções',
-          itens: ['Impedimentos da triagem descartados?', 'Precauções identificadas e registradas?'],
+          itens: [{ codigo: 'antes.impedimentos-descartados', texto: 'Impedimentos da triagem descartados?' }, { codigo: 'antes.precaucoes-registradas', texto: 'Precauções identificadas e registradas?' }],
         },
-        { titulo: 'Pele', itens: ['Pele e sensibilidade examinadas?'] },
-        { titulo: 'Equipamento', itens: ['Cabos e eletrodos íntegros?', 'Intensidade em zero antes da conexão?'] },
+        { titulo: 'Pele', itens: [{ codigo: 'antes.pele-examinada', texto: 'Pele e sensibilidade examinadas?' }] },
+        { titulo: 'Equipamento', itens: [{ codigo: 'antes.cabos-eletrodos-integros', texto: 'Cabos e eletrodos íntegros?' }, { codigo: 'antes.intensidade-zero', texto: 'Intensidade em zero antes da conexão?' }] },
       ],
     },
     {
@@ -75,15 +78,15 @@ export const SEGURANCA: ConteudoSeguranca = {
         {
           titulo: 'Resposta',
           itens: [
-            'Monitore o relato, o contato dos eletrodos e a resposta.',
-            'Na estimulação motora, acompanhe movimento, compensações, fadiga e segurança da tarefa.',
+            { codigo: 'durante.monitorar-relato-contato-resposta', texto: 'Monitore o relato, o contato dos eletrodos e a resposta.' },
+            { codigo: 'durante.acompanhar-movimento-fadiga', texto: 'Na estimulação motora, acompanhe movimento, compensações, fadiga e segurança da tarefa.' },
           ],
         },
-        { titulo: 'Desconforto', itens: ['Observe a pele quando necessário.'] },
+        { titulo: 'Desconforto', itens: [{ codigo: 'durante.observar-pele', texto: 'Observe a pele quando necessário.' }] },
         {
           titulo: 'Critérios de interrupção',
           itens: [
-            'Se houver queimação, dor inesperada, mal-estar, alteração cutânea relevante ou movimento inseguro, interrompa a saída e avalie antes de retomar.',
+            { codigo: 'durante.interromper-se-queimacao', texto: 'Se houver queimação, dor inesperada, mal-estar, alteração cutânea relevante ou movimento inseguro, interrompa a saída e avalie antes de retomar.' },
           ],
         },
       ],
@@ -91,13 +94,13 @@ export const SEGURANCA: ConteudoSeguranca = {
     {
       etapa: 'Depois',
       grupos: [
-        { titulo: 'Pele', itens: ['Observe a pele depois da retirada.'] },
-        { titulo: 'Intercorrências', itens: ['Registre a resposta, a dose efetivamente realizada e as intercorrências.'] },
+        { titulo: 'Pele', itens: [{ codigo: 'depois.observar-pele', texto: 'Observe a pele depois da retirada.' }] },
+        { titulo: 'Intercorrências', itens: [{ codigo: 'depois.registrar-resposta-dose', texto: 'Registre a resposta, a dose efetivamente realizada e as intercorrências.' }] },
         {
           titulo: 'Cuidados com o material',
           itens: [
-            'Zere ou interrompa a saída antes de retirar os eletrodos, conforme o manual.',
-            'Higienize, descarte ou guarde o material conforme as instruções do fabricante.',
+            { codigo: 'depois.zerar-saida-antes-de-retirar', texto: 'Zere ou interrompa a saída antes de retirar os eletrodos, conforme o manual.' },
+            { codigo: 'depois.cuidar-do-material', texto: 'Higienize, descarte ou guarde o material conforme as instruções do fabricante.' },
           ],
         },
       ],

@@ -1,5 +1,6 @@
 package br.unibh.fisiotech.sessao;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -44,7 +45,7 @@ class SessaoIntegracaoTest {
              "sensacao":"Formigamento forte e confortável","contracao":null,"tolerancia":"Boa","fadiga":null,"ajustes":"Nenhum",
              "medidaAntes":"Dor 6/10 na tarefa","medidaDepois":"Dor 4/10 na tarefa","medidaContexto":"Mesma tarefa",
              "condicaoPele":"Sem alteração","motivoTermino":"Tempo programado","planoReavaliacao":"Reavaliar a mesma tarefa.",
-             "checklist":["Antes:Objetivo definido?","Durante:Observe a pele quando necessário."]}
+             "checklist":["antes.objetivo-definido","durante.observar-pele"]}
             """;
 
     @Autowired
@@ -116,6 +117,15 @@ class SessaoIntegracaoTest {
                 .andExpect(jsonPath("$.erros.canais").exists())
                 .andExpect(jsonPath("$.erros.condicaoPele").exists())
                 .andExpect(jsonPath("$.erros.planoReavaliacao").exists());
+    }
+
+    @Test
+    void deveGuardarOChecklistPorCodigoFixoERecusarTextoLivre() throws Exception {
+        criar(profissionalA, pacienteDeA, SESSAO)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.checklist", hasItem("antes.objetivo-definido")));
+        criar(profissionalA, pacienteDeA, SESSAO.replace("antes.objetivo-definido", "Antes:Objetivo definido?"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
