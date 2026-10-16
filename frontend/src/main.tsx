@@ -8,6 +8,9 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
 import { Providers } from './app/providers'
 import { router } from './app/router'
+import { aplicarPreferencias, lerPreferencias } from './shared/acessibilidade/preferencias'
+
+aplicarPreferencias(lerPreferencias())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

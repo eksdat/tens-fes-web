@@ -6,7 +6,15 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Reserva a barra de rolagem: abrir um diálogo não faz a página dar um salto lateral. */
+  scrollbar-gutter: stable;
   overflow-x: clip;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-movimento='reduzido']) {
+    scroll-behavior: smooth;
+  }
 }
 
 html,
@@ -51,4 +59,14 @@ a {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Mesma regra de prefers-reduced-motion, acionada pelo painel de acessibilidade. */
+[data-movimento='reduzido'],
+[data-movimento='reduzido'] *,
+[data-movimento='reduzido'] *::before,
+[data-movimento='reduzido'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
 }

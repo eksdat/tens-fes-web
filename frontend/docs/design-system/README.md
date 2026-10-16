@@ -282,6 +282,11 @@ Em `src/shared/ui`, com testes de acessibilidade em `tests/shared/ui/ui.test.tsx
 | `FolhasDecorativas` | `className` | Folhas do painel verde, `aria-hidden` |
 | `TelaCarregando` | — | `<output>` "Carregando…" |
 | `Dialogo` | `gatilho`, `titulo`, `descricao?`, `acoes?`, `aberto?`, `aoFechar?` | **Radix UI Dialog**: captura foco, ESC fecha, `aria-labelledby`/`aria-describedby`, overlay inerte, animação com `prefers-reduced-motion` |
+| `BotaoAcessibilidade` | nenhuma | Botão com ícone de acesso universal que abre `Dialogo` com tamanho do texto (100/125/150 % na raiz), alto contraste (`data-contraste="alto"` em `tokens.css`) e reduzir movimento (`data-movimento="reduzido"`). Padrão vem de `prefers-contrast` e `prefers-reduced-motion`; escolha fica em `localStorage`. Está no `MenuPrincipal` e no `AuthLayout`. Lógica em `src/shared/acessibilidade/preferencias.ts` |
+| `BuscaRapida` | `perfil`, `aoSair` | Lupa no menu (e Ctrl/Cmd+K) abre `Dialogo` com campo de busca e lista de botões. Enter abre o primeiro resultado; Tab percorre os demais. Atalhos em `src/app/atalhos.ts`: módulos vêm de `src/app/abas.ts`, filtrados por perfil, mais ações que existem de verdade (Meu perfil, Sair). Ignora acento e caixa; exige todas as palavras digitadas |
+| `ModuloLayout` / `PaginaTecnica` | `modulo` (dados do módulo) | Entrada do módulo (kicker, título, aviso educativo) e as 6 abas fixas (Visão geral, Aparelho, Eletrodos, Parâmetros, Segurança, Casos), cada uma uma rota (`/tens/parametros`). `PaginaTecnica` é a página padrão: corpo mais rodapé "Fonte e data de revisão". Conteúdo em `features/<modulo>/conteudo*.ts`; abas sem conteúdo mostram "Conteúdo ainda não liberado". Em `src/features/modulo/` |
+| `PerguntasFrequentes` | `itens` (`pergunta`, `destaque`, `detalhe?`, `alerta?`, `acao?`), `fonteHref` | Acordeão em gaveta do design system: seta para baixo fechada e para cima aberta, cabeçalho aberto escuro com `shadow-card`, altura animada por grid (220 ms). Botão dentro de `h4` com `aria-expanded`/`aria-controls`; resposta em `section` ligada por `aria-labelledby`. A primeira vem aberta, várias podem ficar abertas; Enter e Espaço alternam, setas, Home e End percorrem. Resposta em três camadas: destaque, detalhe e rodapé com ação e "Fonte e data de revisão". Alerta de segurança com `role="note"` |
+| `AtlasEletrodos` | `modalidade`, `base`, `compacto?` | Placa anatômica (músculos de frente e de costas, CC BY-SA 4.0) com pontos clicáveis e lista de regiões (o controle acessível); cada região recorta a placa e mostra os eletrodos em escala. Completo: detalhe com desenho ampliado, eletrodos por canal com códigos 1A/1B/2A/2B (cor é redundante), montagem, cuidados e fonte; a região vive em `?regiao=`. Compacto (Visão geral): só corpo e links para a aba Eletrodos. Dados em `features/atlas/montagens.ts` (guia, seções 11A–11E) |
 
 Padrões que nasceram nas features (em `src/features`):
 
@@ -398,7 +403,7 @@ Imagens originais do protótipo, guardadas só como **referência de estilo**. Q
 | Login | Sem Google nem CAPTCHA | Com Google e CAPTCHA (Turnstile) |
 | Aceite dos termos | Caixa simples | Exigido pela API, que grava versão e data |
 | Cantos | Cartões mais arredondados nas imagens | Valem os tokens: 2, 4 e 6 px |
-| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | Barra inferior no celular e **abas no cabeçalho no computador**, como no protótipo (Card 22). Abas: Início, TENS, FES, Criar conteúdo e Pacientes (só para profissional). "Meu perfil" fica no menu da conta, junto com "Sair" |
+| Navegação no celular | Barra inferior com 4 abas (Início, TENS e FES, Criar conteúdo, Meu perfil) | Barra inferior com ícone e rótulo no celular (topo só com marca e ações) e **abas no cabeçalho no computador**, como no protótipo (Card 22). Abas: Início, TENS, FES, Criar conteúdo e Pacientes (só para profissional). "Meu perfil" fica no menu da conta, junto com "Sair" |
 
 ---
 

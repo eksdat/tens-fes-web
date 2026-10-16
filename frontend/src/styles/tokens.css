@@ -61,3 +61,26 @@
 
   color-scheme: light;
 }
+
+/*
+ * Alto contraste (painel de acessibilidade ou prefers-contrast: more). Texto a 7:1 ou mais (WCAG AAA).
+ * Só troca tokens: nenhum componente muda.
+ */
+:root[data-contraste='alto'] {
+  --surface-100: #ffffff;
+  --surface-300: #e6efe7;
+  --line: #000000;
+  --line-strong: #000000;
+  --ink: #000000;
+  --ink-muted: #1a2b21;
+  --brand: #0a3d26;
+  --brand-strong: #062a1a;
+  --brand-tint: #bfe3ca;
+  --accent: #f2c14b;
+  --on-accent: #000000;
+  --info: #0b3a6b;
+  --warning: #4d2d00;
+  --danger: #6e0f08;
+  --focus: #0033cc;
+  --shadow-card: 6px 6px 0 #000000;
+}

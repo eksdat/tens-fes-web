@@ -8,6 +8,9 @@ import { ProtectedRoute } from './ProtectedRoute'
 import { TermosDeUsoPage } from '../features/termos/TermosDeUsoPage'
 import { AtivarMfaPage } from '../features/mfa/AtivarMfaPage'
 import { VerificarMfaPage } from '../features/mfa/VerificarMfaPage'
+import { FES } from '../features/fes/conteudoFes'
+import { TENS } from '../features/tens/conteudoTens'
+import { rotasDoModulo } from '../features/modulo/rotasDoModulo'
 import { InicioPage } from '../features/inicio/InicioPage'
 import { PerfilPage } from '../features/perfil/PerfilPage'
 import { EmConstrucao } from './EmConstrucao'
@@ -52,8 +55,8 @@ export const router = createBrowserRouter([
             element: <LayoutLogado />,
             children: [
               { path: '/', handle: { titulo: 'Início' }, element: <InicioPage /> },
-              emConstrucao('/tens', 'TENS'),
-              emConstrucao('/fes', 'FES'),
+              rotasDoModulo(TENS),
+              rotasDoModulo(FES),
               emConstrucao('/criar-conteudo', 'Criar conteúdo'),
               { path: '/perfil', handle: { titulo: 'Meu perfil' }, element: <PerfilPage /> },
               { element: <ProtectedRoute perfil="PROFISSIONAL" />, children: [emConstrucao('/pacientes', 'Pacientes')] },
