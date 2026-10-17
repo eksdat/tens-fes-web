@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import br.unibh.fisiotech.conteudo.entity.Conteudo;
 import br.unibh.fisiotech.conteudo.enums.EstadoEditorial;
 import br.unibh.fisiotech.conteudo.enums.Modalidade;
+import br.unibh.fisiotech.conteudo.enums.Secao;
 
 public interface ConteudoRepository extends JpaRepository<Conteudo, Long> {
 
@@ -15,4 +16,6 @@ public interface ConteudoRepository extends JpaRepository<Conteudo, Long> {
             EstadoEditorial estado);
 
     Optional<Conteudo> findByIdAndEstado(Long id, EstadoEditorial estado);
+
+    List<Conteudo> findByModalidadeAndSecaoAndBlocoIsNotNull(Modalidade modalidade, Secao secao);
 }

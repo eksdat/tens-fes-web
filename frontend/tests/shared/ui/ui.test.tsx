@@ -89,18 +89,15 @@ describe('Dialogo', () => {
       </Dialogo>,
     )
 
-    // Antes de abrir: diálogo não está na árvore
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Abrir' }))
 
-    // Depois de abrir
     const dialogo = screen.getByRole('dialog')
     expect(dialogo).toBeInTheDocument()
     expect(screen.getByText('Confirmar ação')).toBeInTheDocument()
     expect(screen.getByText('Essa ação não pode ser desfeita.')).toBeInTheDocument()
 
-    // Fechar pelo botão X
     await userEvent.click(screen.getByRole('button', { name: 'Fechar diálogo' }))
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -153,10 +150,8 @@ describe('Dialogo', () => {
       </Dialogo>,
     )
 
-    // Verificar acessibilidade antes de abrir (gatilho)
     expect(await axe(container)).toHaveNoViolations()
 
-    // Verificar acessibilidade com o diálogo aberto
     await userEvent.click(screen.getByRole('button', { name: 'Abrir' }))
     expect(await axe(document.body)).toHaveNoViolations()
   })

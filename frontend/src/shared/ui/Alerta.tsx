@@ -9,7 +9,6 @@ type Props = {
   intencao?: Intencao
   titulo: string
   children?: ReactNode
-  /** Botão ou link de ação, abaixo do texto. */
   acao?: ReactNode
 }
 

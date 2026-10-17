@@ -40,13 +40,15 @@ Documentos de origem (fora deste repositório, pasta `docs/` do projeto): `Proto
 |---|---|---|
 | UI | React 19 + TypeScript 6 | Tipagem forte |
 | Build / dev server | Vite 8 | Rápido, HMR |
-| Rotas | React Router 7 (`react-router`) | Rotas protegidas por perfil |
+| Rotas | React Router 8 (`react-router`) | Rotas protegidas por perfil |
 | Dados remotos | TanStack Query + axios | Cache, loading e erro sem código repetido |
 | Formulários | React Hook Form + Zod 4 | Validação declarativa; mensagens acessíveis |
 | Login e sessão | `@supabase/supabase-js` (só `supabase.auth.*`) | Identidade no Supabase Auth; dados sempre pela API |
 | Visual | CSS próprio com tokens (`src/styles`) e fontes auto-hospedadas (`@fontsource`: Big Shoulders Display, Ubuntu, Ubuntu Mono) | Identidade do protótipo; sem Google Fonts, por causa da CSP e da LGPD |
-| Componentes base | Radix UI (`radix-ui`) *(a usar em diálogos, menus e seletores)* | Foco, teclado e ARIA corretos por padrão |
-| Aparelho 3D | react-three-fiber *(a adicionar)* | Modelo 3D com lista textual equivalente |
+| Componentes base | Radix UI (`radix-ui`): diálogo, menu da conta, grupo de rádio e chave | Foco, teclado e ARIA corretos por padrão |
+| Markdown do conteúdo técnico | `react-markdown` + `remark-gfm`, sem HTML cru (`features/modulo/CorpoMarkdown.tsx`) | Texto da API exibido sem executar script; tabelas do guia |
+| Gráficos do simulador | SVG próprio, animado com `requestAnimationFrame` | Sem biblioteca de gráfico; tabela e descrição textual equivalentes |
+| Aparelho 3D | react-three-fiber *(a adicionar, card próprio)* | Hoje: desenho do painel + lista textual de controles |
 | Tipos da API | `openapi-typescript` | Gerados do contrato do backend |
 | Lint | oxlint com plugin `jsx-a11y` | Lint rápido + regras de acessibilidade |
 | Testes | Vitest + Testing Library + jsdom; `vitest-axe`; Playwright *(a adicionar)* | Unitário, componente, a11y, e2e |
@@ -135,7 +137,7 @@ flowchart LR
 
 Plataforma: uma versão web responsiva (computador e navegador do celular). Não há aplicativo nativo.
 
-**Supabase:** usado só como banco pelo backend. O frontend não usa Supabase Auth nem `@supabase/supabase-js`. Motivo: a regra "profissional só vê o próprio paciente" fica num lugar só, o backend.
+**Supabase:** o frontend usa só o **Supabase Auth** (`supabase.auth.*`) para identidade: cadastro, login, Google, MFA. Todo dado passa pela API do backend; nunca `from()`, `rpc()`, `storage` ou `realtime`. A regra "profissional só vê o próprio paciente" fica num lugar só, o backend.
 
 ### Organização por feature
 
@@ -148,10 +150,10 @@ Cada feature tem suas páginas, componentes, hooks de dados e schemas juntos. O 
 |---|---|---|---|
 | Página (container) | Busca dados por hook e orquestra componentes | Usar hooks de dados | — |
 | Componente de apresentação | Recebe `props`, dispara callbacks | Ter estado de UI | Chamar HTTP |
-| Hook de dados (`usePacientes`, `useCriarSessao`) | Envolve `useQuery`/`useMutation` | Chamar `api` | Renderizar |
+| Funções de API e hooks (`features/*/api.ts`, `usePaginaTecnica`, `useFaixas`) | Chamam `api` e são usadas com `useQuery` | Chamar `api` | Renderizar |
 | Cliente API (`shared/api/client.ts`) | Instância axios com JWT e tratamento de 401 | — | Ter regra de negócio |
 | Schema Zod (`schemas.ts`) | Validação do formulário | — | — |
-| Tipos | Gerados do OpenAPI | — | Ser escritos à mão |
+| Tipos | Gerados do OpenAPI (`schema.d.ts`) | — | Ser escritos à mão *(hoje há tipos à mão em `features/*/api.ts`; ver seção 18)* |
 
 ```mermaid
 flowchart TB
@@ -169,88 +171,48 @@ flowchart TB
 
 ```text
 frontend/
-├── index.html                 # lang="pt-BR", theme-color, favicon
-├── package.json
-├── vite.config.ts             # plugin React + alias `@/` e config do Vitest (variáveis VITE_* de teste)
-├── firebase.json, .firebaserc # Firebase Hosting (ver DEPLOY.md)
-├── .oxlintrc.json             # lint, com jsx-a11y
-├── .env.example
-├── public/
-│   └── favicon.svg            # folha da marca com pulso
+├── index.html, package.json, vite.config.ts (alias @/ e config do Vitest)
+├── firebase.json, .firebaserc   # Firebase Hosting (ver DEPLOY.md)
+├── docs/design-system/          # guia visual e capturas
+├── public/favicon.svg
 ├── src/
-│   ├── main.tsx               # fontes, estilos, Providers + RouterProvider
-│   ├── vite-env.d.ts          # tipos das variáveis VITE_* e dos módulos @fontsource
-│   ├── styles/
-│   │   ├── tokens.css         # cores, espaço, cantos, fontes (somente tema claro)
-│   │   ├── base.css           # reset mínimo, foco visível, reduced motion
-│   │   └── ui.css             # componentes (classes tf-*) e layout das telas de autenticação
+│   ├── main.tsx                 # fontes, estilos, preferências de acessibilidade, Providers + Router
+│   ├── styles/                  # tokens.css, base.css, ui.css (classes tf-*)
 │   ├── app/
-│   │   ├── providers.tsx      # QueryClientProvider + AuthProvider
-│   │   ├── router.tsx         # todas as rotas, com o título de cada uma (handle.titulo)
-│   │   ├── RaizApp.tsx        # link "Pular para o conteúdo", document.title e anúncio da página
-│   │   ├── EmConstrucao.tsx   # tela provisória das abas TENS, FES, Criar conteúdo e Meu perfil, até cada card entregar a sua
-│   │   ├── LayoutLogado.tsx   # menu + <main id="conteudo"> das telas logadas
-│   │   ├── MenuPrincipal.tsx  # nav "Principal": abas fixas, barra inferior (celular) ou cabeçalho (880px+), menu da conta (nome, perfil, Sair)
-│   │   └── ProtectedRoute.tsx # guarda de rotas (sessão, cadastro, perfil, MFA); compõe auth, mfa e usuario
+│   │   ├── router.tsx           # todas as rotas e o título de cada uma
+│   │   ├── ProtectedRoute.tsx   # sessão, cadastro, termos, perfil e MFA
+│   │   ├── LayoutLogado.tsx     # menu + <main>; envolve o EstadoDoAparelhoProvider
+│   │   ├── MenuPrincipal.tsx, abas.ts, BuscaRapida.tsx, atalhos.ts
+│   │   ├── RaizApp.tsx          # "Pular para o conteúdo", document.title e anúncio da página
+│   │   └── EmConstrucao.tsx     # só "Criar conteúdo" ainda usa
 │   ├── shared/
-│   │   ├── api/
-│   │   │   ├── supabase.ts    # cliente do Supabase (só auth)
-│   │   │   ├── client.ts      # axios: baseURL, Bearer do Supabase, 401 → encerra a sessão
-│   │   │   └── schema.d.ts    # GERADO por `npm run api:types` — não editar
-│   │   ├── auth/
-│   │   │   ├── contexto.ts        # AuthContext (tipo e contexto)
-│   │   │   ├── AuthContext.tsx    # AuthProvider: reflete onAuthStateChange
-│   │   │   ├── useAuth.ts         # hook de acesso ao contexto
-│   │   │   └── armazenamento.ts   # "Manter conectado": localStorage ou sessionStorage
-│   │   └── ui/                # Marca, Botao, BotaoLink, Campo, CampoSenha, Alerta, AuthLayout, FolhasDecorativas, Icones, TelaCarregando
-│   ├── features/
-│   │   ├── auth/
-│   │   │   ├── schemas.ts     # emailSchema, senhaNovaSchema (usados por login, cadastro e senha)
-│   │   │   ├── login/         # LoginPage, BotaoGoogle, AuthCallbackPage
-│   │   │   ├── cadastro/      # CadastroPage (2 etapas + verificação), CompletarCadastroPage, PerfilCampos,
-│   │   │   │                  # CampoAceiteTermos, cadastro.ts, cadastroSeguro.ts
-│   │   │   ├── senha/         # EsqueciSenhaPage, NovaSenhaPage, RequisitosSenha, forcaSenha.ts (zxcvbn-ts)
-│   │   │   └── captcha/       # captcha.tsx (useCaptcha), CampoCaptcha
-│   │   ├── termos/            # TermosDeUsoPage, PoliticaPrivacidadePage, DocumentoLegal (textos preliminares)
-│   │   ├── mfa/               # AtivarMfaPage, VerificarMfaPage, useNivelMfa (AAL da sessão), CampoCodigo
-│   │   ├── usuario/           # useUsuarioAtual (GET /usuarios/me)
-│   │   ├── inicio/            # InicioPage (provisória)
-│   │   ├── perfil/            # a criar
-│   │   ├── modulos/           # TENS e FES, aba Segurança (a criar)
-│   │   ├── dicionario/        # a criar
-│   │   ├── aparelho/          # Aparelho3D + ListaControles (a criar)
-│   │   ├── atlas/             # a criar
-│   │   ├── simulador/         # a criar
-│   │   ├── conteudo/          # CriarConteudo, Revisao, Biblioteca (a criar)
-│   │   ├── casos/             # a criar
-│   │   └── pacientes/         # a criar, com o formato abaixo
-│   │       ├── api/           # usePacientes, useCriarSessao
-│   │       ├── pages/
-│   │       ├── components/
-│   │       └── schemas.ts     # Zod
-├── tests/                     # espelha a árvore de src/; alias @/ aponta para src/
-│   ├── setup.ts               # jest-dom, vitest-axe e limpeza do armazenamento
-│   ├── renderComRotas.tsx     # QueryClientProvider + MemoryRouter + Routes para testes de página
-│   ├── vitest-axe.d.ts        # tipo do matcher toHaveNoViolations
-│   ├── app/                   # ex.: ProtectedRoute.test.tsx
-│   ├── features/              # auth/login/LoginPage.test.tsx, mfa/, termos/ ...
-│   └── shared/
-e2e/                           # Playwright (a criar)
+│   │   ├── api/                 # supabase.ts (só auth), client.ts (axios + JWT), schema.d.ts (gerado)
+│   │   ├── auth/                # AuthProvider, useAuth, "Manter conectado"
+│   │   ├── acessibilidade/      # BotaoAcessibilidade (flutuante) e preferencias.ts
+│   │   └── ui/                  # Alerta, Botao, Campo, CampoSelecao, CampoSenha, CampoTextoLongo, Dialogo,
+│   │                            # ErroDeCampo, EtapaProgresso, PerguntasFrequentes, AuthLayout, Marca, Icones...
+│   └── features/
+│       ├── auth/                # login, cadastro, senha, captcha
+│       ├── mfa/, termos/        # termos inclui AceitarTermosPage (novo aceite)
+│       ├── usuario/             # useUsuarioAtual, cadastro, perfil profissional, aceitarTermos
+│       ├── inicio/, perfil/
+│       ├── modulo/              # TENS e FES: layout, 6 abas, PaginaTecnica, usePaginaTecnica, CorpoMarkdown
+│       ├── tens/, fes/, casos/  # conteúdo de cada módulo (texto do guia)
+│       ├── aparelho/            # PainelDoAparelho, conteudoAparelho, estado compartilhado com o simulador, valores.ts
+│       ├── atlas/               # AtlasEletrodos, montagens.ts (pranchas), placa anatômica SVG
+│       ├── seguranca/           # ChecklistSeguranca, conteudoSeguranca (itens com código fixo)
+│       ├── simulador/           # SimuladorPage, GraficoPulso, OsciloscopioAoVivo, calculos.ts, tracado.ts, useFaixas
+│       ├── pacientes/           # PacientesPage, PacienteFormPage, api.ts, formatar.ts, AvisoDadosFicticios
+│       ├── avaliacao/           # AvaliacaoFormPage, AvaliacoesDoPaciente, api.ts
+│       └── sessao/              # SessaoFormPage, SessoesDoPaciente, AvisoTriagem, api.ts
+└── tests/                       # espelha src/ (alias @/); setup.ts, renderComRotas.tsx
 ```
 
-Crie a pasta da feature quando a primeira tela dela for feita. Não deixe pasta vazia.
+Regras de cada módulo (o que faz, regras de negócio, erros comuns) ficam em `agent_docs/modulos/` do vault: `pacientes.md`, `avaliacao.md`, `sessao.md`, `simulador.md`, `atlas-eletrodos.md`, `modulos-tens-fes.md`. Este README só aponta os caminhos.
 
 ### Identidade visual
 
-O guia completo (tokens, componentes, regras de conteúdo, capturas de tela e protótipo) está em [docs/design-system/README.md](docs/design-system/README.md). Leia antes de criar ou alterar uma tela. Resumo:
-
-O protótipo (design system de referência) é só uma referência visual: cores, tipografia, cartões e campos. Fluxos e regras seguem este projeto. Pontos que valem lembrar:
-
-- **Só tema claro.** O tema escuro do design system não foi adotado; `color-scheme: light` fixo.
-- **Fonte de verdade dos tokens:** o `tokens.json` do design system, não o `tokens.css` gerado dele (que está desatualizado). Os valores estão em `src/styles/tokens.css`.
-- **Fontes auto-hospedadas** (só o subconjunto latino): a CSP do `firebase.json` não permite Google Fonts.
-- **Contraste e foco:** borda de 2 px, sombra rígida sem desfoque, foco de 3 px, alvos de toque de no mínimo 44 px, campos com 16 px ou mais (o iOS não dá zoom).
-- **Responsivo, mobile primeiro:** uma coluna até 880 px; duas colunas (painel verde e cartão) a partir daí; cartão com borda e sombra a partir de 720 px.
+O guia completo (tokens, componentes, padrões, capturas e protótipo) está em [docs/design-system/README.md](docs/design-system/README.md). Leia antes de criar ou alterar uma tela.
 
 ---
 
@@ -266,7 +228,7 @@ O protótipo (design system de referência) é só uma referência visual: cores
 8. **401** da API: encerra a sessão, e a rota protegida leva ao login. **403**: perfil sem permissão (mensagem, sem deslogar). **404** em paciente: "não encontrado", nunca "sem permissão".
 9. Se a API não responde (por exemplo, o servidor do plano grátis ainda subindo, cerca de 3 min), a rota protegida mostra "Não foi possível carregar seus dados" com "Tentar de novo".
 
-`ProtectedRoute` decide só a navegação, em 3 estados: sem sessão (`/login`), logado sem cadastro completo (`/completar-cadastro`) e logado com perfil (rotas do perfil).
+`ProtectedRoute` decide só a navegação, nesta ordem: sem sessão vai para `/login`; sem cadastro completo, para `/completar-cadastro`; perfil errado, para `/`; **termos com versão nova** (`termosPendentes` da API), para `/termos/aceitar`; autenticador cadastrado e sessão `aal1`, para `/mfa/verificar`; PROFISSIONAL sem autenticador, para `/mfa/ativar`. As telas de MFA e de aceite usam `semMfa` para não entrar em laço.
 
 ---
 
@@ -285,7 +247,9 @@ Regras que o frontend precisa respeitar:
 - Esconder menus e rotas que o perfil não usa. Isso é conforto, não segurança.
 - Paciente não é usuário: não existe tela de login de paciente.
 - Registro profissional digitado **não** mostra selo de "verificado".
-- Anexo: só PDF e imagem, até 10 MB. Validar antes do upload; o backend valida de novo.
+- A API de pacientes, avaliações e sessões exige PROFISSIONAL com sessão `aal2`: o frontend força o MFA antes, para a pessoa não cair em 403.
+- Paciente de outro profissional aparece como "não encontrado" (404), nunca como "sem permissão".
+- Anexo *(quando existir)*: só PDF e imagem, até 10 MB. Validar antes do upload; o backend valida de novo.
 - "Esqueci a senha": mesma mensagem exista ou não a conta.
 - Até as políticas LGPD estarem definidas: **somente dados fictícios**.
 
@@ -295,32 +259,29 @@ Regras que o frontend precisa respeitar:
 
 | Rota | Perfil | Página | Observações |
 |---|---|---|---|
-| `/login`, `/cadastro` | público | `LoginPage`, `CadastroPage` | Cadastro em etapas: dados comuns, depois perfil. Os dois têm "Continuar com o Google" (`BotaoGoogle`): quem entra assim e não tem cadastro cai em `/completar-cadastro` com o nome sugerido |
-| `/mfa/verificar` | logado com autenticador | `VerificarMfaPage` | Código de 6 dígitos depois da senha; a sessão sobe para `aal2` |
-| `/mfa/ativar` | logado | `AtivarMfaPage` | QR code e chave manual, confirma com o primeiro código. Obrigatória para PROFISSIONAL (`ProtectedRoute` redireciona) |
-| `/completar-cadastro` | logado sem perfil | `CompletarCadastroPage` | Envia sozinha os dados guardados no e-mail; senão mostra o formulário |
-| `/termos`, `/privacidade` | público | `TermosDeUsoPage`, `PoliticaPrivacidadePage` | Abrem em outra aba a partir do cadastro; texto preliminar |
-| `/esqueci-senha`, `/nova-senha` | público | `EsqueciSenhaPage`, `NovaSenhaPage` | Mesma mensagem exista ou não a conta. Em `/nova-senha`, quem tem autenticador digita o código antes (o Supabase só troca a senha em sessão `aal2`); senha igual à atual é recusada pela API (`same_password`) |
-| `/` | ambos | `InicioPage` | Atalhos conforme o perfil |
-| `/tens/*`, `/fes/*` | ambos | `ModuloPage` | Abas: visão geral, aparelho, eletrodos, parâmetros, segurança, casos |
-| `/aparelho/:id` | ambos | `AparelhoPage` | Canvas 3D + `ListaControles` textual com as mesmas funções |
-| `/atlas` | ambos | `AtlasPage` | Descrição alternativa em toda prancha |
-| `/dicionario` | ambos | `DicionarioPage` | Três grupos de parâmetros; busca por nome; unidade lida por extenso |
-| `/simulador` | ambos | `SimuladorPage` | Modos explorar e praticar; pulso com descrição textual |
-| `/biblioteca` | ambos | `BibliotecaPage` | Cartões de referência com filtro por modalidade |
-| `/criar` | ambos | `CriarConteudoPage` | Rascunho, depois envio para revisão |
-| `/revisao` | profissional | `RevisaoPage` | Aprovar ou devolver materiais em revisão |
-| `/casos` | estudante | `CasosPage` | Envio para a IA |
-| `/pacientes/**` | profissional | `PacientesPage`, `PacienteDetalhePage`, `AvaliacaoPage`, `NovaSessaoPage`, `EvolucaoPage`, `RelatorioPage` | Gráfico de evolução com tabela equivalente |
+| `/login`, `/cadastro` | público | `LoginPage`, `CadastroPage` | Cadastro em etapas; "Continuar com o Google" nos dois |
+| `/esqueci-senha`, `/nova-senha`, `/auth/callback` | público | telas de senha e retorno do link | Mesma mensagem exista ou não a conta |
+| `/termos`, `/privacidade` | público | `TermosDeUsoPage`, `PoliticaPrivacidadePage` | Texto preliminar |
+| `/completar-cadastro` | logado sem perfil | `CompletarCadastroPage` | Envia sozinha os dados guardados; senão mostra o formulário |
+| `/mfa/ativar`, `/mfa/verificar` | logado | `AtivarMfaPage`, `VerificarMfaPage` | Ativar é obrigatório para PROFISSIONAL |
+| `/termos/aceitar` | logado | `AceitarTermosPage` | Novo aceite quando a versão dos termos muda |
+| `/` | ambos | `InicioPage` | Módulos, ferramentas (Simulador) e atalhos |
+| `/tens`, `/fes` e as abas `aparelho`, `eletrodos`, `parametros`, `seguranca`, `casos` | ambos | `ModuloLayout` + `Pagina*` | Visão geral vem da API (página padrão); atlas em Eletrodos; checklist em Segurança; lista de controles em Aparelho |
+| `/simulador` | ambos | `SimuladorPage` | Modo explorar; `?modalidade=TENS|FES&modo=` abre direto num modo |
 | `/perfil` | ambos | `PerfilPage` | Troca de estudante para profissional |
+| `/criar-conteudo` | ambos | `EmConstrucao` | Card próprio, ainda não feito |
+| `/pacientes` | profissional | `PacientesPage` | Busca, ordenação por coluna, paginação; aviso de dados fictícios |
+| `/pacientes/novo`, `/pacientes/:id` | profissional | `PacienteFormPage` | Cadastro e edição; no detalhe, listas de avaliações e sessões e exclusão confirmada |
+| `/pacientes/:id/avaliacoes/nova`, `/pacientes/:id/avaliacoes/:avaliacaoId` | profissional | `AvaliacaoFormPage` | Avaliação inicial e reavaliação |
+| `/pacientes/:id/sessoes/nova` | profissional | `SessaoFormPage` | Formulário, revisão antes de salvar, confirmação |
 
-Hoje existem só `/login` e `/`.
+Qualquer outra rota leva a `/`. Ainda não existem: dicionário em tela própria, biblioteca, revisão de conteúdo, casos para a IA, evolução e relatório do paciente.
 
 ---
 
 ## 11. UML — domínio
 
-O frontend consome estas entidades pela API, sempre como DTO. Nunca recria regra de negócio delas.
+O frontend consome estas entidades pela API, sempre como DTO. O diagrama mostra o que **existe hoje**; o domínio completo planejado (conteúdo editorial, IA, materiais) está no documento de arquitetura do projeto.
 
 ```mermaid
 classDiagram
@@ -329,74 +290,55 @@ classDiagram
         +String nome
         +Perfil perfil
         +boolean revisor
-        +boolean ativo
-        +String instituicao
-        +Integer periodo
-        +Categoria categoria
-        +String registro
-        +String uf
-    }
-    class Categoria {
-        <<enumeration>>
-        FISIOTERAPEUTA
-        TERAPEUTA_OCUPACIONAL
-        OUTRA
-    }
-    class Perfil {
-        <<enumeration>>
-        ESTUDANTE
-        PROFISSIONAL
+        +boolean termosPendentes
     }
     class Paciente {
-        +Long id
+        +UUID id
         +String nome
-        +String identificadorInterno
+        +String sobrenome
+        +String identificador
+        +String email
         +LocalDate dataNascimento
-        +String contato
     }
     class Avaliacao {
-        +Long id
+        +UUID id
+        +LocalDate dataAvaliacao
         +String queixa
         +String historico
-        +Triagem triagem
-        +Integer dorEscala
-        +String peleSensibilidade
-        +String funcaoMotora
-        +String objetivoMensuravel
+        +Short dorEscala
+        +String dorTarefa
+        +String dorMomento
+        +String objetivo
         +String plano
+        +Map triagem
+    }
+    class Achado {
+        +BlocoAchado bloco
+        +String descricao
+        +EstadoAchado estado
+        +Lado lado
+        +String regiao
+        +String metodo
     }
     class Sessao {
-        +Long id
-        +LocalDateTime dataHora
+        +UUID id
+        +Instant dataHora
         +String objetivo
         +Modalidade modalidade
-        +Integer duracaoRealMin
-        +String resposta
-        +String intercorrencias
-        +String resultadoAntesDepois
-        +String encerramento
+        +String aparelho
+        +String modo
+        +BigDecimal duracaoRealMin
+        +Lado lado
+        +String montagemId
+        +List checklist
     }
-    class ParametroAplicado {
-        +Integer canal
+    class Canal {
+        +Short canal
         +BigDecimal frequenciaHz
         +Integer larguraPulsoUs
         +BigDecimal amplitudeInicialMa
         +BigDecimal amplitudeFinalMa
-        +String formaOnda
-        +Temporizacao temporizacao
-    }
-    class EletrodoAplicado {
-        +Integer canal
-        +String tipo
-        +String dimensoes
-        +Lado lado
-        +String marcosAnatomicos
-    }
-    class Modalidade {
-        <<enumeration>>
-        TENS
-        NMES
-        FES
+        +String par
     }
     class EstadoAchado {
         <<enumeration>>
@@ -404,160 +346,37 @@ classDiagram
         AUSENTE
         PRESENTE
     }
-    class Aparelho {
-        +Long id
-        +String fabricante
-        +String modelo
-        +String versaoManual
-    }
-    class Controle {
-        +Long id
-        +String nome
-        +String funcao
-        +String unidade
-        +String descricaoAcessivel
-    }
-    class PranchaAtlas {
-        +Long id
+    class PaginaTecnica {
         +Modalidade modalidade
-        +String regiao
-        +String vista
-        +String alvos
-        +String pares
-        +String descricaoAlternativa
-    }
-    class Conteudo {
-        +Long id
-        +String titulo
-        +Modalidade modalidade
-        +String corpo
-        +String referencias
-        +Integer versao
-        +EstadoEditorial estado
+        +Secao secao
+        +boolean liberada
+        +List blocos
         +LocalDate dataRevisao
     }
-    class EstadoEditorial {
-        <<enumeration>>
-        RASCUNHO
-        EM_REVISAO
-        APROVADO
-        ARQUIVADO
-    }
-    class CasoClinico {
-        +Long id
-        +String titulo
-        +String objetivo
-        +String contexto
-        +String proposta
-        +String duvida
-    }
-    class RespostaIA {
-        +Long id
-        +String texto
-        +List~String~ referencias
-        +boolean evidenciaSuficiente
-        +LocalDateTime geradaEm
-    }
-    class ParametroDicionario {
-        +Long id
-        +String nome
-        +GrupoParametro grupo
-        +String unidade
-        +String unidadeExtenso
-        +String oQueMuda
-        +String exemplo
-    }
-    class GrupoParametro {
-        <<enumeration>>
-        AJUSTE_BASICO
-        RECURSO_ESPECIFICO
-        ESPECIFICACAO_ELETRICA
-    }
-    class CasoPratica {
-        +Long id
-        +String titulo
+    class FaixaParametro {
         +Modalidade modalidade
-        +String cenario
-        +String respostaEsperada
-        +String modeloRetorno
-    }
-    class TentativaPratica {
-        +Long id
-        +String parametrosEscolhidos
-        +String justificativa
-        +LocalDateTime enviadaEm
-    }
-    class Referencia {
-        +Long id
-        +String codigo
-        +String titulo
-        +String autores
-        +Modalidade modalidade
-        +String comoAcessar
-        +boolean licencaPermiteCopia
-    }
-    class Material {
-        +Long id
-        +String titulo
-        +String corpo
-        +EstadoEditorial estado
-        +String motivoDevolucao
-    }
-    class Anexo {
-        +Long id
-        +String nomeArquivo
-        +String tipo
-        +Long tamanhoBytes
+        +String modo
+        +String parametro
+        +OrigemFaixa origem
+        +BigDecimal minimo
+        +BigDecimal maximo
     }
 
-    Usuario --> Perfil
-    Usuario --> Categoria
-    Usuario "1 responsavel" -- "*" Paciente
+    Usuario "1 responsável" -- "*" Paciente
     Paciente "1" *-- "*" Avaliacao
+    Avaliacao "1" *-- "*" Achado
+    Achado --> EstadoAchado
     Paciente "1" *-- "*" Sessao
-    Sessao "*" --> "1" Aparelho
-    Sessao "1" *-- "*" ParametroAplicado
-    Sessao "1" *-- "*" EletrodoAplicado
-    Sessao "*" --> "0..1" PranchaAtlas : baseada em
-    Sessao --> Modalidade
-    Aparelho "1" *-- "*" Controle
-    Conteudo --> EstadoEditorial
-    Conteudo "*" --> "1" Usuario : autor
-    Conteudo "*" --> "0..1" Usuario : revisor
-    CasoClinico "*" --> "1" Usuario : estudante
-    CasoClinico "1" *-- "*" RespostaIA
-    RespostaIA "*" --> "*" Conteudo : cita
-    ParametroDicionario --> GrupoParametro
-    CasoPratica "1" -- "*" TentativaPratica
-    TentativaPratica "*" --> "1" Usuario : estudante
-    Material "*" --> "1" Usuario : autor
-    Material "*" --> "0..1" Usuario : revisor
-    Material --> EstadoEditorial
-    Material "1" *-- "*" Anexo
-    CasoClinico "1" *-- "*" Anexo
+    Sessao "1" *-- "1..2" Canal
 ```
 
 O que muda na tela por causa do modelo:
 
-- Campos de triagem, pele e função usam `EstadoAchado`. O formulário oferece **"Não avaliado"** explícito. Campo vazio não significa ausência de risco.
-- Campos de `ParametroAplicado` mostram a unidade ao lado do input (Hz, µs, mA) e a unidade por extenso para leitor de tela.
-- `ParametroDicionario` (página `/dicionario`) ≠ `ParametroAplicado` (formulário de sessão).
-- `CasoPratica` = os 4 casos do simulador. `CasoClinico` = caso enviado para a IA em `/casos`.
-- `RespostaIA` exibe referências e data de revisão. Com `evidenciaSuficiente = false`, mostra o aviso padrão.
-
-Fluxo editorial de material (telas `/criar` e `/revisao`):
-
-```mermaid
-stateDiagram-v2
-    [*] --> RASCUNHO
-    RASCUNHO --> EM_REVISAO : autor envia
-    EM_REVISAO --> RASCUNHO : revisor devolve (motivoDevolucao)
-    EM_REVISAO --> APROVADO : revisor aprova (revisor ≠ autor)
-    APROVADO --> ARQUIVADO
-    ARQUIVADO --> [*]
-```
-
-O botão "Aprovar" não aparece para o autor do material.
+- Triagem e achados usam `EstadoAchado`, com "Não avaliado" como padrão. Campo vazio nunca vira "ausente"; dor vazia fica nula.
+- Parâmetros da sessão mostram a unidade ao lado (Hz, µs, mA, min) e por extenso no rótulo.
+- O checklist da sessão guarda o **código** do item (`antes.objetivo-definido`); o texto da pergunta vive em `conteudoSeguranca.ts`.
+- `montagemId` aponta para uma prancha de `features/atlas/montagens.ts` (as pranchas vivem no frontend).
+- Pranchas, controles do aparelho, casos e checklist são dados do frontend, não da API.
 
 ---
 
@@ -567,53 +386,51 @@ O botão "Aprovar" não aparece para o autor do material.
 sequenceDiagram
     autonumber
     actor P as Profissional
-    participant UI as React (NovaSessaoPage)
-    participant Hook as useCriarSessao (TanStack Query)
-    participant Api as axios + interceptor JWT
+    participant UI as SessaoFormPage
+    participant Api as axios + JWT
     participant Sec as Spring Security
     participant C as SessaoController
     participant S as SessaoService
     participant PS as PacienteService
     participant DB as PostgreSQL
 
-    P->>UI: Preenche formulário e confirma revisão
-    UI->>UI: Validação Zod (erros anunciados via aria-live)
-    UI->>Hook: mutate(dados)
-    Hook->>Api: POST /api/v1/pacientes/{id}/sessoes
-    Api->>Sec: Authorization: Bearer JWT
-    Sec->>C: Perfil PROFISSIONAL ok
+    P->>UI: Preenche os 6 blocos
+    UI->>UI: Validação Zod; erro aparece no campo
+    P->>UI: "Revisar sessão"
+    UI-->>P: Tela "Revise antes de salvar"
+    P->>UI: "Salvar sessão"
+    UI->>Api: POST /api/v1/pacientes/{id}/sessoes
+    Api->>Sec: Bearer JWT
+    Sec->>C: PROFISSIONAL com aal2
     C->>C: @Valid SessaoRequest
-    C->>S: criar(pacienteId, req, usuario)
-    S->>PS: buscarDoResponsavel(pacienteId, usuario)
-    alt não é o responsável
-        PS-->>C: PacienteNaoEncontradoException
-        C-->>UI: 404 ProblemDetail
+    C->>S: registrar(pacienteId, responsavel, req)
+    S->>PS: buscarDoResponsavel(pacienteId, responsavel)
+    alt paciente de outro profissional ou inexistente
+        PS-->>UI: 404 ProblemDetail
     else é o responsável
-        S->>DB: INSERT sessao (+ auditoria Envers)
-        DB-->>S: Sessao salva
-        S-->>C: SessaoResponse
-        C-->>Hook: 201 Created
-        Hook->>Hook: invalida cache ["sessoes", pacienteId]
-        UI-->>P: Confirmação anunciada ao leitor de tela
+        S->>DB: INSERT sessao, sessao_canal, sessao_checklist
+        S-->>UI: 201 SessaoResponse
+        UI->>UI: invalida ["pacientes", id, "sessoes"]
+        UI-->>P: "Sessão registrada." num output que o leitor de tela anuncia
     end
 ```
 
-Padrão de chave do TanStack Query: `[recurso, ...ids]`. Ex.: `["pacientes"]`, `["sessoes", pacienteId]`. Toda mutation invalida a chave do recurso que mudou.
+Chaves do TanStack Query: `["pacientes", filtro]`, `["pacientes", id]`, `["pacientes", id, "avaliacoes"]`, `["pacientes", id, "sessoes"]`. Mutation invalida a chave do recurso que mudou. Ao excluir, o paciente sai do cache (`removeQueries`) antes de navegar, para não rebuscar um 404.
 
 ---
 
 ## 13. Acessibilidade
 
-Meta: **WCAG 2.2 AA**. Testes manuais com NVDA, VoiceOver e TalkBack.
+Meta: **WCAG 2.2 AA**. Testes automáticos com `vitest-axe`; teste com leitor de tela real ainda pendente.
 
-- Toda função do 3D existe também na lista textual (`ListaControles`). O 3D é complemento.
-- Erro de formulário ligado ao campo por `aria-describedby`, com `aria-invalid`. Erro geral em `role="alert"`. Veja `src/features/auth/login/LoginPage.tsx`.
-- Todo `input` tem `label` com `htmlFor`.
-- Foco previsível ao abrir e fechar diálogos (Radix garante).
-- Foco sempre visível (`:focus-visible` em `src/index.css`).
-- Informação nunca depende só de cor. Gráfico tem tabela ou resumo textual.
-- Imagem e prancha do atlas sempre com descrição alternativa.
-- `oxlint` com `jsx-a11y` no lint; `vitest-axe` nos testes de componente.
+- Erro de formulário ligado ao campo (`aria-describedby`, `aria-invalid`); o foco vai ao primeiro campo com erro.
+- Anúncios: região viva montada vazia desde o início (`<output>`), só o texto muda. O simulador anuncia o valor confirmado ao sair do campo, com as "Mensagens prontas" do guia; a sessão anuncia "Sessão registrada."; excluir mostra "Excluindo o paciente. Aguarde…".
+- `Alerta` só usa `role="alert"` no perigo; os demais não interrompem o leitor de tela.
+- Lista textual dos controles do aparelho com unidade e valor atual; ao fechar a explicação (botão ou Esc) o foco volta ao controle.
+- Gráficos têm descrição textual e tabela equivalentes; os desenhos são `aria-hidden`.
+- **Reduzir movimento** segue só o painel de acessibilidade (`data-movimento`), que parte da preferência do sistema. No simulador, a animação fica parada e aparece "Animar mesmo assim".
+- Cor nunca é a única pista: canais do atlas e do osciloscópio têm código ou rótulo escrito.
+- Botão de acessibilidade flutuante (tamanho do texto, alto contraste, reduzir movimento), presente em todas as telas.
 
 ---
 
@@ -645,7 +462,7 @@ Regras:
 - Sem dependência de ordem, relógio real ou rede. Chamadas HTTP mockadas.
 - `tests/setup.ts` limpa o DOM e o `localStorage` depois de cada teste.
 
-Exemplo atual: `tests/app/ProtectedRoute.test.tsx` (3 testes).
+Hoje: 42 arquivos de teste, cerca de 530 testes (`npm test`). Cálculos do simulador e máscaras têm testes de função pura (`tests/features/simulador/tracado.test.ts`, `calculos.test.ts`, `pacientes/formatar.test.ts`).
 
 ---
 
@@ -715,25 +532,21 @@ Frontend no **Firebase Hosting** (plano Spark). Só existe o ambiente de produç
 ---
 ## 18. Estado atual e pendências
 
-Pronto:
+Pronto (ver `agent_docs/modulos/` para o detalhe de cada um):
 
-- Vite + React 19 + TypeScript; dependências da stack instaladas.
-- Base visual: tokens, fontes auto-hospedadas, componentes (`shared/ui`) e layout responsivo das telas de autenticação.
-- Favicon (folha com pulso) e `theme-color`.
-- Sessão pelo Supabase Auth, cliente HTTP com o token, `useUsuarioAtual` e `ProtectedRoute` de 3 estados.
-- Telas: entrar, esqueci a senha, nova senha e retorno do link do e-mail.
-- Tipos da API gerados do OpenAPI (`schema.d.ts`).
-- Vitest com `vitest-axe`: 39 testes (armazenamento, validação, componentes, login com acessibilidade e rotas). Lint e build ok.
+- Autenticação completa: senha, Google, MFA (obrigatório para PROFISSIONAL), "Manter conectado", novo aceite dos termos.
+- Módulos TENS e FES com 6 abas: Visão geral pela API (página padrão, Markdown seguro), lista de controles do aparelho, atlas com pranchas, parâmetros, checklist de segurança e casos.
+- Simulador (modo explorar): osciloscópio ao vivo com câmera lenta, modos contínuos, Burst e FES síncrono/recíproco, mensagens do guia.
+- Pacientes, avaliação inicial e registro de sessão, com validação no formulário e no backend.
+- Acessibilidade: botão flutuante, anúncios, `vitest-axe` nos testes de tela.
 
 Pendente:
 
-- Revisão jurídica/LGPD dos textos de Termos de uso e Política de privacidade (hoje preliminares; falta canal de contato do titular).
-- MFA: exigir `aal2` na API (endpoints de paciente), códigos de recuperação e troca de aparelho (hoje, perder o celular exige remover o fator pelo painel do Supabase).
-- CAPTCHA (Turnstile) no cadastro.
-- Ícones PNG (apple-touch-icon) e manifesto do app.
-- Componentes de `shared/ui` sobre Radix (diálogos, menus, seletores), quando surgirem.
-- Demais telas do mapa (seção 10).
-- `openapi-typescript`: hoje roda por `npx` no script `api:types`, porque a versão 7.13 pede TypeScript 5 e o projeto usa 6. Instalar como dependência quando sair versão compatível.
-- Playwright (inclui comparação visual em 320, 390, 768 e 1280 px), react-three-fiber, workflow de CI e deploy automático no Firebase.
-- Teste com leitor de tela real (NVDA, VoiceOver, TalkBack).
-- Bundle passa de 500 kB: dividir rotas com `lazy()` quando houver mais telas.
+- Revisão docente dos textos (prof. Taís): o site mostra "Revisão docente: pendente" e a Visão geral fica "não liberada" até o conteúdo ser aprovado no banco.
+- Simulador: modos Misto, VF e VIF (variação automática) e o modo praticar.
+- Lista do aparelho só mostra valores; quem ajusta é o simulador. O estado some ao recarregar a página.
+- Tipos de pacientes, avaliação, sessão, simulador e página técnica escritos à mão em `features/*/api.ts`: rodar `npm run api:types` com o backend no ar e trocar pelos tipos gerados.
+- Criar conteúdo, revisão, biblioteca, dicionário em tela própria, casos para a IA, evolução e relatório do paciente.
+- Revisão jurídica/LGPD dos Termos e da Política (texto preliminar).
+- Teste com leitor de tela real; Playwright; CI do frontend.
+- `openapi-typescript` roda por `npx` (pede TypeScript 5).

@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
+import br.unibh.fisiotech.usuario.dto.AceiteTermosRequest;
 import br.unibh.fisiotech.usuario.dto.AtualizarPerfilProfissionalRequest;
 import br.unibh.fisiotech.usuario.dto.CadastroRequest;
 import br.unibh.fisiotech.usuario.dto.UsuarioResponse;
@@ -41,6 +42,12 @@ public class UsuarioController {
             @Valid @RequestBody CadastroRequest req) {
         var criado = service.cadastrar(UUID.fromString(jwt.getSubject()), req);
         return ResponseEntity.status(HttpStatus.CREATED).body(criado);
+    }
+
+    /** Novo aceite quando a versão dos termos muda ({@code termosPendentes}). */
+    @PostMapping("/termos")
+    public UsuarioResponse aceitarTermos(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AceiteTermosRequest req) {
+        return service.aceitarTermos(UUID.fromString(jwt.getSubject()));
     }
 
     @PutMapping({ "", "/perfil" })

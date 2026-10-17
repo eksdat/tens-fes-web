@@ -5,12 +5,18 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.authorization.AuthorizationManagers;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -21,10 +27,15 @@ import br.unibh.fisiotech.usuario.security.PerfilJwtConverter;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    /** Claim {@code aal} do Supabase: aal2 só depois do código do autenticador (SEGURANCA.md, seção 4). */
+    private static final AuthorizationManager<RequestAuthorizationContext> SESSAO_COM_MFA = (autenticacao, contexto) ->
+            new AuthorizationDecision(autenticacao.get() instanceof JwtAuthenticationToken token
+                    && "aal2".equals(token.getToken().getClaimAsString("aal")));
+
     /**
      * API stateless com JWT do Supabase: sem sessão HTTP, logo sem CSRF.
      * {@code /api/v1/usuarios/me} aceita quem ainda não completou o cadastro (sem papel);
-     * {@code /api/v1/pacientes/**} (pacientes, avaliações e sessões) é só de PROFISSIONAL;
+     * {@code /api/v1/pacientes/**} (pacientes, avaliações e sessões) é só de PROFISSIONAL com sessão aal2 (MFA);
      * todo o resto exige perfil.
      */
     @Bean
@@ -37,7 +48,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/usuarios/me", "/api/v1/usuarios/me/**").authenticated()
-                        .requestMatchers("/api/v1/pacientes/**").hasRole("PROFISSIONAL")
+                        .requestMatchers("/api/v1/pacientes/**").access(AuthorizationManagers.allOf(
+                                AuthorityAuthorizationManager.hasRole("PROFISSIONAL"), SESSAO_COM_MFA))
                         .anyRequest().hasAnyRole("ESTUDANTE", "PROFISSIONAL"))
                 .build();
     }
