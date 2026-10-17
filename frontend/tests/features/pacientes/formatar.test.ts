@@ -14,6 +14,14 @@ describe('identificador', () => {
 })
 
 describe('nome', () => {
+  test('deveManterOAcentoColadoEmFormaDecomposta', () => {
+    expect(limparNome('Jose\u0301')).toBe('José')
+  })
+
+  test('deveTrocarEspacoInseparavelPorEspacoComum', () => {
+    expect(limparNome('Ana\u00a0Maria')).toBe('Ana Maria')
+  })
+
   test('deveTirarDigitosESimbolosEManterAcentoApostrofoEHifen', () => {
     expect(limparNome('Jo4ão D’Ávila-Silva!')).toBe('João D’Ávila-Silva')
   })

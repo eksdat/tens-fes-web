@@ -157,6 +157,80 @@ test('devePreencherEletrodosAPartirDaPranchaEscolhida', async () => {
   expect(screen.getByLabelText('Marcos anatômicos')).toHaveValue('Patela central, região superior medial e inferior lateral.')
 })
 
+test('deveMostrarOMotivoQuandoOServidorRecusaAData', async () => {
+  vi.spyOn(api, 'registrarSessao').mockRejectedValue({
+    response: { status: 400, data: { erros: { dataHora: 'A sessão não pode ser antes do nascimento do paciente.' } } },
+  })
+  renderizar()
+  const usuario = userEvent.setup()
+
+  await preencherObrigatorios(usuario)
+  await usuario.click(screen.getByRole('button', { name: 'Revisar sessão' }))
+  await usuario.click(await screen.findByRole('button', { name: 'Salvar sessão' }))
+
+  expect(await screen.findByText('A sessão não pode ser antes do nascimento do paciente.')).toBeInTheDocument()
+})
+
+test('deveAceitarVirgulaNaAmplitudeInicial', async () => {
+  const registrar = vi.spyOn(api, 'registrarSessao').mockResolvedValue(ANTERIOR)
+  renderizar()
+  const usuario = userEvent.setup()
+
+  await preencherObrigatorios(usuario)
+  await usuario.type(screen.getByLabelText(/Amplitude inicial do canal 1/), '2,5')
+  await usuario.click(screen.getByRole('button', { name: 'Revisar sessão' }))
+  await usuario.click(await screen.findByRole('button', { name: 'Salvar sessão' }))
+
+  await waitFor(() => expect(registrar).toHaveBeenCalled())
+  expect(registrar.mock.calls[0][1].canais[0].amplitudeInicialMa).toBe(2.5)
+})
+
+test.each([
+  [/Frequência do canal 1/, '2,55'],
+  [/Amplitude final do canal 1/, '0,04'],
+  [/Amplitude inicial do canal 1/, '1,25'],
+  [/Duração real/, '0,04'],
+])('deveRecusarMaisDeUmaCasaDecimalEm %s', async (rotulo, valor) => {
+  renderizar()
+  const usuario = userEvent.setup()
+
+  await preencherObrigatorios(usuario)
+  await usuario.clear(screen.getByLabelText(rotulo))
+  await usuario.type(screen.getByLabelText(rotulo), valor)
+  await usuario.click(screen.getByRole('button', { name: 'Revisar sessão' }))
+
+  expect(await screen.findByText('Use no máximo uma casa decimal.')).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Revise antes de salvar' })).not.toBeInTheDocument()
+})
+
+test('deveRecusarDecimalNaLarguraDePulso', async () => {
+  renderizar()
+  const usuario = userEvent.setup()
+
+  await preencherObrigatorios(usuario)
+  await usuario.type(screen.getByLabelText(/Largura de pulso do canal 1/), ',5')
+  await usuario.click(screen.getByRole('button', { name: 'Revisar sessão' }))
+
+  expect(await screen.findByText('Use um número inteiro.')).toBeInTheDocument()
+})
+
+test('deveDescartarAPranchaQuandoAModalidadeMuda', async () => {
+  const registrar = vi.spyOn(api, 'registrarSessao').mockResolvedValue(ANTERIOR)
+  renderizar()
+  const usuario = userEvent.setup()
+
+  await usuario.selectOptions(screen.getByLabelText('Prancha do atlas (opcional)'), 'joelho')
+  await usuario.selectOptions(screen.getByLabelText('Modalidade'), 'FES')
+  expect(screen.getByLabelText('Prancha do atlas (opcional)')).toHaveValue('')
+
+  await preencherObrigatorios(usuario)
+  await usuario.click(screen.getByRole('button', { name: 'Revisar sessão' }))
+  await usuario.click(await screen.findByRole('button', { name: 'Salvar sessão' }))
+
+  await waitFor(() => expect(registrar).toHaveBeenCalled())
+  expect(registrar.mock.calls[0][1].montagemId).toBeNull()
+})
+
 test('deveSalvarOsItensMarcadosDoChecklist', async () => {
   const registrar = vi.spyOn(api, 'registrarSessao').mockResolvedValue(ANTERIOR)
   renderizar()
@@ -210,6 +284,13 @@ test('deveAvisarQuandoOPacienteNaoTemAvaliacao', async () => {
   renderizar()
 
   expect(await screen.findByText('Este paciente ainda não tem avaliação inicial.')).toBeInTheDocument()
+})
+
+test('deveAvisarQuandoATriagemNaoCarrega', async () => {
+  vi.spyOn(apiAvaliacao, 'listarAvaliacoes').mockRejectedValue(new Error('rede'))
+  renderizar()
+
+  expect(await screen.findByText('Não foi possível carregar a triagem da última avaliação.')).toBeInTheDocument()
 })
 
 test('deveSerAcessivelSemViolacoes', async () => {

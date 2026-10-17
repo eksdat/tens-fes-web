@@ -21,9 +21,9 @@ import {
   lerErroPaciente,
   type PacienteRequest,
 } from './api'
+import { hojeLocal } from '../../shared/datas'
 import { limparIdentificador, limparNome, pareceDocumento } from './formatar'
 
-const hoje = () => new Date().toISOString().slice(0, 10)
 const NOME = /^\p{L}[\p{L}\s'’-]*$/u
 
 /** Mesmas regras do PacienteRequest do backend; o backend continua sendo quem decide. */
@@ -49,7 +49,7 @@ const schema = z.object({
     .string()
     .min(1, 'Informe a data de nascimento.')
     .refine((v) => v >= '1900-01-01', 'Confira o ano: use uma data a partir de 1900.')
-    .refine((v) => v <= hoje(), 'A data de nascimento não pode estar no futuro.'),
+    .refine((v) => v <= hojeLocal(), 'A data de nascimento não pode estar no futuro.'),
 })
 
 type Valores = z.infer<typeof schema>
@@ -190,7 +190,7 @@ export function PacienteFormPage() {
             rotulo="Data de nascimento"
             type="date"
             min="1900-01-01"
-            max={hoje()}
+            max={hojeLocal()}
             erro={errors.dataNascimento?.message}
             {...register('dataNascimento')}
           />

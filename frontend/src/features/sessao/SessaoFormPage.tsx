@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useState, type ChangeEvent, type ReactNode } from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { useParams } from 'react-router'
 import { z } from 'zod'
+import { agoraLocal } from '../../shared/datas'
 import { Alerta } from '../../shared/ui/Alerta'
 import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Campo, type CampoProps } from '../../shared/ui/Campo'
@@ -20,20 +21,22 @@ import { chaveSessoes, listarSessoes, registrarSessao, type Sessao, type SessaoR
 
 const AVISO_REAPROVEITAR = 'Parâmetros anteriores não substituem a avaliação desta sessão.'
 
-const agoraLocal = () => {
-  const d = new Date()
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
-}
+const num = (v: string) => Number(v.replace(',', '.'))
+const casasDecimais = (v: string) => v.replace(',', '.').split('.')[1]?.length ?? 0
 
-const numero = (mensagem: string, min: number, max: number, minExclusivo = false) =>
-  z
-    .string()
-    .trim()
-    .min(1, mensagem)
+type Faixa = { min: number; max: number; minExclusivo?: boolean; casas?: 0 | 1 }
+
+/** O banco guarda uma casa decimal (inteiro na largura de pulso): mais casas seriam arredondadas sem aviso. */
+const valorNaFaixa = (campo: z.ZodString, { min, max, minExclusivo = false, casas = 1 }: Faixa) =>
+  campo
+    .refine((v) => v === '' || casasDecimais(v) <= casas, casas === 0 ? 'Use um número inteiro.' : 'Use no máximo uma casa decimal.')
     .refine((v) => {
-      const n = Number(v.replace(',', '.'))
+      if (v === '') return true
+      const n = num(v)
       return Number.isFinite(n) && (minExclusivo ? n > min : n >= min) && n <= max
     }, `Use um valor ${minExclusivo ? 'maior que' : 'a partir de'} ${min} e até ${max}.`)
+
+const numero = (mensagem: string, faixa: Faixa) => valorNaFaixa(z.string().trim().min(1, mensagem), faixa)
 
 const opcional = (max: number) => z.string().max(max, `Use até ${max} caracteres.`)
 const obrigatorio = (mensagem: string, max: number) => z.string().trim().min(1, mensagem).max(max, `Use até ${max} caracteres.`)
@@ -47,14 +50,14 @@ const schema = z.object({
   modalidade: z.enum(['TENS', 'NMES', 'FES']),
   aparelho: obrigatorio('Informe o aparelho.', 120),
   modo: opcional(60),
-  duracaoRealMin: numero('Informe a duração real em minutos.', 0, 240, true),
+  duracaoRealMin: numero('Informe a duração real em minutos.', { min: 0, max: 240, minExclusivo: true }),
   canais: z
     .array(
       z.object({
-        frequenciaHz: numero('Informe a frequência em Hz.', 0, 1000, true),
-        larguraPulsoUs: numero('Informe a largura de pulso em µs.', 1, 1000),
-        amplitudeInicialMa: z.string().refine((v) => v.trim() === '' || (Number(v) >= 0 && Number(v) <= 100), 'Use de 0 a 100 mA.'),
-        amplitudeFinalMa: numero('Informe a amplitude final em mA.', 0, 100),
+        frequenciaHz: numero('Informe a frequência em Hz.', { min: 0, max: 1000, minExclusivo: true }),
+        larguraPulsoUs: numero('Informe a largura de pulso em µs.', { min: 1, max: 1000, casas: 0 }),
+        amplitudeInicialMa: valorNaFaixa(z.string().trim(), { min: 0, max: 100 }),
+        amplitudeFinalMa: numero('Informe a amplitude final em mA.', { min: 0, max: 100 }),
         par: obrigatorio('Informe o par de eletrodos.', 20),
       }),
     )
@@ -115,7 +118,6 @@ const LADO_DA_PRANCHA: Record<LadoDaPrancha, Lado> = {
   central: 'NAO_SE_APLICA',
 }
 
-const num = (v: string) => Number(v.replace(',', '.'))
 const nulo = (v: string) => (v.trim() ? v.trim() : null)
 
 function paraRequest(v: Valores, checklist: Set<string>): SessaoRequest {
@@ -177,6 +179,9 @@ function reaproveitar(s: Sessao): Partial<Valores> {
 
 const ROTULO_MODALIDADE = { TENS: 'TENS', NMES: 'NMES', FES: 'FES' } as const
 
+const pranchasDa = (modalidade: Valores['modalidade']) =>
+  MONTAGENS.filter((m) => (modalidade === 'TENS' ? m.modalidade === 'TENS' : m.modalidade === 'FES'))
+
 export function SessaoFormPage() {
   const { id: pacienteId = '' } = useParams()
   const queryClient = useQueryClient()
@@ -232,14 +237,16 @@ export function SessaoFormPage() {
       await registrarSessao(pacienteId, paraRequest(getValues(), checklist))
       await queryClient.invalidateQueries({ queryKey: chaveSessoes(pacienteId) })
       setEtapa('salva')
-    } catch {
-      setErroGeral('Não foi possível salvar a sessão. Volte, confira os dados e tente de novo.')
+    } catch (erro) {
+      const resposta = (erro as { response?: { status?: number; data?: { erros?: Record<string, string> } } }).response
+      const motivos = resposta?.status === 400 ? Object.values(resposta.data?.erros ?? {}) : []
+      setErroGeral(motivos.length > 0 ? motivos.join(' ') : 'Não foi possível salvar a sessão. Volte, confira os dados e tente de novo.')
     } finally {
       setSalvando(false)
     }
   }
 
-  const pranchas = MONTAGENS.filter((m) => (modalidade === 'TENS' ? m.modalidade === 'TENS' : m.modalidade === 'FES'))
+  const pranchas = pranchasDa(modalidade)
   const unidade = (texto: string) => <span className="tf-control__unidade" aria-hidden="true">{texto}</span>
 
   return (
@@ -304,7 +311,13 @@ export function SessaoFormPage() {
               rotulo="Modalidade"
               placeholder="Selecione"
               opcoes={Object.entries(ROTULO_MODALIDADE).map(([valor, rotulo]) => ({ valor, rotulo }))}
-              {...register('modalidade')}
+              {...register('modalidade', {
+                onChange: (e: ChangeEvent<HTMLSelectElement>) => {
+                  // A prancha de outra modalidade some da lista; sem limpar, ela continuaria indo no salvamento.
+                  const nova = e.target.value as Valores['modalidade']
+                  if (!pranchasDa(nova).some((m) => m.id === getValues('montagemId'))) setValue('montagemId', '')
+                },
+              })}
             />
           </div>
           <CampoTextoLongo rotulo="Objetivo desta sessão" erro={errors.objetivo?.message} {...register('objetivo')} />

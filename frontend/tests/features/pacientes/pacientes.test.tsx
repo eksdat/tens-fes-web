@@ -83,6 +83,17 @@ describe('lista de pacientes', () => {
     expect(await screen.findByText('Nenhum paciente encontrado para "jose".')).toBeInTheDocument()
   })
 
+  test('deveIrParaAUltimaPaginaQuandoAPedidaNaoExisteMais', async () => {
+    const listar = vi
+      .spyOn(api, 'listarPacientes')
+      .mockImplementation(async (f) => (f.pagina === 0 ? pagina([MARIA], { totalItens: 20 }) : pagina([], { pagina: 1, totalItens: 20 })))
+    renderizarLista('/pacientes?pagina=1')
+
+    expect(await screen.findByRole('link', { name: 'Maria Silva' })).toBeInTheDocument()
+    expect(listar).toHaveBeenLastCalledWith(expect.objectContaining({ pagina: 0 }))
+    expect(screen.queryByText('Nenhum paciente cadastrado ainda.')).not.toBeInTheDocument()
+  })
+
   test('deveLerOrdenacaoEPaginaDaUrl', async () => {
     const listar = vi.spyOn(api, 'listarPacientes').mockResolvedValue(pagina([MARIA]))
     renderizarLista('/pacientes?ordenar=identificador&direcao=desc&pagina=2')

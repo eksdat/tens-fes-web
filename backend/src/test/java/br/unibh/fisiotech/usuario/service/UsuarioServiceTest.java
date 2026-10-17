@@ -90,11 +90,22 @@ class UsuarioServiceTest {
 
     @Test
     void deveRecusarSegundoCadastroDoMesmoUsuario() {
-        when(repository.saveAndFlush(any(Usuario.class))).thenThrow(new DataIntegrityViolationException("pk"));
+        when(repository.saveAndFlush(any(Usuario.class))).thenThrow(new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint \"usuario_pkey\""));
 
         assertThatThrownBy(() -> service.cadastrar(ID,
                 new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null, true)))
                 .isInstanceOf(ConflitoException.class);
+    }
+
+    @Test
+    void deveNaoTratarOutraViolacaoDoBancoComoCadastroRepetido() {
+        when(repository.saveAndFlush(any(Usuario.class))).thenThrow(new DataIntegrityViolationException(
+                "new row violates check constraint \"usuario_nome_check\""));
+
+        assertThatThrownBy(() -> service.cadastrar(ID,
+                new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null, true)))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

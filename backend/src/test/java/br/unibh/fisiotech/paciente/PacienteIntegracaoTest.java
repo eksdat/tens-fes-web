@@ -2,7 +2,9 @@ package br.unibh.fisiotech.paciente;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -26,11 +28,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.jayway.jsonpath.JsonPath;
 
+import br.unibh.fisiotech.paciente.repository.PacienteRepository;
 import br.unibh.fisiotech.TestcontainersConfiguration;
 
 /**
@@ -47,6 +51,9 @@ class PacienteIntegracaoTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @MockitoSpyBean
+    private PacienteRepository repository;
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
@@ -115,6 +122,14 @@ class PacienteIntegracaoTest {
 
         criar(profissionalA, paciente("Joana", "X-1")).andExpect(status().isConflict());
         criar(profissionalB, paciente("Joana", "X-1")).andExpect(status().isCreated());
+    }
+
+    @Test
+    void deveResponder409QuandoDoisCadastrosDoMesmoIdentificadorPassamJuntosPelaConferencia() throws Exception {
+        criar(profissionalA, paciente("Maria", "X-2")).andExpect(status().isCreated());
+        doReturn(false).when(repository).existsByResponsavelIdAndIdentificadorIgnoreCase(any(), anyString());
+
+        criar(profissionalA, paciente("Joana", "X-2")).andExpect(status().isConflict());
     }
 
     @Test

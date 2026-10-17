@@ -122,6 +122,14 @@ describe('formulário de avaliação', () => {
     expect(await screen.findByText('Use a escala de 0 a 10.')).toBeInTheDocument()
   })
 
+  test('deveNaoMostrarOFormularioQuandoAAvaliacaoNaoCarrega', async () => {
+    vi.spyOn(api, 'buscarAvaliacao').mockRejectedValue(new Error('rede'))
+    renderizarForm('/pacientes/p1/avaliacoes/av1')
+
+    expect(await screen.findByText('Não foi possível carregar a avaliação.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Descreva a queixa')).not.toBeInTheDocument()
+  })
+
   test('deveCarregarAvaliacaoExistenteParaEditar', async () => {
     vi.spyOn(api, 'buscarAvaliacao').mockResolvedValue(AVALIACAO)
     renderizarForm('/pacientes/p1/avaliacoes/av1')

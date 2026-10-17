@@ -14,6 +14,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -139,6 +141,25 @@ class SessaoIntegracaoTest {
     @Test
     void deveRecusarParametroForaDoLimiteFisico() throws Exception {
         criar(profissionalA, pacienteDeA, SESSAO.replace("\"amplitudeFinalMa\":18", "\"amplitudeFinalMa\":500"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deveRecusarSessaoAntesDoNascimentoDoPaciente() throws Exception {
+        criar(profissionalA, pacienteDeA, SESSAO.replace("2026-10-10T14:00:00Z", "1979-01-01T14:00:00Z"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.dataHora").value("A sessão não pode ser antes do nascimento do paciente."));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "\"frequenciaHz\":80|\"frequenciaHz\":2.55",
+            "\"amplitudeFinalMa\":18|\"amplitudeFinalMa\":0.04",
+            "\"amplitudeInicialMa\":0|\"amplitudeInicialMa\":1.25",
+            "\"duracaoRealMin\":20|\"duracaoRealMin\":0.04",
+            "\"larguraPulsoUs\":100|\"larguraPulsoUs\":100.5"})
+    void deveRecusarMaisCasasDecimaisDoQueOBancoGuarda(String original, String comMaisCasas) throws Exception {
+        criar(profissionalA, pacienteDeA, SESSAO.replace(original, comMaisCasas))
                 .andExpect(status().isBadRequest());
     }
 

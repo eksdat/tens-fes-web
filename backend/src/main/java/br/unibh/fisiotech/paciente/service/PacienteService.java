@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import lombok.RequiredArgsConstructor;
+
+import static br.unibh.fisiotech.shared.exception.Violacoes.violou;
 
 import br.unibh.fisiotech.paciente.dto.PacienteRequest;
 import br.unibh.fisiotech.paciente.dto.PacienteResponse;
@@ -72,7 +75,7 @@ public class PacienteService {
         }
         var paciente = new Paciente(responsavelId);
         preencher(paciente, req);
-        return PacienteResponse.de(repository.saveAndFlush(paciente));
+        return salvar(paciente);
     }
 
     @Transactional
@@ -83,7 +86,19 @@ public class PacienteService {
             throw new ConflitoException(IDENTIFICADOR_REPETIDO);
         }
         preencher(paciente, req);
-        return PacienteResponse.de(repository.saveAndFlush(paciente));
+        return salvar(paciente);
+    }
+
+    /** Dois cadastros simultâneos passam juntos pelo exists; o índice único barra o segundo. */
+    private PacienteResponse salvar(Paciente paciente) {
+        try {
+            return PacienteResponse.de(repository.saveAndFlush(paciente));
+        } catch (DataIntegrityViolationException e) {
+            if (!violou(e, "uq_paciente_identificador")) {
+                throw e;
+            }
+            throw new ConflitoException(IDENTIFICADOR_REPETIDO);
+        }
     }
 
     @Transactional

@@ -10,10 +10,17 @@ const lista = (itens: string[]) => itens.join(', ')
  * Sem avaliação, a triagem toda é "não avaliado" e o guia manda concluí-la antes de aplicar (gatilho "Risco não esclarecido").
  */
 export function AvisoTriagem({ pacienteId }: { pacienteId: string }) {
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: [...chaveAvaliacoes(pacienteId), 'desc'],
     queryFn: () => listarAvaliacoes(pacienteId, 'desc'),
   })
+  if (isError) {
+    return (
+      <Alerta intencao="atencao" titulo="Não foi possível carregar a triagem da última avaliação.">
+        Confira a avaliação do paciente antes de aplicar. Recarregue a página para tentar de novo.
+      </Alerta>
+    )
+  }
   if (!data) return null
 
   const ultima = data[0]

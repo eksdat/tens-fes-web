@@ -362,6 +362,17 @@ describe('osciloscópio ao vivo', () => {
     expect(await screen.findByText('Subida: 0 s de 2')).toBeInTheDocument()
   })
 
+  test('deveMostrarAFaseDoCicloAoVoltarParaOFes', async () => {
+    renderizarComEstado('/simulador?modalidade=FES')
+    const usuario = userEvent.setup()
+    await screen.findByText('Subida: 0 s de 2')
+
+    await usuario.click(screen.getByRole('button', { name: 'TENS' }))
+    await usuario.click(screen.getByRole('button', { name: 'FES' }))
+
+    expect(await screen.findByText('Subida: 0 s de 2')).toBeInTheDocument()
+  })
+
   test('deveDesligarAAnimacaoComReduzirMovimentoEDeixarAnimarMesmoAssim', async () => {
     document.documentElement.dataset.movimento = 'reduzido'
     renderizarComEstado()

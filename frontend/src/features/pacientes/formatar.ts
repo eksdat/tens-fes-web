@@ -15,4 +15,6 @@ export const limparIdentificador = (texto: string) =>
 export const pareceDocumento = (texto: string) => /^\d{11}$/.test(texto.replace(/[.\-/\s]/g, ''))
 
 /** Letras (com acento), espaço, apóstrofo e hífen. Dígito e símbolo não entram no nome. */
-export const limparNome = (texto: string) => texto.replace(/[^\p{L}\s'’-]/gu, '')
+/** NFC junta o acento colado em forma decomposta (comum vindo de PDF); o backend não aceita espaço inseparável. */
+export const limparNome = (texto: string) =>
+  texto.normalize('NFC').replace(/\u00a0/g, ' ').replace(/[^\p{L}\s'’-]/gu, '')

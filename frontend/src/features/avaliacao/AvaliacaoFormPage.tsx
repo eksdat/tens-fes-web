@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import { useFieldArray, useForm, type UseFormRegister } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router'
 import { z } from 'zod'
+import { hojeLocal } from '../../shared/datas'
 import { Alerta } from '../../shared/ui/Alerta'
 import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
@@ -28,7 +29,6 @@ import {
 } from './api'
 
 const ESTADOS: EstadoAchado[] = ['NAO_AVALIADO', 'AUSENTE', 'PRESENTE']
-const hoje = () => new Date().toISOString().slice(0, 10)
 const texto = (max: number) => z.string().max(max, `Use até ${max} caracteres.`)
 
 const DATA_MINIMA = '1900-01-01'
@@ -46,7 +46,7 @@ const criarSchema = (nascimento?: string) =>
     .min(1, 'Informe a data da avaliação.')
     .refine((v) => v >= DATA_MINIMA, 'Confira o ano: use uma data a partir de 1900.')
     .refine((v) => !nascimento || v >= nascimento, 'A avaliação não pode ser antes do nascimento do paciente.')
-    .refine((v) => v <= hoje(), 'A data não pode estar no futuro.'),
+    .refine((v) => v <= hojeLocal(), 'A data não pode estar no futuro.'),
   queixa: z.string().trim().min(1, 'Descreva a queixa.').max(2000, 'Use até 2000 caracteres.'),
   historico: texto(2000),
   /** Texto no formulário: vazio quer dizer "não avaliada" e vira null, nunca zero. */
@@ -185,6 +185,18 @@ export function AvaliacaoFormPage() {
   }, [existente.data, reset])
 
   if (editando && existente.isPending) return <TelaCarregando />
+  // Sem a avaliação carregada, salvar o formulário vazio apagaria a triagem e os achados dela.
+  if (editando && existente.isError) {
+    return (
+      <section className="tf-pagina">
+        <h1 className="tf-titulo">Editar avaliação</h1>
+        <Alerta intencao="perigo" titulo="Não foi possível carregar a avaliação.">
+          Recarregue a página para tentar de novo.
+        </Alerta>
+        <BotaoLink to={`/pacientes/${pacienteId}`}>Voltar para o paciente</BotaoLink>
+      </section>
+    )
+  }
 
   async function salvar(valores: Valores) {
     setErroGeral(null)
@@ -218,7 +230,7 @@ export function AvaliacaoFormPage() {
           rotulo="Data da avaliação"
           type="date"
           min={nascimento ?? DATA_MINIMA}
-          max={hoje()}
+          max={hojeLocal()}
           erro={errors.dataAvaliacao?.message}
           {...register('dataAvaliacao')}
         />

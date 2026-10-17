@@ -79,6 +79,8 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
     }
 
     desenhar()
+    // Parado, o quadro não roda: sem isto, a fase do ciclo some ao voltar para o FES e fica velha ao editar a rampa.
+    setEnvelope(envelopes(tempoReal.current / 1000))
     if (!animar) return
 
     let anterior: number | undefined

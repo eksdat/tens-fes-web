@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
+import static br.unibh.fisiotech.shared.exception.Violacoes.violou;
+
 import br.unibh.fisiotech.shared.exception.ConflitoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
 import br.unibh.fisiotech.usuario.dto.AtualizarPerfilProfissionalRequest;
@@ -42,6 +44,10 @@ public class UsuarioService {
         try {
             return UsuarioResponse.de(repository.saveAndFlush(usuario));
         } catch (DataIntegrityViolationException e) {
+            // Só a chave primária repetida é "já cadastrado"; outra violação é defeito e não pode virar 409.
+            if (!violou(e, "usuario_pkey")) {
+                throw e;
+            }
             throw new ConflitoException("Cadastro já concluído.");
         }
     }

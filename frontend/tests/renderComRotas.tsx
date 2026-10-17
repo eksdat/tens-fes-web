@@ -5,7 +5,7 @@ import { MemoryRouter, Routes } from 'react-router'
 
 export function renderComRotas(rotas: ReactNode, rotaInicial: string) {
   return render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter initialEntries={[rotaInicial]}>
         <Routes>{rotas}</Routes>
       </MemoryRouter>

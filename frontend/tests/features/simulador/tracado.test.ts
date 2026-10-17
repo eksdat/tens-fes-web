@@ -75,6 +75,12 @@ describe('modos com forma própria', () => {
     expect(t[BURST.pulsosPorRajada]).toBe(500)
   })
 
+  test('deveTerminarComFrequenciaAbsurdaDigitada', () => {
+    const { janelaMs } = escalaDeTempo(1e17)
+    const t = instantesDosPulsos({ forma: 'continuo', frequenciaHz: 1e17, inicioMs: 250, janelaMs })
+    expect(t.length).toBeLessThanOrEqual(1000)
+  })
+
   test('deveRepetirOPulsoNoPeriodoNoModoContinuo', () => {
     expect(instantesDosPulsos({ forma: 'continuo', frequenciaHz: 80, inicioMs: 0, janelaMs: 50 })).toEqual([0, 12.5, 25, 37.5])
   })

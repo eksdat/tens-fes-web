@@ -1,5 +1,6 @@
 package br.unibh.fisiotech.sessao.service;
 
+import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import br.unibh.fisiotech.sessao.dto.SessaoRequest;
 import br.unibh.fisiotech.sessao.dto.SessaoResponse;
 import br.unibh.fisiotech.sessao.entity.Sessao;
 import br.unibh.fisiotech.sessao.repository.SessaoRepository;
+import br.unibh.fisiotech.shared.exception.DadoInvalidoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
 
 @Service
@@ -39,7 +41,10 @@ public class SessaoService {
 
     @Transactional
     public SessaoResponse registrar(UUID pacienteId, UUID responsavelId, SessaoRequest req) {
-        pacientes.buscarDoResponsavel(pacienteId, responsavelId);
+        var paciente = pacientes.buscarDoResponsavel(pacienteId, responsavelId);
+        if (req.dataHora().atZone(FUSO).toLocalDate().isBefore(paciente.getDataNascimento())) {
+            throw new DadoInvalidoException("dataHora", "A sessão não pode ser antes do nascimento do paciente.");
+        }
         var s = new Sessao(pacienteId);
         s.definirContexto(req.dataHora(), req.objetivo().trim(), req.modalidade());
         s.definirAplicacao(req.aparelho().trim(), limpar(req.modo()), req.duracaoRealMin(),
@@ -53,6 +58,9 @@ public class SessaoService {
                 req.checklist() == null ? new LinkedHashSet<>() : new LinkedHashSet<>(req.checklist()));
         return SessaoResponse.de(repository.saveAndFlush(s));
     }
+
+    /** O nascimento é uma data local; a sessão chega em UTC. */
+    private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
 
     private static String limpar(String texto) {
         return texto == null || texto.isBlank() ? null : texto.trim();

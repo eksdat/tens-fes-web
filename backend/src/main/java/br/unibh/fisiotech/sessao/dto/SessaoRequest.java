@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -29,7 +30,7 @@ public record SessaoRequest(
         @NotBlank(message = "Informe o aparelho.") @Size(max = 120) String aparelho,
         @Size(max = 60) String modo,
         @NotNull(message = "Informe a duração real em minutos.")
-        @DecimalMin(value = "0", inclusive = false) @DecimalMax("240") BigDecimal duracaoRealMin,
+        @DecimalMin(value = "0", inclusive = false) @DecimalMax("240") @Digits(integer = 3, fraction = 1, message = "Use no máximo uma casa decimal.") BigDecimal duracaoRealMin,
         @NotEmpty(message = "Informe os parâmetros de ao menos um canal.") @Size(max = 2) List<@Valid @NotNull CanalDto> canais,
         @NotBlank(message = "Informe o tipo de eletrodo.") @Size(max = 80) String eletrodoTipo,
         @NotBlank(message = "Informe as dimensões do eletrodo.") @Size(max = 40) String eletrodoDimensoes,

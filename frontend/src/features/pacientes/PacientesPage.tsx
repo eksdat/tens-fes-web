@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Alerta } from '../../shared/ui/Alerta'
 import { Botao, BotaoLink } from '../../shared/ui/Botao'
@@ -32,6 +32,17 @@ export function PacientesPage() {
     queryFn: () => listarPacientes(filtro),
     placeholderData: keepPreviousData,
   })
+
+  // Página que deixou de existir (exclusão, link antigo): vai para a última, em vez de dizer que a lista está vazia.
+  const paginaSumiu = !!data && data.itens.length === 0 && filtro.pagina > 0 && data.totalItens > 0
+  useEffect(() => {
+    if (!paginaSumiu || !data) return
+    const p = new URLSearchParams(params)
+    const ultima = Math.max(0, data.totalPaginas - 1)
+    if (ultima > 0) p.set('pagina', String(ultima))
+    else p.delete('pagina')
+    setParams(p, { replace: true })
+  }, [paginaSumiu, data, params, setParams])
 
   function atualizar(mudancas: Partial<FiltroPacientes>) {
     const novo = { ...filtro, pagina: 0, ...mudancas }
@@ -90,7 +101,7 @@ export function PacientesPage() {
 
       {isPending && <p className="tf-sub">Carregando pacientes…</p>}
 
-      {data && data.itens.length === 0 && (
+      {data && data.itens.length === 0 && !paginaSumiu && (
         <output className="tf-sub tf-pacientes__vazio">
           {filtro.busca ? `Nenhum paciente encontrado para "${filtro.busca}".` : 'Nenhum paciente cadastrado ainda.'}
         </output>

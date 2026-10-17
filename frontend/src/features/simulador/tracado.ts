@@ -4,6 +4,11 @@ import type { FaixasDoCampo, Rampas } from './calculos'
 export const INTENSIDADE_MAXIMA_MA = 100
 
 const PERIODOS_NA_JANELA = 6
+/**
+ * Teto de pulsos por janela. Com frequência absurda digitada (1e17), `k * periodo` passa de 2^53, `k++` deixa de mudar
+ * `k` e o laço nunca termina.
+ */
+const MAXIMO_DE_PULSOS = 1000
 /** Tempo que um pulso leva para atravessar a tela; abaixo disso o olho não acompanha. */
 const TRAVESSIA_MS = 3000
 
@@ -82,7 +87,9 @@ export function instantesDosPulsos({
     return instantes
   }
   const periodo = 1000 / frequenciaHz
-  for (let k = Math.ceil(inicioMs / periodo); k * periodo < fim; k++) instantes.push(k * periodo)
+  for (let k = Math.ceil(inicioMs / periodo); k * periodo < fim && instantes.length < MAXIMO_DE_PULSOS; k++) {
+    instantes.push(k * periodo)
+  }
   return instantes
 }
 

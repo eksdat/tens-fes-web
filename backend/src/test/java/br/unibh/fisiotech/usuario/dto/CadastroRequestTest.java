@@ -65,6 +65,18 @@ class CadastroRequestTest {
     }
 
     @Test
+    void deveContarAsLetrasDoNomeSemOsEspacosDasPontas() {
+        assertThat(valido(new CadastroRequest(" a", Perfil.ESTUDANTE, "UniBH", (short) 5, null, null, null, true)))
+                .isFalse();
+    }
+
+    @Test
+    void deveRecusarInstituicaoSoComEspacos() {
+        assertThat(valido(new CadastroRequest("Ana Souza", Perfil.ESTUDANTE, "   ", (short) 5, null, null, null, true)))
+                .isFalse();
+    }
+
+    @Test
     void deveRecusarNomeComLink() {
         assertThat(valido(new CadastroRequest("Ganhe www.premio.com", Perfil.ESTUDANTE, "UniBH", (short) 5,
                 null, null, null, true))).isFalse();

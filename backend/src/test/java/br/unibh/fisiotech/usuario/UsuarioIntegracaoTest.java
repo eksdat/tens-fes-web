@@ -170,5 +170,8 @@ class UsuarioIntegracaoTest {
         mvc.perform(post("/api/v1/usuarios/me/termos").header(HttpHeaders.AUTHORIZATION, bearer())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"aceite\":false}"))
                 .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/usuarios/me/termos").header(HttpHeaders.AUTHORIZATION, bearer())
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
     }
 }
