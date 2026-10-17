@@ -229,6 +229,17 @@
   color: var(--ink);
 }
 
+/* O campo de data nativo tem altura e espaçamento próprios: ficava mais alto que os outros campos. */
+.tf-input[type='date'],
+.tf-input[type='datetime-local'] {
+  min-height: 44px;
+  padding-block: 0;
+}
+
+.tf-input::-webkit-datetime-edit {
+  padding: 0;
+}
+
 .tf-input:focus {
   outline: none;
 }
@@ -258,6 +269,128 @@
 
 .tf-field--erro .tf-control {
   border-color: var(--danger);
+}
+
+/* Unidade fixa ao lado do valor (CampoParametro do design system). */
+.tf-control__unidade {
+  display: inline-flex;
+  align-items: center;
+  min-width: 48px;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  border-left: 2px solid var(--ink);
+  background: var(--surface-300);
+  color: var(--ink);
+  font: 400 var(--fs-sm) / 1 var(--font-mono);
+}
+
+/* Simulador */
+
+.tf-simulador__corpo {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.tf-simulador__campos {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.tf-simulador__campo {
+  gap: var(--space-1);
+}
+
+.tf-simulador__mensagens {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tf-simulador__mensagem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--warning);
+  font-size: var(--fs-sm);
+}
+
+.tf-simulador__mensagem .tf-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.tf-simulador__mensagem--fora-aparelho,
+.tf-simulador__mensagem--unidade {
+  color: var(--danger);
+}
+
+.tf-grafico {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tf-grafico__item {
+  margin: 0;
+  padding: var(--space-3);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--surface-100);
+}
+
+.tf-grafico__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.tf-grafico__eixo {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.tf-grafico__linha {
+  fill: none;
+  stroke: var(--brand-strong);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.tf-grafico__rotulo {
+  fill: var(--ink);
+  font: 400 11px var(--font-mono);
+}
+
+.tf-grafico__legenda {
+  margin-top: var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+}
+
+.tf-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tf-tabela th,
+.tf-tabela td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.tf-tabela td {
+  font-family: var(--font-mono);
+}
+
+@media (min-width: 960px) {
+  .tf-simulador__corpo {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
 }
 
 .tf-field__erro {
@@ -355,6 +488,169 @@
 .tf-alert--sucesso .tf-icon,
 .tf-alert--sucesso .tf-alert__titulo {
   color: var(--brand-strong);
+}
+
+/*
+ * Toast: resultado de uma ação. Logo abaixo do cabeçalho, nunca no rodapé (teclado e abas do celular).
+ * Largura total no celular e com zoom alto; canto superior direito a partir de 880 px.
+ */
+.tf-toasts {
+  position: fixed;
+  z-index: 25;
+  top: calc(56px + var(--space-2));
+  left: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  gap: var(--space-3);
+  pointer-events: none;
+}
+
+.tf-toasts__lista {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tf-toasts__lista:empty {
+  display: none;
+}
+
+.tf-toast {
+  --faixa: var(--brand);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3) var(--space-1) var(--space-3) var(--space-4);
+  background: var(--surface-200);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--faixa);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+  pointer-events: auto;
+  animation: tf-toast-entrada 0.18s ease-out;
+  --icon-knock: var(--surface-200);
+}
+
+.tf-toast .tf-icon {
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  color: var(--faixa);
+}
+
+.tf-toast__titulo {
+  font: 700 var(--fs-base) / 1.5 var(--font-sans);
+}
+
+.tf-toast__texto {
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
+}
+
+.tf-toast__acao {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  margin-top: var(--space-1);
+  padding: 0 var(--space-1);
+  background: none;
+  border: 0;
+  color: var(--brand-strong);
+  font: 700 var(--fs-base) / 1.5 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.tf-toast__fechar {
+  display: grid;
+  place-items: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tf-toast__fechar svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: square;
+}
+
+.tf-toast__fechar:hover,
+.tf-toast__acao:hover {
+  background: var(--brand-tint);
+}
+
+.tf-toast__fechar:focus-visible,
+.tf-toast__acao:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.tf-toast--erro {
+  --faixa: var(--danger);
+}
+
+.tf-toast--atencao {
+  --faixa: var(--warning);
+}
+
+.tf-toast--info {
+  --faixa: var(--info);
+}
+
+/* Mais contraste: borda e faixa mais grossas, sem sombra e título sublinhado. */
+:root[data-contraste='alto'] .tf-toast {
+  border-width: 3px;
+  border-left-width: 12px;
+  box-shadow: none;
+}
+
+:root[data-contraste='alto'] .tf-toast__titulo {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (forced-colors: active) {
+  .tf-toast {
+    border-width: 3px;
+    border-left-width: 12px;
+    box-shadow: none;
+  }
+
+  .tf-toast__titulo {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+@keyframes tf-toast-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 880px) {
+  .tf-toasts {
+    top: calc(64px + var(--space-3));
+    left: auto;
+    right: var(--space-4);
+    width: min(420px, calc(100vw - 2 * var(--space-4)));
+  }
 }
 
 /* Layout das telas de autenticação: mobile primeiro */
@@ -1123,17 +1419,7 @@ fieldset.tf-captcha {
   margin: 0;
 }
 
-/* =========================================================
- * Diálogo (Dialog / AlertDialog do Radix UI)
- * ---------------------------------------------------------
- * .tf-dialogo-overlay  — camada escura atrás do painel
- * .tf-dialogo          — painel de conteúdo
- * .tf-dialogo__cabecalho — título e botão de fechar
- * .tf-dialogo__titulo  — <h2> do diálogo
- * .tf-dialogo__corpo   — área de conteúdo
- * .tf-dialogo__rodape  — área de ações (botões)
- * .tf-dialogo__fechar  — botão X
- * ========================================================= */
+/* Diálogo (Radix UI) */
 
 .tf-dialogo-overlay {
   position: fixed;
@@ -1313,9 +1599,7 @@ fieldset.tf-captcha {
 
 
 
-/* =========================================================
- * Painel de acessibilidade (BotaoAcessibilidade)
- * ========================================================= */
+/* Painel de acessibilidade */
 
 .tf-menu__icone,
 .tf-acessibilidade {
@@ -1358,10 +1642,42 @@ fieldset.tf-captcha {
   }
 }
 
-.tf-auth__acessibilidade {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--space-3) var(--space-4) 0;
+/* Botão flutuante no canto inferior direito, acima do conteúdo e abaixo do diálogo (z-index 50). */
+.tf-acessibilidade {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+  z-index: 30;
+  width: var(--target-min);
+  min-height: var(--target-min);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface-200);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+/* No app logado, no celular, a barra de abas ocupa a base da tela: o botão sobe acima dela. */
+.tf-menu .tf-acessibilidade {
+  bottom: calc(var(--target-min) + var(--space-3) + 2px + var(--space-3) + env(safe-area-inset-bottom));
+}
+
+/* Na tela de entrada, o cartão ganha folga na base para o botão nunca cobrir o último controle. */
+.tf-auth__conteudo {
+  padding-bottom: calc(var(--target-min) + var(--space-5) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 880px) {
+  .tf-acessibilidade,
+  .tf-menu .tf-acessibilidade {
+    right: var(--space-5);
+    bottom: var(--space-5);
+    width: 48px;
+    min-height: 48px;
+  }
+
+  .tf-auth__conteudo {
+    padding-bottom: var(--space-5);
+  }
 }
 
 .tf-ajustes {
@@ -1584,6 +1900,48 @@ fieldset.tf-captcha {
 
 .tf-tecnica {
   gap: var(--space-5);
+}
+
+/* Corpo em Markdown vindo da API (CorpoMarkdown) */
+.tf-markdown {
+  display: grid;
+  gap: var(--space-3);
+  color: var(--ink-muted);
+}
+
+.tf-markdown p,
+.tf-markdown ul,
+.tf-markdown ol {
+  margin: 0;
+}
+
+.tf-markdown ul,
+.tf-markdown ol {
+  padding-left: var(--space-5);
+}
+
+.tf-markdown strong {
+  color: var(--ink);
+}
+
+.tf-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.tf-markdown th,
+.tf-markdown td {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tf-markdown th {
+  background: var(--surface-200);
+  color: var(--ink);
 }
 
 .tf-tecnica__rodape {
@@ -1948,7 +2306,9 @@ fieldset.tf-captcha {
   box-shadow: 0 0 0 3px var(--ink);
 }
 
-.tf-regioes {
+/* Grupo de botões de alternância lado a lado (regiões do atlas, modalidade do simulador); o escolhido fica escuro. */
+.tf-regioes,
+.tf-grupo-botoes {
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -1958,7 +2318,8 @@ fieldset.tf-captcha {
   gap: var(--space-3);
 }
 
-.tf-regioes .tf-btn[aria-pressed='true'] {
+.tf-regioes .tf-btn[aria-pressed='true'],
+.tf-grupo-botoes .tf-btn[aria-pressed='true'] {
   background: var(--ink);
   color: var(--surface-100);
 }
@@ -2229,23 +2590,35 @@ fieldset.tf-captcha {
 .tf-controles {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: 1fr;
+  align-items: start;
   gap: var(--space-2) var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* O cartão é o item da lista: o botão fica no topo e a leitura (unidade, valor, estado) logo abaixo. */
+.tf-controles > li {
+  display: grid;
+  background: var(--surface-200);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.tf-controles > li:has(> .tf-controle[aria-expanded='true']) {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+
 .tf-controle {
   display: flex;
   align-items: flex-start;
-  height: 100%;
   gap: var(--space-3);
   width: 100%;
   min-height: var(--target-min);
   padding: var(--space-2) var(--space-3);
-  background: var(--surface-200);
-  border: 2px solid var(--line);
+  background: transparent;
+  border: 0;
   border-radius: var(--radius-md);
   color: var(--ink);
   font: inherit;
@@ -2255,11 +2628,6 @@ fieldset.tf-captcha {
 
 .tf-controle:hover {
   background: var(--brand-tint);
-}
-
-.tf-controle[aria-pressed='true'] {
-  border-color: var(--ink);
-  box-shadow: var(--shadow-card);
 }
 
 .tf-controle__numero {
@@ -2285,23 +2653,55 @@ fieldset.tf-captcha {
   font-size: var(--fs-sm);
 }
 
-/* Segurança: gatilhos */
-.tf-gatilhos {
-  gap: var(--space-3);
+/* Segurança: checklist */
+.tf-checklist {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-4);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  background: var(--surface-200);
 }
 
-.tf-gatilho {
+.tf-checklist__etapa {
+  padding: 0 var(--space-2);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tf-checklist__grupo {
   display: grid;
   gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
-  border-left: 4px solid var(--warning);
-  background: var(--warning-tint);
-  border-radius: var(--radius-md);
 }
 
-.tf-gatilho dt {
+.tf-checklist__grupo h4 {
   margin: 0;
-  color: var(--warning);
+}
+
+.tf-checklist__itens {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tf-checklist__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--target-min);
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.tf-checklist__item input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--brand);
 }
 
 @media (min-width: 640px) {
@@ -2331,4 +2731,259 @@ fieldset.tf-captcha {
   background: var(--brand-tint);
   border: 2px solid var(--brand);
   border-radius: var(--radius-md);
+}
+
+/* Pacientes: lista ordenável e formulário */
+
+.tf-pacientes__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.tf-pacientes__busca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.tf-pacientes__busca .tf-field {
+  flex: 1 1 260px;
+}
+
+/* Botão ao lado de um campo tem a altura do campo (48 px), não a do botão comum (44 px). */
+.tf-pacientes__busca .tf-btn {
+  min-height: 48px;
+}
+
+.tf-pacientes__vazio {
+  display: block;
+}
+
+.tf-tabela__rolagem {
+  overflow-x: auto;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-lg);
+  background: var(--surface-200);
+}
+
+.tf-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tf-tabela th,
+.tf-tabela td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line-strong);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tf-tabela tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tf-tabela th {
+  padding: 0;
+}
+
+.tf-tabela__ordenar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tf-tabela__ordenar:hover {
+  background: var(--brand-tint);
+}
+
+.tf-tabela__seta {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+}
+
+.tf-tabela__mono {
+  font-family: var(--font-mono);
+}
+
+.tf-paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* align-items: start: sem isso o campo ao lado de um com dica estica e o rótulo desce. */
+.tf-form-grade {
+  display: grid;
+  align-items: start;
+  gap: var(--space-4);
+}
+
+@media (min-width: 720px) {
+  .tf-form-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tf-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* Avaliação: estados "não avaliado / ausente / presente" e texto longo */
+/* A caixa de texto longo usa o mesmo .tf-control (borda 2 px, foco azul) do campo de uma linha. */
+.tf-control--texto {
+  min-height: 96px;
+}
+
+.tf-textarea {
+  min-height: 96px;
+  padding: var(--space-3) var(--space-4);
+  resize: vertical;
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
+}
+
+.tf-estado {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tf-estado__legenda {
+  padding: 0;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tf-estado__opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+/* Telas do app logado mais largas no computador; o texto legal (.tf-documento) mantém a medida de leitura. */
+@media (min-width: 1024px) {
+  .tf-pagina {
+    max-width: 1200px;
+    padding: var(--space-7) var(--space-6);
+  }
+
+  .tf-documento {
+    max-width: 720px;
+  }
+}
+
+/* Aviso de operação em andamento (excluir, salvar): ícone girando e texto, para quem não vê a animação. */
+.tf-espere {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tf-espere:empty {
+  display: none;
+}
+
+.tf-espere__icone {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--brand-tint);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: tf-girar 800ms linear infinite;
+}
+
+@keyframes tf-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tf-controle__leitura {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-1) calc(var(--space-3) * 2 + 32px);
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+}
+
+.tf-controle__explicacao {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding: var(--space-1) var(--space-3) var(--space-3) calc(var(--space-3) * 2 + 32px);
+}
+
+.tf-controle__explicacao .tf-controle__leitura {
+  padding: 0;
+}
+
+.tf-controle__explicacao[hidden] {
+  display: none;
+}
+
+/* Osciloscópio do simulador: canal 1 azul e canal 2 âmbar, como no atlas; o rótulo diz o canal, a cor não é a única pista. */
+.tf-osciloscopio {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tf-osciloscopio__canal {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.tf-osciloscopio__tela {
+  height: 80px;
+  background: var(--surface-200);
+  border-radius: var(--radius-sm);
+}
+
+.tf-grafico__rotulo-canal {
+  color: var(--ink);
+  font: 700 var(--fs-sm) / 1.4 var(--font-mono);
+}
+
+.tf-osciloscopio__linha--c1 {
+  stroke: var(--info);
+}
+
+.tf-osciloscopio__linha--c2 {
+  stroke: var(--warning);
+}
+
+.tf-osciloscopio__envoltoria {
+  stroke: var(--brand-strong);
+}
+
+.tf-osciloscopio__cursor {
+  stroke: var(--danger);
+  stroke-width: 2;
+}
+
+/* A tela estica na largura (preserveAspectRatio="none"); sem isto a linha engrossaria nas bordas verticais. */
+.tf-osciloscopio__tela line,
+.tf-osciloscopio__tela path {
+  vector-effect: non-scaling-stroke;
 }

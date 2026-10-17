@@ -22,10 +22,12 @@ public record UsuarioResponse(
         Short periodo,
         Categoria categoria,
         String registro,
-        Uf uf) {
+        Uf uf,
+        /** Os termos mudaram desde o último aceite: o frontend pede novo aceite antes de liberar as telas. */
+        @Schema(requiredMode = RequiredMode.REQUIRED) boolean termosPendentes) {
 
     public static UsuarioResponse de(Usuario u) {
         return new UsuarioResponse(u.getId(), u.getNome(), u.getPerfil(), u.isRevisor(), u.getInstituicao(),
-                u.getPeriodo(), u.getCategoria(), u.getRegistro(), u.getUf());
+                u.getPeriodo(), u.getCategoria(), u.getRegistro(), u.getUf(), u.termosPendentes());
     }
 }

@@ -46,6 +46,7 @@ export function ProtectedRoute({ perfil, semMfa = false }: { perfil?: Perfil; se
   if (usuario.data === null) return <Navigate to="/completar-cadastro" replace />
   if (perfil && usuario.data.perfil !== perfil) return <Navigate to="/" replace />
   if (semMfa) return <Outlet />
+  if (usuario.data.termosPendentes) return <Navigate to="/termos/aceitar" replace />
 
   if (mfa?.proximo === 'aal2' && mfa.atual === 'aal1') return <Navigate to="/mfa/verificar" replace />
   if (usuario.data.perfil === 'PROFISSIONAL' && mfa?.proximo === 'aal1') {

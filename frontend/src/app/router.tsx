@@ -6,6 +6,7 @@ import { LoginPage } from '../features/auth/login/LoginPage'
 import { PoliticaPrivacidadePage } from '../features/termos/PoliticaPrivacidadePage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { TermosDeUsoPage } from '../features/termos/TermosDeUsoPage'
+import { AceitarTermosPage } from '../features/termos/AceitarTermosPage'
 import { AtivarMfaPage } from '../features/mfa/AtivarMfaPage'
 import { VerificarMfaPage } from '../features/mfa/VerificarMfaPage'
 import { FES } from '../features/fes/conteudoFes'
@@ -13,6 +14,11 @@ import { TENS } from '../features/tens/conteudoTens'
 import { rotasDoModulo } from '../features/modulo/rotasDoModulo'
 import { InicioPage } from '../features/inicio/InicioPage'
 import { PerfilPage } from '../features/perfil/PerfilPage'
+import { PacienteFormPage } from '../features/pacientes/PacienteFormPage'
+import { PacientesPage } from '../features/pacientes/PacientesPage'
+import { AvaliacaoFormPage } from '../features/avaliacao/AvaliacaoFormPage'
+import { SessaoFormPage } from '../features/sessao/SessaoFormPage'
+import { SimuladorPage } from '../features/simulador/SimuladorPage'
 import { EmConstrucao } from './EmConstrucao'
 import { LayoutLogado } from './LayoutLogado'
 import { RaizApp } from './RaizApp'
@@ -46,6 +52,7 @@ export const router = createBrowserRouter([
         children: [
           { path: '/mfa/ativar', handle: { titulo: 'Ativar verificação em duas etapas' }, element: <AtivarMfaPage /> },
           { path: '/mfa/verificar', handle: { titulo: 'Verificar código' }, element: <VerificarMfaPage /> },
+          { path: '/termos/aceitar', handle: { titulo: 'Termos atualizados' }, element: <AceitarTermosPage /> },
         ],
       },
       {
@@ -57,9 +64,20 @@ export const router = createBrowserRouter([
               { path: '/', handle: { titulo: 'Início' }, element: <InicioPage /> },
               rotasDoModulo(TENS),
               rotasDoModulo(FES),
+              { path: '/simulador', handle: { titulo: 'Simulador' }, element: <SimuladorPage /> },
               emConstrucao('/criar-conteudo', 'Criar conteúdo'),
               { path: '/perfil', handle: { titulo: 'Meu perfil' }, element: <PerfilPage /> },
-              { element: <ProtectedRoute perfil="PROFISSIONAL" />, children: [emConstrucao('/pacientes', 'Pacientes')] },
+              {
+                element: <ProtectedRoute perfil="PROFISSIONAL" />,
+                children: [
+                  { path: '/pacientes', handle: { titulo: 'Pacientes' }, element: <PacientesPage /> },
+                  { path: '/pacientes/novo', handle: { titulo: 'Novo paciente' }, element: <PacienteFormPage /> },
+                  { path: '/pacientes/:id', handle: { titulo: 'Paciente' }, element: <PacienteFormPage /> },
+                  { path: '/pacientes/:id/avaliacoes/nova', handle: { titulo: 'Avaliação inicial' }, element: <AvaliacaoFormPage /> },
+                  { path: '/pacientes/:id/avaliacoes/:avaliacaoId', handle: { titulo: 'Avaliação' }, element: <AvaliacaoFormPage /> },
+                  { path: '/pacientes/:id/sessoes/nova', handle: { titulo: 'Registrar sessão' }, element: <SessaoFormPage /> },
+                ],
+              },
             ],
           },
         ],

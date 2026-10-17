@@ -35,6 +35,20 @@ describe('dados das montagens', () => {
     }
   })
 
+  test('deveTerLadoECaracteristicasDosEletrodosEmCadaRegiao', () => {
+    for (const m of MONTAGENS) {
+      expect(['esquerdo', 'direito', 'bilateral', 'central']).toContain(m.lado)
+      expect(m.caracteristicasEletrodos.tipo.length).toBeGreaterThan(5)
+      expect(m.caracteristicasEletrodos.larguraCm).toBeGreaterThan(0)
+      expect(m.caracteristicasEletrodos.alturaCm).toBeGreaterThan(0)
+    }
+  })
+
+  test('deveUsarLadoBilateralQuandoHaUmParDeCadaLado', () => {
+    expect(MONTAGENS.find((m) => m.id === 'lombar')?.lado).toBe('bilateral')
+    expect(MONTAGENS.find((m) => m.id === 'joelho')?.lado).toBe('esquerdo')
+  })
+
   test('deveCasarCodigoDoEletrodoComOCanal', () => {
     for (const m of MONTAGENS) {
       const codigos = m.eletrodos.map((e) => e.codigo)
@@ -120,6 +134,18 @@ describe('atlas completo', () => {
     expect(screen.getByRole('button', { name: 'Região lombar' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText(/Costas em esquema/)).toBeInTheDocument()
     expect(screen.getByText('Parestesia confortável na área selecionada.')).toBeInTheDocument()
+  })
+
+  test('deveMostrarLadoECaracteristicasDosEletrodosNoDetalhe', async () => {
+    renderizar()
+    const usuario = userEvent.setup()
+
+    await usuario.click(screen.getByRole('button', { name: 'Joelho' }))
+
+    expect(screen.getByText('Lado')).toBeInTheDocument()
+    expect(screen.getByText('Esquerdo')).toBeInTheDocument()
+    expect(screen.getByText('Eletrodos')).toBeInTheDocument()
+    expect(screen.getByText(/Borracha condutiva, 5 cm × 5 cm/)).toBeInTheDocument()
   })
 
   test('deveListarOsQuatroEletrodosDaLombarComCanal', async () => {

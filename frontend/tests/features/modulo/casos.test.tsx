@@ -7,12 +7,25 @@ import { rotasDoModulo } from '@/features/modulo/rotasDoModulo'
 import { TENS } from '@/features/tens/conteudoTens'
 import type { Modulo } from '@/features/modulo/tipos'
 
+vi.mock('@/features/modulo/usePaginaTecnica', () => import('./paginaTecnicaFalsa'))
+
 function renderizar(modulo: Modulo, rota: string) {
   const roteador = createMemoryRouter([{ element: <main><Outlet /></main>, children: [rotasDoModulo(modulo)] }], {
     initialEntries: [rota],
   })
   return render(<RouterProvider router={roteador} />)
 }
+
+test.each([
+  [TENS, '/tens/parametros', '/simulador?modalidade=TENS&modo=Convencional'],
+  [TENS, '/tens/casos', '/simulador?modalidade=TENS&modo=Convencional'],
+  [FES, '/fes/parametros', '/simulador?modalidade=FES&modo=FES'],
+  [FES, '/fes/casos', '/simulador?modalidade=FES&modo=FES'],
+])('deveLevarAoSimuladorDaModalidade (%#)', (modulo, rota, destino) => {
+  renderizar(modulo, rota)
+
+  expect(screen.getByRole('link', { name: 'Testar no simulador' })).toHaveAttribute('href', destino)
+})
 
 test('deveListarOsCasosDoTensNaOrdemDoGuia', () => {
   renderizar(TENS, '/tens/casos')

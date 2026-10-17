@@ -4,6 +4,8 @@ import { axe } from 'vitest-axe'
 import { rotasDoModulo } from '@/features/modulo/rotasDoModulo'
 import { TENS } from '@/features/tens/conteudoTens'
 
+vi.mock('@/features/modulo/usePaginaTecnica', () => import('./paginaTecnicaFalsa'))
+
 function renderizar(rota: string) {
   const roteador = createMemoryRouter([{ element: <main><Outlet /></main>, children: [rotasDoModulo(TENS)] }], { initialEntries: [rota] })
   return render(<RouterProvider router={roteador} />)
@@ -37,8 +39,8 @@ test('deveExplicarFundamentosMecanismoBeneficioEPerguntas', () => {
   renderizar('/tens')
 
   expect(screen.getByText(/estimulação elétrica nervosa transcutânea/i)).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Como funciona' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'O que apresentar como benefício' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Como o TENS age na dor' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'O que a evidência mostra' })).toBeInTheDocument()
   expect(screen.getByText('Qual intensidade em mA?')).toBeInTheDocument()
 })
 
@@ -98,7 +100,8 @@ test('deveMostrarFonteERevisaoDaPaginaTecnica', () => {
 
   const rodape = screen.getByRole('contentinfo')
   expect(within(rodape).getAllByText(/johnson/i)).toHaveLength(2)
-  expect(within(rodape).getByText(/Revisão docente: pendente/)).toBeInTheDocument()
+  expect(within(rodape).getByText('Guia técnico TENS + FES, seção 07')).toBeInTheDocument()
+  expect(within(rodape).getByText('Revisão docente: 10/10/2026.')).toBeInTheDocument()
 })
 
 test('deveListarOsQuatroModosComFaixaEducativa', () => {

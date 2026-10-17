@@ -66,6 +66,13 @@ test('deveManterOAtalhoDaVerificacaoEmDuasEtapas', () => {
   expect(screen.getByRole('link', { name: 'Verificação em duas etapas' })).toHaveAttribute('href', '/mfa/ativar')
 })
 
+test('deveLevarAoSimuladorPelasFerramentas', () => {
+  renderizar()
+
+  const ferramentas = screen.getByRole('region', { name: 'Ferramentas' })
+  expect(within(ferramentas).getByRole('link', { name: 'Abrir o simulador' })).toHaveAttribute('href', '/simulador')
+})
+
 test('deveSerAcessivelSemViolacoes', async () => {
   renderizar()
 

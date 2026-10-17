@@ -16,21 +16,33 @@ export type Eletrodo = {
   y: number
 }
 
+/** Lado do corpo da pessoa (não da imagem). Bilateral: um par de cada lado; central: sobre a linha média. */
+export type Lado = 'esquerdo' | 'direito' | 'bilateral' | 'central'
+
+export type CaracteristicasEletrodos = { tipo: string; larguraCm: number; alturaCm: number }
+
+/** Eletrodo que acompanha o Neurodyn Portable (manual M1, cap. 8.3); o desenho usa esse tamanho (LADO_ELETRODO). */
+export const ELETRODO_DO_APARELHO: CaracteristicasEletrodos = {
+  tipo: 'Borracha condutiva',
+  larguraCm: 5,
+  alturaCm: 5,
+}
+
 export type Montagem = {
   id: 'lombar' | 'joelho' | 'quadriceps' | 'tibial-anterior' | 'extensores-punho' | 'ombro' | 'abdomen' | 'isquiotibiais'
   modalidade: Modalidade
   nome: string
   vista: string
+  lado: Lado
+  caracteristicasEletrodos: CaracteristicasEletrodos
   objetivo: string
   marcos: string
   montagem: string[]
   resposta: string
   cuidados: string[]
-  /** Explica o que a ilustração mostra nesta região. */
   legendaDesenho: string[]
   descricao: string
   fonte: string
-  /** Trecho da placa anatômica que ilustra a região. */
   recorte: { x: number; y: number; w: number; h: number }
   eletrodos: Eletrodo[]
   /** Ponto clicável no corpo, em coordenadas da placa. */
@@ -55,6 +67,8 @@ export const CREDITO_DA_ILUSTRACAO =
 export const MONTAGENS: Montagem[] = [
   {
     id: 'lombar',
+    lado: 'bilateral',
+    caracteristicasEletrodos: ELETRODO_DO_APARELHO,
     modalidade: 'TENS',
     nome: 'Região lombar',
     vista: 'Costas (posterior)',
@@ -92,6 +106,8 @@ export const MONTAGENS: Montagem[] = [
   },
   {
     id: 'joelho',
+    lado: 'esquerdo',
+    caracteristicasEletrodos: ELETRODO_DO_APARELHO,
     modalidade: 'TENS',
     nome: 'Joelho',
     vista: 'Frente (anterior), joelho esquerdo',
@@ -125,6 +141,8 @@ export const MONTAGENS: Montagem[] = [
   },
   {
     id: 'quadriceps',
+    lado: 'direito',
+    caracteristicasEletrodos: ELETRODO_DO_APARELHO,
     modalidade: 'FES',
     nome: 'Quadríceps',
     vista: 'Frente (anterior)',
@@ -156,6 +174,8 @@ export const MONTAGENS: Montagem[] = [
   },
   {
     id: 'tibial-anterior',
+    lado: 'esquerdo',
+    caracteristicasEletrodos: ELETRODO_DO_APARELHO,
     modalidade: 'FES',
     nome: 'Tibial anterior',
     vista: 'Frente e lado da perna (anterolateral)',
@@ -190,6 +210,8 @@ export const MONTAGENS: Montagem[] = [
   },
   {
     id: 'extensores-punho',
+    lado: 'esquerdo',
+    caracteristicasEletrodos: ELETRODO_DO_APARELHO,
     modalidade: 'FES',
     nome: 'Extensores de punho e dedos',
     vista: 'Parte de trás do antebraço (dorsal)',
@@ -220,6 +242,8 @@ export const MONTAGENS: Montagem[] = [
   },
   {
     id: 'ombro',
+    lado: 'direito',
+    caracteristicasEletrodos: ELETRODO_DO_APARELHO,
     modalidade: 'TENS',
     nome: 'Ombro',
     vista: 'Costas (posterior), ombro direito',
@@ -253,6 +277,8 @@ export const MONTAGENS: Montagem[] = [
   },
   {
     id: 'abdomen',
+    lado: 'bilateral',
+    caracteristicasEletrodos: ELETRODO_DO_APARELHO,
     modalidade: 'FES',
     nome: 'Abdômen',
     vista: 'Frente (anterior)',
@@ -292,6 +318,8 @@ export const MONTAGENS: Montagem[] = [
   },
   {
     id: 'isquiotibiais',
+    lado: 'esquerdo',
+    caracteristicasEletrodos: ELETRODO_DO_APARELHO,
     modalidade: 'FES',
     nome: 'Coxa posterior (isquiotibiais)',
     vista: 'Costas (posterior), coxa',

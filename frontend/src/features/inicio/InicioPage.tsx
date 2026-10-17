@@ -65,6 +65,21 @@ export function InicioPage() {
         </ul>
       </section>
 
+      <section className="tf-pilha" aria-labelledby="titulo-ferramentas">
+        <h2 id="titulo-ferramentas" className="tf-titulo tf-titulo--secao">
+          Ferramentas
+        </h2>
+        <ul className="tf-lista-cartoes">
+          <li className="tf-cartao tf-modulo-cartao">
+            <h3 className="tf-titulo tf-titulo--cartao">Simulador</h3>
+            <p className="tf-sub">Combine frequência, largura de pulso e tempo e veja a forma de onda resultante.</p>
+            <Link className="tf-link tf-modulo-cartao__acao" to="/simulador">
+              Abrir o simulador
+            </Link>
+          </li>
+        </ul>
+      </section>
+
       <div className="tf-linha">
         <BotaoLink to="/mfa/ativar" variante="ghost">
           Verificação em duas etapas

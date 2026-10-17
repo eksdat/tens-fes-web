@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 
 import br.unibh.fisiotech.conteudo.dto.ConteudoResponse;
+import br.unibh.fisiotech.conteudo.dto.PaginaTecnicaResponse;
 import br.unibh.fisiotech.conteudo.enums.Modalidade;
+import br.unibh.fisiotech.conteudo.enums.Secao;
 import br.unibh.fisiotech.conteudo.service.ConteudoService;
 
 @RestController
@@ -24,6 +26,12 @@ public class ConteudoController {
     @GetMapping
     public List<ConteudoResponse> listar(@RequestParam("modalidade") List<Modalidade> modalidades) {
         return service.listarAprovados(modalidades);
+    }
+
+    @GetMapping("/pagina")
+    public PaginaTecnicaResponse pagina(@RequestParam("modalidade") Modalidade modalidade,
+            @RequestParam("secao") Secao secao) {
+        return service.paginaTecnica(modalidade, secao);
     }
 
     @GetMapping("/{id}")

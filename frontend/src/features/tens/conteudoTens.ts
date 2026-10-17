@@ -15,27 +15,6 @@ export const TENS: Modulo = {
   titulo: 'Alívio da dor',
   introducao: 'Conteúdo organizado em torno do alívio da dor. Cada exemplo traz contexto, fonte e limitações.',
   visaoGeral: {
-    secoes: [
-      {
-        titulo: 'O que é TENS',
-        paragrafos: [
-          'TENS significa estimulação elétrica nervosa transcutânea. Utiliza eletrodos de superfície para estimular nervos e auxiliar no alívio da dor. A resposta e a tolerância devem ser acompanhadas durante a aplicação.',
-        ],
-      },
-      {
-        titulo: 'Como funciona',
-        paragrafos: [
-          'Os estímulos sensoriais podem modular a transmissão de informações relacionadas à dor na medula e em circuitos de modulação do sistema nervoso. O TENS convencional busca uma sensação forte e confortável.',
-          'A explicação de “fechar a comporta da dor” é uma analogia didática, não um bloqueio completo ou permanente.',
-        ],
-      },
-      {
-        titulo: 'O que apresentar como benefício',
-        paragrafos: [
-          'A revisão meta-TENS encontrou redução de dor durante ou imediatamente após a aplicação em comparação com placebo. Isso não demonstra benefício duradouro para todas as condições nem substitui tratamento ativo e avaliação da causa da dor.',
-        ],
-      },
-    ],
     perguntas: [
       {
         pergunta: 'TENS fortalece músculos?',

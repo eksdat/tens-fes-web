@@ -31,6 +31,30 @@ SMTP próprio pela conta Gmail do projeto (senha de app), configurado em *Authen
 
 `config.toml` configura o Supabase local (`npx supabase start`, Docker) com a mesma política da nuvem: senha forte de 10 caracteres, confirmação por e-mail, TOTP e os templates desta pasta. Com o SMTP real ligado (padrão), os e-mails saem de verdade; sem ele, caem no Mailpit (http://127.0.0.1:54324). Mudou uma regra de Auth no painel? Repita no `config.toml`. Passo a passo em [backend/README.md](../backend/README.md).
 
+O que o `npx supabase start` sobe:
+
+| Serviço | Endereço |
+|---|---|
+| PostgreSQL 17 | `127.0.0.1:54322` (usuário e senha `postgres`) |
+| API (Auth em `/auth/v1`) | `http://127.0.0.1:54321` |
+| Studio | `http://127.0.0.1:54323` |
+| Mailpit | `http://127.0.0.1:54324` |
+
+Storage e Realtime ficam desligados (o sistema não usa). Esta pasta não tem migrations do Supabase: as tabelas vêm do Flyway quando o backend sobe com o perfil `local`.
+
+### Extensões e job do banco
+
+A `V8__paciente` cria, local e na nuvem:
+
+- `unaccent` no schema `extensions`, usada pela função `public.sem_acento` na busca de pacientes.
+- `pg_cron` e o job `remover-pacientes-excluidos` (`0 3 * * *`, UTC): apaga de vez o paciente com `excluido_em` há mais de 90 dias; avaliações e sessões saem em cascata. Conferir: `select jobname, schedule from cron.job;`.
+
+Nada a ligar no painel antes: a migration cria as duas extensões. Só o PostgreSQL dos testes (Testcontainers) fica sem `pg_cron`, e lá o job é pulado.
+
+### Armadilha: Auth parado
+
+Sintoma: login falha com `{"message":"name resolution failed"}`. Causa: o contêiner `supabase_auth_*` parou (Docker reiniciado, por exemplo). O `npx supabase start` lista o Auth em "Stopped services" e **não** o religa. Correção: `npx supabase stop` e depois `npx supabase start`. Os dados do banco ficam.
+
 ### Login com Google no local
 
 O `config.toml` liga o provedor Google lendo `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` de `supabase/.env`. Passos:

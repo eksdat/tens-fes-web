@@ -18,6 +18,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import br.unibh.fisiotech.conteudo.enums.Bloco;
 import br.unibh.fisiotech.conteudo.enums.EstadoEditorial;
 import br.unibh.fisiotech.conteudo.enums.Modalidade;
 import br.unibh.fisiotech.conteudo.enums.Secao;
@@ -39,6 +40,10 @@ public class Conteudo {
 
     @Enumerated(EnumType.STRING)
     private Secao secao;
+
+    /** Nulo quando a linha não faz parte de uma página padrão. */
+    @Enumerated(EnumType.STRING)
+    private Bloco bloco;
 
     @Column(columnDefinition = "text")
     private String corpo;
@@ -62,9 +67,15 @@ public class Conteudo {
 
     public Conteudo(String titulo, Modalidade modalidade, Secao secao, String corpo,
             String referencias, EstadoEditorial estado, LocalDate dataRevisao) {
+        this(titulo, modalidade, secao, null, corpo, referencias, estado, dataRevisao);
+    }
+
+    public Conteudo(String titulo, Modalidade modalidade, Secao secao, Bloco bloco, String corpo,
+            String referencias, EstadoEditorial estado, LocalDate dataRevisao) {
         this.titulo = titulo;
         this.modalidade = modalidade;
         this.secao = secao;
+        this.bloco = bloco;
         this.corpo = corpo;
         this.referencias = referencias;
         this.estado = estado;
