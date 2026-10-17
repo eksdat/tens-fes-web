@@ -6,6 +6,8 @@ import { FES } from '@/features/fes/conteudoFes'
 import { rotasDoModulo } from '@/features/modulo/rotasDoModulo'
 import { TENS } from '@/features/tens/conteudoTens'
 
+vi.mock('@/features/modulo/usePaginaTecnica', () => import('./paginaTecnicaFalsa'))
+
 function renderizar(modulo: typeof TENS, rota: string) {
   const roteador = createMemoryRouter([{ element: <main><Outlet /></main>, children: [rotasDoModulo(modulo)] }], {
     initialEntries: [rota],
@@ -74,20 +76,81 @@ describe.each([
     expect(within(secao).getByRole('heading', { name: 'Gestação' })).toBeInTheDocument()
   })
 
-  test('deveTrazerOChecklistDeSeisPerguntas', () => {
+  test('deveDividirOChecklistEmAntesDuranteEDepois', () => {
     renderizar(modulo, `${base}/seguranca`)
 
-    const secao = screen.getByRole('heading', { name: 'Checklist antes de começar' }).parentElement as HTMLElement
-    expect(within(secao).getAllByRole('listitem')).toHaveLength(6)
-    expect(within(secao).getByText('Intensidade em zero antes da conexão?')).toBeInTheDocument()
+    const checklist = screen.getByRole('region', { name: 'Checklist de segurança' })
+    for (const etapa of ['Antes', 'Durante', 'Depois']) {
+      expect(within(checklist).getByRole('group', { name: etapa })).toBeInTheDocument()
+    }
   })
 
-  test('deveTrazerOsCincoGatilhosComAMensagem', () => {
+  test('deveTrazerOsGruposDeCadaEtapa', () => {
     renderizar(modulo, `${base}/seguranca`)
 
-    expect(screen.getByText('Ardência ou queimação')).toBeInTheDocument()
-    expect(screen.getByText('Interrompa a estimulação e verifique pele, eletrodo e contato.')).toBeInTheDocument()
-    expect(screen.getByText(/Não aumente automaticamente a amplitude/)).toBeInTheDocument()
+    const antes = screen.getByRole('group', { name: 'Antes' })
+    for (const grupo of ['Avaliação', 'Contraindicações e precauções', 'Pele', 'Equipamento']) {
+      expect(within(antes).getByRole('heading', { name: grupo })).toBeInTheDocument()
+    }
+    const durante = screen.getByRole('group', { name: 'Durante' })
+    for (const grupo of ['Resposta', 'Desconforto', 'Critérios de interrupção']) {
+      expect(within(durante).getByRole('heading', { name: grupo })).toBeInTheDocument()
+    }
+    const depois = screen.getByRole('group', { name: 'Depois' })
+    for (const grupo of ['Pele', 'Intercorrências', 'Cuidados com o material']) {
+      expect(within(depois).getByRole('heading', { name: grupo })).toBeInTheDocument()
+    }
+  })
+
+  test('deveTrazerAsSeisPerguntasDoChecklistProntoDoGuia', () => {
+    renderizar(modulo, `${base}/seguranca`)
+
+    const antes = screen.getByRole('group', { name: 'Antes' })
+    for (const pergunta of [
+      'Objetivo definido?',
+      'Riscos avaliados?',
+      'Pele e sensibilidade examinadas?',
+      'Cabos e eletrodos íntegros?',
+      'Intensidade em zero antes da conexão?',
+      'Paciente orientado a relatar desconforto?',
+    ]) {
+      expect(within(antes).getByRole('checkbox', { name: pergunta })).toBeInTheDocument()
+    }
+  })
+
+  test('deveMarcarEDesmarcarUmItemAoClicar', async () => {
+    renderizar(modulo, `${base}/seguranca`)
+    const usuario = userEvent.setup()
+    const item = screen.getByRole('checkbox', { name: 'Objetivo definido?' })
+
+    await usuario.click(item)
+    expect(item).toBeChecked()
+    await usuario.click(item)
+    expect(item).not.toBeChecked()
+  })
+
+  test('deveTrazerOsCincoGatilhosComIconeETexto', () => {
+    renderizar(modulo, `${base}/seguranca`)
+
+    const gatilhos = screen.getByRole('region', { name: 'Quando interromper ou revisar' })
+    const titulos = within(gatilhos).getAllByText(
+      /^(Ardência ou queimação|Perda de resposta motora|Risco não esclarecido|Troca de eletrodos|Fim da sessão)$/,
+    )
+    expect(titulos).toHaveLength(5)
+    for (const titulo of titulos) {
+      expect(titulo.closest('.tf-alert')?.querySelector('svg')).not.toBeNull()
+    }
+    expect(within(gatilhos).getByText('Interrompa a estimulação e verifique pele, eletrodo e contato.')).toBeInTheDocument()
+  })
+
+  test('deveAnunciarDeImediatoSoOsAlertasUrgentes', () => {
+    renderizar(modulo, `${base}/seguranca`)
+
+    const urgentes = screen.getAllByRole('alert')
+    expect(urgentes.map((a) => within(a).getByText(/.+/, { selector: '.tf-alert__titulo' }).textContent)).toEqual([
+      'Ardência ou queimação',
+      'Risco não esclarecido',
+    ])
   })
 
   test('deveDizerOQueFicaForaDoEscopo', () => {
@@ -119,6 +182,62 @@ test('deveManterOVideoSobreTensSoNoTens', () => {
   expect(screen.queryByRole('link', { name: /TENS na dor crônica/ })).not.toBeInTheDocument()
 })
 
+describe('lista textual dos controles', () => {
+  const item = (nome: RegExp) => screen.getByRole('button', { name: nome }).closest('li') as HTMLElement
+
+  test('deveMostrarNomeFuncaoUnidadeEValorAtualDeCadaControle', () => {
+    renderizar(TENS, '/tens/aparelho')
+
+    const itens = within(screen.getByRole('list', { name: 'Controles do aparelho' })).getAllByRole('listitem')
+    expect(itens).toHaveLength(14)
+    for (const li of itens) {
+      expect(within(li).getByText(/^Unidade: /)).toBeInTheDocument()
+      expect(within(li).getByText(/^Valor atual: /)).toBeInTheDocument()
+    }
+    expect(within(item(/Teclas UP e DOWN/)).getByText('Unidade: mA')).toBeInTheDocument()
+    expect(within(item(/Teclas UP e DOWN/)).getByText('Valor atual: Canal 1: 0 mA · Canal 2: 0 mA')).toBeInTheDocument()
+    expect(within(item(/Teclas SET/)).getByText('Valor atual: 80 Hz · 100 µs')).toBeInTheDocument()
+  })
+
+  test('deveAbrirAExplicacaoComEstadoEReferenciaDoManual', async () => {
+    renderizar(TENS, '/tens/aparelho')
+    const usuario = userEvent.setup()
+    const botao = screen.getByRole('button', { name: /Tecla START\/STOP/ })
+
+    await usuario.click(botao)
+
+    expect(botao).toHaveAttribute('aria-expanded', 'true')
+    const painel = document.getElementById(botao.getAttribute('aria-controls') as string) as HTMLElement
+    expect(within(painel).getByText('Estado: Simulação pausada')).toBeInTheDocument()
+    expect(within(painel).getByText(/Manual do Neurodyn \(M1\)/)).toBeInTheDocument()
+  })
+
+  test('deveDevolverOFocoAoControleAoFecharPeloBotaoDaExplicacao', async () => {
+    renderizar(TENS, '/tens/aparelho')
+    const usuario = userEvent.setup()
+    const botao = screen.getByRole('button', { name: /Tecla START\/STOP/ })
+
+    await usuario.click(botao)
+    await usuario.click(screen.getByRole('button', { name: 'Fechar explicação' }))
+
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    expect(botao).toHaveFocus()
+  })
+
+  test('deveDevolverOFocoAoControleAoFecharComEsc', async () => {
+    renderizar(TENS, '/tens/aparelho')
+    const usuario = userEvent.setup()
+    const botao = screen.getByRole('button', { name: /Display de parâmetros/ })
+
+    await usuario.click(botao)
+    await usuario.tab()
+    await usuario.keyboard('{Escape}')
+
+    expect(botao).toHaveAttribute('aria-expanded', 'false')
+    expect(botao).toHaveFocus()
+  })
+})
+
 describe('painel interativo do aparelho', () => {
   test('deveDescreverOControleEscolhidoNaLista', async () => {
     renderizar(TENS, '/tens/aparelho')
@@ -126,7 +245,7 @@ describe('painel interativo do aparelho', () => {
 
     await usuario.click(screen.getByRole('button', { name: /Tecla START\/STOP/ }))
 
-    expect(screen.getByRole('button', { name: /Tecla START\/STOP/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /Tecla START\/STOP/ })).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText(/Controle 6: Tecla START\/STOP\. Inicia ou interrompe o tratamento\./)).toBeInTheDocument()
   })
 
@@ -136,7 +255,7 @@ describe('painel interativo do aparelho', () => {
 
     await usuario.click(document.querySelector('[data-controle="3"]') as HTMLElement)
 
-    expect(screen.getByRole('button', { name: /Display de parâmetros/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /Display de parâmetros/ })).toHaveAttribute('aria-expanded', 'true')
   })
 
   test('deveDesmarcarAoClicarDeNovo', async () => {
@@ -147,7 +266,7 @@ describe('painel interativo do aparelho', () => {
     await usuario.click(controle)
     await usuario.click(controle)
 
-    expect(controle).toHaveAttribute('aria-pressed', 'false')
+    expect(controle).toHaveAttribute('aria-expanded', 'false')
   })
 
   test('deveAvisarQueOsControlesDeNoveACatorzeFicamEmOutrasFaces', () => {

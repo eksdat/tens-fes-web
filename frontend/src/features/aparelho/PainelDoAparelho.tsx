@@ -1,5 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
+import { Botao } from '../../shared/ui/Botao'
 import type { Controle } from './conteudoAparelho'
+import { useEstadoDoAparelho } from './useEstadoDoAparelho'
+import { descreverControle } from './valores'
+
+const REFERENCIA = 'Manual do Neurodyn (M1), capítulos 9 e 10.'
 
 /**
  * Painel frontal do aparelho de referência, desenhado a partir da disposição de fotos do Neurodyn Portable. Desenho
@@ -33,11 +38,26 @@ const POSICOES: Record<number, { x: number; y: number }[]> = {
 
 export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
   const [ativo, setAtivo] = useState<number | null>(null)
+  const { estado } = useEstadoDoAparelho()
+  const botoes = useRef(new Map<number, HTMLButtonElement>())
   const escolhido = controles.find((c) => c.numero === ativo)
   const marcados = ativo ? (POSICOES[ativo] ?? []) : []
 
   function alternar(numero: number) {
     setAtivo((atual) => (atual === numero ? null : numero))
+  }
+
+  /** Fecha a explicação e devolve o foco ao controle, para quem navega por teclado não se perder na página. */
+  function fechar(numero: number) {
+    setAtivo(null)
+    botoes.current.get(numero)?.focus()
+  }
+
+  function aoTeclar(evento: KeyboardEvent, numero: number) {
+    if (evento.key === 'Escape' && ativo === numero) {
+      evento.stopPropagation()
+      fechar(numero)
+    }
   }
 
   return (
@@ -124,13 +144,22 @@ export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
             : 'Escolha um controle na lista, ou toque no desenho, para ver a função e onde fica.'}
         </p>
         <ol className="tf-controles" aria-label="Controles do aparelho">
-          {controles.map((c) => (
+          {controles.map((c) => {
+            const d = descreverControle(c.numero, estado)
+            const aberto = ativo === c.numero
+            return (
             <li key={c.numero}>
               <button
                 type="button"
                 className="tf-controle"
-                aria-pressed={ativo === c.numero}
+                aria-expanded={aberto}
+                aria-controls={`controle-${c.numero}-explicacao`}
+                ref={(el) => {
+                  if (el) botoes.current.set(c.numero, el)
+                  else botoes.current.delete(c.numero)
+                }}
                 onClick={() => alternar(c.numero)}
+                onKeyDown={(e) => aoTeclar(e, c.numero)}
               >
                 <span className="tf-controle__numero" aria-hidden="true">
                   {c.numero}
@@ -140,8 +169,22 @@ export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
                   <span className="tf-controle__funcao">{c.funcao}</span>
                 </span>
               </button>
+              <p className="tf-controle__leitura">Unidade: {d.unidade}</p>
+              <p className="tf-controle__leitura">Valor atual: {d.valor}</p>
+              <div id={`controle-${c.numero}-explicacao`} className="tf-controle__explicacao" hidden={!aberto}>
+                {aberto && (
+                  <>
+                    <p className="tf-controle__leitura">Estado: {d.estado}</p>
+                    <p className="tf-controle__leitura">Referência: {REFERENCIA}</p>
+                    <Botao variante="secundario" onClick={() => fechar(c.numero)} onKeyDown={(e) => aoTeclar(e, c.numero)}>
+                      Fechar explicação
+                    </Botao>
+                  </>
+                )}
+              </div>
             </li>
-          ))}
+            )
+          })}
         </ol>
       </div>
     </div>

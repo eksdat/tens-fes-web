@@ -74,8 +74,15 @@ class RestricaoPorPerfilTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void deveNegarProfissionalSemVerificacaoEmDuasEtapas() throws Exception {
+        mvc.perform(get("/api/v1/pacientes").with(jwt().jwt(j -> j.claim("aal", "aal1"))
+                        .authorities(new SimpleGrantedAuthority("ROLE_PROFISSIONAL"))))
+                .andExpect(status().isForbidden());
+    }
+
     private static RequestPostProcessor perfil(String... papeis) {
-        return jwt().authorities(Arrays.stream(papeis)
+        return jwt().jwt(j -> j.claim("aal", "aal2")).authorities(Arrays.stream(papeis)
                 .<GrantedAuthority>map(p -> new SimpleGrantedAuthority("ROLE_" + p))
                 .toList());
     }

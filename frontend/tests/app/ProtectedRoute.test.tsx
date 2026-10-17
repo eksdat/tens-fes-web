@@ -26,6 +26,7 @@ function renderizar(perfil?: 'ESTUDANTE' | 'PROFISSIONAL', semMfa = false) {
       <Route path="/" element={<p>tela inicial</p>} />
       <Route path="/mfa/verificar" element={<p>tela de verificar mfa</p>} />
       <Route path="/mfa/ativar" element={<p>tela de ativar mfa</p>} />
+      <Route path="/termos/aceitar" element={<p>tela de aceitar termos</p>} />
       <Route element={<ProtectedRoute perfil={perfil} semMfa={semMfa} />}>
         <Route path="/area" element={<p>area protegida</p>} />
       </Route>
@@ -130,6 +131,20 @@ test('deveNaoObrigarEstudanteSemAutenticador', () => {
 
 test('deveDeixarAsTelasDeMfaAbrirSemExigirMfa', () => {
   estado.usuario = { isPending: false, isError: false, data: { perfil: 'PROFISSIONAL' } }
+  renderizar(undefined, true)
+
+  expect(screen.getByText('area protegida')).toBeInTheDocument()
+})
+
+test('deveLevarParaONovoAceiteQuandoOsTermosMudaram', () => {
+  estado.usuario = { isPending: false, isError: false, data: { perfil: 'ESTUDANTE', termosPendentes: true } }
+  renderizar()
+
+  expect(screen.getByText('tela de aceitar termos')).toBeInTheDocument()
+})
+
+test('deveLiberarAsTelasSemMfaMesmoComTermosPendentes', () => {
+  estado.usuario = { isPending: false, isError: false, data: { perfil: 'ESTUDANTE', termosPendentes: true } }
   renderizar(undefined, true)
 
   expect(screen.getByText('area protegida')).toBeInTheDocument()

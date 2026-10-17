@@ -45,8 +45,10 @@ Documentos de origem (fora deste repositório, pasta `docs/` do projeto): `Proto
 | Persistência | Spring Data JPA (Hibernate) | Repositórios gerados pelo Spring |
 | Migrations | Flyway | Schema versionado em SQL |
 | Validação | Bean Validation (`@Valid`) | Valida o DTO na entrada |
-| Auditoria | Hibernate Envers *(a adicionar)* | Registro clínico exige autoria e histórico |
-| Banco | PostgreSQL no **Supabase** (+ pgvector para a IA) | Relacional e busca vetorial no mesmo banco |
+| Auditoria | Spring Data Auditing (`@CreatedBy`, `@LastModifiedBy`) | Registro clínico guarda quem criou e quem alterou. Envers não foi adotado (sem histórico campo a campo; `decisoes.md`, 2026-10-16) |
+| Banco | PostgreSQL 17 no **Supabase** | Relacional; `unaccent` para busca sem acento e `pg_cron` para a limpeza de pacientes excluídos |
+| Busca | Full-text do PostgreSQL (`tsvector` + `unaccent`) | Busca de paciente por nome ou identificador, por prefixo |
+| IA | pgvector *(a adicionar)* | Busca vetorial no mesmo banco |
 | Contrato | springdoc-openapi 3.1.1 | Swagger UI; gera os tipos TypeScript do frontend |
 | IA | Spring AI *(a adicionar)* | RAG sobre conteúdo revisado |
 | Erros | `ProblemDetail` (RFC 9457) | Formato único de erro |
@@ -135,10 +137,10 @@ Para testar login e cadastro de ponta a ponta sem tocar na nuvem. Precisa de Doc
 ```powershell
 npx supabase start                  # sobe Postgres, Auth e Mailpit (a primeira vez baixa as imagens)
 cd backend
-.mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
 
-O perfil `local` (`application-local.yml`) aponta para o banco `127.0.0.1:54322` e valida os tokens do Auth local. Não usa o `.env`. O Flyway cria as tabelas na primeira subida. Os e-mails saem pelo SMTP real: preencha `supabase/.env` antes (modelo em `supabase/.env.example`). Com o SMTP desligado no `config.toml`, abra o Mailpit em http://127.0.0.1:54324. O painel (Studio) fica em http://127.0.0.1:54323. `npx supabase stop` desliga tudo; os dados ficam guardados para a próxima vez. A configuração do Auth local (`supabase/config.toml`) repete a política da nuvem: senha de 10 caracteres com maiúscula, minúscula, número e símbolo, confirmação por e-mail e templates em português.
+O perfil `local` (`application-local.yml`) aponta para o banco `127.0.0.1:54322` e valida os tokens do Auth local. Não usa o `.env`. O Flyway cria as tabelas na primeira subida e aplica as migrations novas a cada reinício. Login falhando com `{"message":"name resolution failed"}`: o contêiner do Auth está parado (confira com `docker ps`); rode `npx supabase stop` e `npx supabase start` (os dados ficam). Os e-mails saem pelo SMTP real: preencha `supabase/.env` antes (modelo em `supabase/.env.example`). Com o SMTP desligado no `config.toml`, abra o Mailpit em http://127.0.0.1:54324. O painel (Studio) fica em http://127.0.0.1:54323. `npx supabase stop` desliga tudo; os dados ficam guardados para a próxima vez. A configuração do Auth local (`supabase/config.toml`) repete a política da nuvem: senha de 10 caracteres com maiúscula, minúscula, número e símbolo, confirmação por e-mail e templates em português.
 
 ---
 
@@ -160,12 +162,10 @@ O mapeamento está em `src/main/resources/application.yml`.
 
 ## 5. Banco de dados (Supabase)
 
-**Decisão:** o Supabase é usado **apenas como PostgreSQL gerenciado**.
+**Decisão:** o Supabase é o PostgreSQL gerenciado e o serviço de identidade (Supabase Auth: cadastro, login, e-mail, senha, MFA). Perfis e regras de acesso ficam no Spring Boot.
 
-- Login, perfis e regras de acesso ficam no Spring Boot.
-- Não usar Supabase Auth.
-- Não usar a API automática do Supabase (PostgREST) pelo frontend. Desativar ou deixar sem permissão.
-- Motivo: a regra "profissional só vê o próprio paciente" fica num lugar só. Em dois lugares, um deles acaba esquecido e vira vazamento de prontuário.
+- O frontend usa só `supabase.auth.*`. A API automática do Supabase (Data API/PostgREST) fica desligada e sem permissão.
+- Motivo: a regra "profissional só vê o próprio paciente" fica num lugar só. Em dois lugares, um deles acaba esquecido e vira vazamento de prontuário. Detalhes em [SEGURANCA.md](../SEGURANCA.md).
 
 Como pegar a conexão:
 
@@ -176,7 +176,7 @@ Como pegar a conexão:
 ### Migrations (Flyway)
 
 - Ficam em `src/main/resources/db/migration/`.
-- Nome: `V<n>__<descricao>.sql`. Ex.: `V1__usuarios.sql`, `V2__pacientes.sql`.
+- Nome: `V<n>__<descricao>.sql`. Ex.: `V8__paciente.sql`.
 - Rodam sozinhas ao subir a aplicação.
 - **Nunca** edite uma migration que já foi aplicada em produção. Crie uma nova.
 - `spring.jpa.hibernate.ddl-auto=validate`: o Hibernate **não** cria tabela. Ele só confere se a entidade bate com o schema. Se não bater, a aplicação não sobe. Isso é proposital.
@@ -184,6 +184,25 @@ Como pegar a conexão:
 - O Supabase cria a function `public.rls_auto_enable`, que liga o RLS em toda tabela nova. Por causa dela o Flyway vê o schema como "não vazio" e falha com `Found non-empty schema(s) "public" but no schema history table`. Por isso o `application.yml` usa `baseline-on-migrate: true` com `baseline-version: 0`: o histórico começa na versão 0 e a `V1` continua sendo aplicada. Não suba `baseline-version` para 1, senão a `V1` é pulada.
 - O RLS ligado não afeta o backend: o usuário `postgres` é dono das tabelas e passa pelo RLS. Ele bloqueia o acesso pela Data API do Supabase, que é o que queremos.
 - As migrations usam os papéis `anon` e `authenticated`, que só existem no Supabase. Num PostgreSQL comum a `V1` falha com `role "anon" does not exist`. Os testes criam esses papéis antes das migrations (`src/test/resources/papeis-supabase.sql`, carregado em `TestcontainersConfiguration`). Fora do Supabase, crie os dois papéis antes de subir a API.
+- A `V8` cria as extensões `unaccent` (no schema `extensions`) e `pg_cron`. O `pg_cron` só existe no Supabase: no PostgreSQL dos testes o agendamento é pulado (`do $$ ... if exists (pg_available_extensions)`).
+- Em branches paralelas, o número da migration é definido na hora do merge (o próximo livre). Duas branches com a mesma versão quebram o Flyway.
+
+| Versão | O que faz |
+|---|---|
+| `V1__seguranca_base` | Revoga tudo de `anon` e `authenticated`, inclusive para objetos futuros |
+| `V2__usuario` | Tabela `usuario` com `CHECK` por perfil |
+| `V3__aceite_termos` | Data e versão dos termos aceitos |
+| `V4__parametro_dicionario` | Dicionário de parâmetros (seção 12 do guia) |
+| `V5__conteudo` | Conteúdo técnico de TENS e FES, todo `EM_REVISAO` |
+| `V6__conteudo_bloco` | Coluna `bloco` (página técnica padrão) e blocos que faltavam |
+| `V7__faixa_parametro` | Parâmetro "Platô" e faixas educativas e do aparelho por modo (25 linhas) |
+| `V8__paciente` | `paciente`, função `sem_acento`, busca full-text, `unaccent` e job `pg_cron` de 90 dias |
+| `V9__avaliacao` | `avaliacao`, `avaliacao_triagem`, `avaliacao_achado` |
+| `V10__sessao` | `sessao`, `sessao_canal`, `sessao_checklist` |
+| `V11__paciente_sem_telefone` | Remove o telefone do paciente (minimização) |
+| `V12__sessao_checklist_codigo` | Itens do checklist da sessão passam a código fixo |
+
+Tabelas, colunas e índices: `agent_docs/database.md` no vault do projeto.
 
 ---
 
@@ -221,18 +240,37 @@ Cada feature (`paciente`, `sessao`, ...) tem as próprias camadas:
 |---|---|---|---|
 | Controller | `@RestController` | Entrada HTTP. Valida o DTO com `@Valid`. Devolve `ResponseEntity` | Ter regra de negócio |
 | Service | `@Service` | Regra de negócio, autorização por posse, `@Transactional`, conversão entidade ↔ DTO | Conhecer HTTP |
-| Repository | `interface XRepository extends JpaRepository<X, Long>` | Acesso ao banco. O Spring gera a implementação | Ter regra |
+| Repository | `interface XRepository extends JpaRepository<X, ID>` | Acesso ao banco. O Spring gera a implementação | Ter regra |
 | Entity | `@Entity` | Mapeamento JPA | Sair do backend |
-| DTO | `record` | Contrato da API (`XRequest`, `XResponse`) | — |
-| Mapper | classe ou MapStruct | Único ponto que liga entidade e DTO | — |
+| DTO | `record` | Contrato da API (`XRequest`, `XResponse`). A conversão fica no próprio DTO (`XResponse.de(entidade)`); não há classe Mapper | — |
 | Enum | `enum` | Constantes do domínio | — |
 
 Regras de desenho:
 
 - **A entidade nunca sai do backend.** Sempre DTO.
-- **Não criar `IXService`** com uma implementação só. O Mockito mocka a classe concreta. Interface só existe com mais de uma implementação real ou quando o teste precisa de um fake. Caso atual: `LlmClient`.
-- Erro sai como `ProblemDetail` (`shared/GlobalExceptionHandler`). Exceções de domínio estendem `ErrorResponseException` e já levam o status: `RecursoNaoEncontradoException` (404), `ConflitoException` (409). Erro de validação traz `erros: { campo: mensagem }`. Erro do framework sai com "Requisição inválida." e exceção não tratada com 500 "Erro interno." (detalhe só no log). Exceção nova de domínio que deva manter a própria mensagem precisa entrar na exceção do `handleExceptionInternal`.
+- **Não criar `IXService`** com uma implementação só. O Mockito mocka a classe concreta. Interface só existe com mais de uma implementação real ou quando o teste precisa de um fake. Caso previsto: `LlmClient` (seção 13).
+- Erro sai como `ProblemDetail` (`shared/exception/GlobalExceptionHandler`). Exceções de domínio estendem `ErrorResponseException` e já levam o status: `RecursoNaoEncontradoException` (404), `ConflitoException` (409) e `DadoInvalidoException` (400 com `erros: { campo: mensagem }`, para regra que depende do banco, como data da avaliação antes do nascimento). Erro de validação do DTO traz o mesmo `erros`. Erro do framework sai com "Requisição inválida." e exceção não tratada com 500 "Erro interno." (detalhe só no log). Exceção nova de domínio que deva manter a própria mensagem precisa entrar na exceção do `handleExceptionInternal`.
 - Rotas da API: prefixo `/api/v1`. Ex.: `POST /api/v1/pacientes/{id}/sessoes`.
+
+### Endpoints
+
+| Método e rota | Quem | O que faz |
+|---|---|---|
+| `GET /usuarios/me` | autenticado | Usuário logado; 404 sem cadastro. Traz `termosPendentes` |
+| `POST /usuarios/me` | autenticado | Completa o cadastro (exige `aceiteTermos`) |
+| `PUT /usuarios/me/perfil` | autenticado | Estudante passa a profissional |
+| `POST /usuarios/me/termos` | autenticado | Novo aceite quando a versão dos termos muda |
+| `GET /conteudos?modalidade=` | com perfil | Conteúdos `APROVADO` |
+| `GET /conteudos/pagina?modalidade=&secao=` | com perfil | Página técnica padrão: blocos na ordem, `liberada` |
+| `GET /conteudos/{id}` | com perfil | Um conteúdo aprovado |
+| `GET /parametros?busca=` | com perfil | Dicionário de parâmetros |
+| `GET /parametros/faixas?modalidade=` | com perfil | Faixas educativas e do aparelho por modo |
+| `GET /pacientes?busca=&ordenar=&direcao=&pagina=&tamanho=` | PROFISSIONAL + aal2 | Pacientes do responsável, paginados |
+| `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}` em `/pacientes` | PROFISSIONAL + aal2 | Cadastro, leitura, edição e exclusão lógica |
+| `GET`, `POST`, `GET /{id}`, `PUT /{id}` em `/pacientes/{id}/avaliacoes` | PROFISSIONAL + aal2 | Avaliação inicial (várias por paciente) |
+| `GET`, `POST`, `GET /{id}` em `/pacientes/{id}/sessoes` | PROFISSIONAL + aal2 | Registro de sessão (sem edição: registro clínico) |
+
+Regras de cada módulo (campos, validações, erros comuns): `agent_docs/modulos/` no vault do projeto.
 
 ### Segurança (`config/SecurityConfig.java`)
 
@@ -240,6 +278,8 @@ Regras de desenho:
 - Liberados sem login: `/actuator/health/**`. O Swagger (`/swagger-ui/**`, `/v3/api-docs/**`) também passa pela segurança, mas só existe com `SWAGGER_ENABLED=true`.
 - Todo o resto exige autenticação.
 - `@EnableMethodSecurity` ativa `@PreAuthorize` nos controllers.
+- `/api/v1/pacientes/**` exige `PROFISSIONAL` **e** sessão `aal2` (MFA) no token (`SESSAO_COM_MFA`); sem MFA, 403.
+- `AuditoriaConfig` preenche `criado_por` e `alterado_por` com o `sub` do token.
 - CORS liberado só para `/api/**` e para as origens de `CORS_ALLOWED_ORIGINS`.
 - O JWT é validado pelo resource server do Spring (chaves públicas do Supabase); o perfil vem do banco (`PerfilJwtConverter`).
 
@@ -256,35 +296,27 @@ backend/
     ├── main/
     │   ├── java/br/unibh/fisiotech/
     │   │   ├── FisiotechApiApplication.java
-    │   │   ├── config/                  # SecurityConfig (JWT, CORS), ResumoInicializacao
-    │   │   ├── shared/exception/        # GlobalExceptionHandler, ConflitoException, RecursoNaoEncontradoException
-    │   │   ├── usuario/                 # cadastro e perfil (identidade fica no Supabase Auth)
-    │   │   │   ├── controller/          # UsuarioController (/api/v1/usuarios/me)
-    │   │   │   ├── service/             # UsuarioService
-    │   │   │   ├── repository/          # UsuarioRepository
-    │   │   │   ├── entity/              # Usuario
-    │   │   │   ├── dto/                 # CadastroRequest, UsuarioResponse
-    │   │   │   ├── enums/               # Perfil, Categoria, Uf
-    │   │   │   └── security/            # PerfilJwtConverter (JWT -> papéis)
-    │   │   ├── paciente/      # Paciente, Avaliacao
-    │   │   ├── sessao/        # Sessao, ParametroAplicado, EletrodoAplicado
-    │   │   ├── conteudo/      # Conteudo, Material, Anexo, Referencia, fluxo editorial
-    │   │   ├── parametro/     # ParametroDicionario
-    │   │   ├── aparelho/      # Aparelho, Controle
-    │   │   ├── atlas/         # PranchaAtlas
-    │   │   ├── simulador/     # CasoPratica, TentativaPratica
-    │   │   ├── caso/          # CasoClinico
-    │   │   └── assistente/    # AssistenteService, LlmClient, indexação RAG
+    │   │   ├── config/        # SecurityConfig (JWT, CORS, aal2), AuditoriaConfig, ResumoInicializacao
+    │   │   ├── shared/
+    │   │   │   ├── dto/       # PaginaResponse
+    │   │   │   └── exception/ # GlobalExceptionHandler, RecursoNaoEncontrado, Conflito, DadoInvalido
+    │   │   ├── usuario/       # cadastro, perfil e aceite dos termos (identidade no Supabase Auth)
+    │   │   │   ├── controller/  service/  repository/  entity/  dto/  enums/
+    │   │   │   └── security/  # PerfilJwtConverter (JWT -> papéis, perfil vem do banco)
+    │   │   ├── conteudo/      # Conteudo e página técnica padrão (Modalidade, Secao, Bloco, EstadoEditorial)
+    │   │   ├── parametro/     # ParametroDicionario e FaixaParametro (faixas por modo)
+    │   │   ├── paciente/      # Paciente: busca, ordenação, paginação, exclusão lógica
+    │   │   ├── avaliacao/     # Avaliacao, triagem e achados (EstadoAchado, ItemTriagem, Lado)
+    │   │   └── sessao/        # Sessao, Canal e checklist
     │   └── resources/
-    │       ├── application.yml
-    │       └── db/migration/  # V1__*.sql, V2__*.sql ...
-    └── test/java/br/unibh/fisiotech/
-        ├── FisiotechApiApplicationTests.java    # sobe o contexto com Postgres em container
-        ├── TestcontainersConfiguration.java   # container PostgreSQL 17
-        └── TestFisiotechApiApplication.java     # roda a API local com o container
+    │       ├── application.yml, application-local.yml
+    │       └── db/migration/  # V1 a V12 (seção 5)
+    └── test/
+        ├── java/br/unibh/fisiotech/   # espelha os pacotes de main (seção 15)
+        └── resources/papeis-supabase.sql
 ```
 
-Toda feature segue o mesmo padrão de subpastas: `controller/`, `service/`, `repository/`, `entity/`, `dto/`, `enums/` e, quando houver, `security/` ou `mapper/`. Crie só a subpasta que tiver classe. As features da árvore sem subpastas (`paciente/`, `sessao/`...) ainda não existem no código.
+Toda feature segue o mesmo padrão de subpastas: `controller/`, `service/`, `repository/`, `entity/`, `dto/`, `enums/` e, quando houver, `security/`. Crie só a subpasta que tiver classe. Aparelho, atlas, simulador e casos ainda não têm backend: o frontend usa dados estáticos (`frontend/README.md`). Assistente de IA e materiais com anexo não existem ainda.
 
 Consequência do padrão: o que uma camada usa de outra precisa ser `public` (ex.: `Usuario.definirDadosEstudante`). Mutação sensível que só teste usa (ex.: `revisor`, `ativo`) não ganha setter; o teste usa `ReflectionTestUtils`.
 
@@ -302,8 +334,8 @@ Consequência do padrão: o que uma camada usa de outra precisa ser `public` (ex
 
 Regras obrigatórias no backend:
 
-1. Endpoint de paciente exige `PROFISSIONAL` (`@PreAuthorize("hasRole('PROFISSIONAL')")`). `ESTUDANTE` recebe **403**. A `SecurityConfig` também barra `/api/v1/pacientes/**` (pacientes, avaliações e sessões) para quem não é `PROFISSIONAL`, então um endpoint novo nasce protegido mesmo se faltar o `@PreAuthorize`.
-2. Todo acesso a paciente, avaliação ou sessão confere `paciente.responsavel.id == usuarioLogado.id`. Se falhar, responde **404**, não 403. Assim não revela que o registro existe. O ponto único dessa verificação é `PacienteService.buscarDoResponsavel`.
+1. Endpoint de paciente exige `PROFISSIONAL` (`@PreAuthorize("hasRole('PROFISSIONAL')")`). `ESTUDANTE` recebe **403**. A `SecurityConfig` também barra `/api/v1/pacientes/**` (pacientes, avaliações e sessões) para quem não é `PROFISSIONAL` **ou** não tem sessão `aal2` (MFA), então um endpoint novo nasce protegido mesmo se faltar o `@PreAuthorize`.
+2. Todo acesso a paciente, avaliação ou sessão confere `paciente.responsavelId == sub do token`. Se falhar, responde **404**, não 403. Assim não revela que o registro existe. O ponto único dessa verificação é `PacienteService.buscarDoResponsavel` (`findByIdAndResponsavelId`).
 3. Paciente não é usuário: sem login, sem conta.
 4. Registro profissional digitado (CREFITO etc.) **não** gera selo de "verificado".
 5. Só usuário com `revisor = true` (PROFISSIONAL) aprova material, e nunca o próprio. `revisor` não muda por endpoint: liga-se no banco para pessoas conhecidas (docente).
@@ -318,7 +350,7 @@ Dois perfis: `ESTUDANTE` e `PROFISSIONAL`. Paciente não é usuário. Docente é
 | Campo | Perfil | Regra |
 |---|---|---|
 | `nome` | ambos | 2 a 120 caracteres |
-| `termos_aceitos_em`, `termos_versao` | ambos | O `POST` exige `aceiteTermos: true` (400 sem ele). A API grava a data e a versão vigente (`UsuarioService.VERSAO_TERMOS`). Nulos só em cadastros anteriores à V3. Mudou o texto de `/termos` ou `/privacidade`: troque a versão |
+| `termos_aceitos_em`, `termos_versao` | ambos | O `POST` exige `aceiteTermos: true` (400 sem ele). A API grava a data e a versão vigente (`Usuario.VERSAO_TERMOS`). Nulos só em cadastros anteriores à V3. Mudou o texto de `/termos` ou `/privacidade`: troque a versão; `GET /me` passa a devolver `termosPendentes: true` e o frontend pede novo aceite (`POST /me/termos`) |
 | `instituicao` | estudante | Texto livre. A tela sugere UniBH, PUC Minas, UFMG, Unifenas |
 | `periodo` | estudante | 1 a 12 |
 | `categoria` | profissional | `FISIOTERAPEUTA`, `TERAPEUTA_OCUPACIONAL`, `OUTRA` |
@@ -334,6 +366,8 @@ Dois perfis: `ESTUDANTE` e `PROFISSIONAL`. Paciente não é usuário. Docente é
 
 ## 10. UML — domínio
 
+O que existe no código:
+
 ```mermaid
 classDiagram
     class Usuario {
@@ -343,16 +377,12 @@ classDiagram
         +boolean revisor
         +boolean ativo
         +String instituicao
-        +Integer periodo
+        +Short periodo
         +Categoria categoria
         +String registro
-        +String uf
-    }
-    class Categoria {
-        <<enumeration>>
-        FISIOTERAPEUTA
-        TERAPEUTA_OCUPACIONAL
-        OUTRA
+        +Uf uf
+        +Instant termosAceitosEm
+        +String termosVersao
     }
     class Perfil {
         <<enumeration>>
@@ -360,55 +390,68 @@ classDiagram
         PROFISSIONAL
     }
     class Paciente {
-        +Long id
+        +UUID id
+        +UUID responsavelId
         +String nome
-        +String identificadorInterno
+        +String sobrenome
+        +String identificador
+        +String email
         +LocalDate dataNascimento
-        +String contato
+        +Instant excluidoEm
     }
     class Avaliacao {
-        +Long id
+        +UUID id
+        +UUID pacienteId
+        +LocalDate dataAvaliacao
         +String queixa
         +String historico
-        +Triagem triagem
-        +Integer dorEscala
-        +String peleSensibilidade
-        +String funcaoMotora
-        +String objetivoMensuravel
+        +Short dorEscala
+        +String dorContexto
+        +String dorTarefa
+        +String dorMomento
+        +String objetivo
         +String plano
+        +Map~ItemTriagem,EstadoAchado~ triagem
+    }
+    class Achado {
+        <<embeddable>>
+        +BlocoAchado bloco
+        +String descricao
+        +EstadoAchado estado
+        +Lado lado
+        +String regiao
+        +String metodo
     }
     class Sessao {
-        +Long id
-        +LocalDateTime dataHora
+        +UUID id
+        +UUID pacienteId
+        +Instant dataHora
         +String objetivo
         +Modalidade modalidade
-        +Integer duracaoRealMin
-        +String resposta
-        +String intercorrencias
-        +String resultadoAntesDepois
-        +String encerramento
+        +String aparelho
+        +String modo
+        +BigDecimal duracaoRealMin
+        +String eletrodoTipo
+        +String eletrodoDimensoes
+        +Lado lado
+        +String marcos
+        +String montagemId
+        +String sensacao
+        +String medidaAntes
+        +String medidaDepois
+        +String condicaoPele
+        +String motivoTermino
+        +String planoReavaliacao
+        +Set~String~ checklist
     }
-    class ParametroAplicado {
-        +Integer canal
+    class Canal {
+        <<embeddable>>
+        +Short canal
         +BigDecimal frequenciaHz
         +Integer larguraPulsoUs
         +BigDecimal amplitudeInicialMa
         +BigDecimal amplitudeFinalMa
-        +String formaOnda
-        +Temporizacao temporizacao
-    }
-    class EletrodoAplicado {
-        +Integer canal
-        +String tipo
-        +String dimensoes
-        +Lado lado
-        +String marcosAnatomicos
-    }
-    class Modalidade {
-        <<enumeration>>
-        TENS
-        NMES
-        FES
+        +String par
     }
     class EstadoAchado {
         <<enumeration>>
@@ -416,59 +459,16 @@ classDiagram
         AUSENTE
         PRESENTE
     }
-    class Aparelho {
-        +Long id
-        +String fabricante
-        +String modelo
-        +String versaoManual
-    }
-    class Controle {
-        +Long id
-        +String nome
-        +String funcao
-        +String unidade
-        +String descricaoAcessivel
-    }
-    class PranchaAtlas {
-        +Long id
-        +Modalidade modalidade
-        +String regiao
-        +String vista
-        +String alvos
-        +String pares
-        +String descricaoAlternativa
-    }
     class Conteudo {
         +Long id
         +String titulo
         +Modalidade modalidade
+        +Secao secao
+        +Bloco bloco
         +String corpo
         +String referencias
-        +Integer versao
         +EstadoEditorial estado
         +LocalDate dataRevisao
-    }
-    class EstadoEditorial {
-        <<enumeration>>
-        RASCUNHO
-        EM_REVISAO
-        APROVADO
-        ARQUIVADO
-    }
-    class CasoClinico {
-        +Long id
-        +String titulo
-        +String objetivo
-        +String contexto
-        +String proposta
-        +String duvida
-    }
-    class RespostaIA {
-        +Long id
-        +String texto
-        +List~String~ referencias
-        +boolean evidenciaSuficiente
-        +LocalDateTime geradaEm
     }
     class ParametroDicionario {
         +Long id
@@ -479,87 +479,42 @@ classDiagram
         +String oQueMuda
         +String exemplo
     }
-    class GrupoParametro {
-        <<enumeration>>
-        AJUSTE_BASICO
-        RECURSO_ESPECIFICO
-        ESPECIFICACAO_ELETRICA
-    }
-    class CasoPratica {
+    class FaixaParametro {
         +Long id
-        +String titulo
         +Modalidade modalidade
-        +String cenario
-        +String respostaEsperada
-        +String modeloRetorno
-    }
-    class TentativaPratica {
-        +Long id
-        +String parametrosEscolhidos
-        +String justificativa
-        +LocalDateTime enviadaEm
-    }
-    class Referencia {
-        +Long id
-        +String codigo
-        +String titulo
-        +String autores
-        +Modalidade modalidade
-        +String comoAcessar
-        +boolean licencaPermiteCopia
-    }
-    class Material {
-        +Long id
-        +String titulo
-        +String corpo
-        +EstadoEditorial estado
-        +String motivoDevolucao
-    }
-    class Anexo {
-        +Long id
-        +String nomeArquivo
-        +String tipo
-        +Long tamanhoBytes
+        +String modo
+        +OrigemFaixa origem
+        +BigDecimal minimo
+        +BigDecimal maximo
+        +String fonte
     }
 
     Usuario --> Perfil
-    Usuario --> Categoria
     Usuario "1 responsavel" -- "*" Paciente
     Paciente "1" *-- "*" Avaliacao
     Paciente "1" *-- "*" Sessao
-    Sessao "*" --> "1" Aparelho
-    Sessao "1" *-- "*" ParametroAplicado
-    Sessao "1" *-- "*" EletrodoAplicado
-    Sessao "*" --> "0..1" PranchaAtlas : baseada em
-    Sessao --> Modalidade
-    Aparelho "1" *-- "*" Controle
-    Conteudo --> EstadoEditorial
-    Conteudo "*" --> "1" Usuario : autor
-    Conteudo "*" --> "0..1" Usuario : revisor
-    CasoClinico "*" --> "1" Usuario : estudante
-    CasoClinico "1" *-- "*" RespostaIA
-    RespostaIA "*" --> "*" Conteudo : cita
-    ParametroDicionario --> GrupoParametro
-    CasoPratica "1" -- "*" TentativaPratica
-    TentativaPratica "*" --> "1" Usuario : estudante
-    Material "*" --> "1" Usuario : autor
-    Material "*" --> "0..1" Usuario : revisor
-    Material --> EstadoEditorial
-    Material "1" *-- "*" Anexo
-    CasoClinico "1" *-- "*" Anexo
+    Avaliacao "1" *-- "*" Achado
+    Avaliacao --> EstadoAchado
+    Sessao "1" *-- "1..2" Canal
+    FaixaParametro "*" --> "1" ParametroDicionario
 ```
 
 Notas que o diagrama não mostra:
 
-- `Triagem` e os campos de pele e função usam `EstadoAchado`. **Campo vazio não significa ausência de risco.** Por isso existe `NAO_AVALIADO`.
-- `Paciente`, `Avaliacao` e `Sessao` são auditados com Envers (`@Audited`): quem alterou, quando e o quê.
+- Todo id de tabela clínica é `UUID`. `Paciente`, `Avaliacao` e `Sessao` guardam `criadoEm`, `criadoPor`, `alteradoEm` e `alteradoPor` (Spring Data Auditing; `config/AuditoriaConfig`). Não há histórico campo a campo.
+- Triagem e achados usam `EstadoAchado`. **Campo vazio não significa ausência de risco.** Item omitido vira `NAO_AVALIADO`; `dorEscala` nula é "não avaliada".
+- `Paciente` tem exclusão lógica (`excluidoEm` + `@SQLRestriction`). O job `pg_cron` apaga de vez após 90 dias, com avaliações e sessões em cascata.
+- `Sessao` não tem edição. O profissional da sessão é o `criadoPor`.
+- `Canal` tem a unidade no nome do campo (`frequenciaHz`, `larguraPulsoUs`, `amplitudeInicialMa`).
+- `ParametroDicionario` (texto do dicionário) ≠ `Canal` (valor usado numa sessão real) ≠ `FaixaParametro` (faixa educativa ou do aparelho por modo).
+
+Planejado, sem código ainda: `Aparelho` e `Controle`, `PranchaAtlas`, `CasoPratica` e `TentativaPratica` (simulador com casos), `CasoClinico` e `RespostaIA` (assistente), `Material`, `Anexo` e `Referencia` (fluxo editorial). Regras já decididas para eles:
+
 - `RespostaIA` cita só `Conteudo` `APROVADO`. `CasoClinico` e anexos **nunca** entram na base da IA automaticamente.
-- `ParametroAplicado` tem a unidade no nome do campo (`frequenciaHz`, `larguraPulsoUs`, `amplitudeInicialMa`).
-- `ParametroDicionario` (texto do dicionário) ≠ `ParametroAplicado` (valor usado numa sessão real).
-- `CasoPratica` = os 4 casos fictícios do simulador. `CasoClinico` = caso que o estudante envia para a IA.
+- `CasoPratica` = os casos fictícios do simulador. `CasoClinico` = caso que o estudante envia para a IA.
 - `Material` é criado por usuário. Aprovado, vira `Conteudo` publicado.
 
-Fluxo editorial de `Material`/`Conteudo`:
+Fluxo editorial de `Material`/`Conteudo` (hoje o `Conteudo` só muda de estado direto no banco):
 
 ```mermaid
 stateDiagram-v2
@@ -582,52 +537,48 @@ classDiagram
     class SessaoController {
         <<RestController>>
         -SessaoService service
-        +criar(Long pacienteId, SessaoRequest req) ResponseEntity~SessaoResponse~
-        +listar(Long pacienteId) ResponseEntity~List~SessaoResponse~~
+        +registrar(UUID pacienteId, SessaoRequest req, Jwt jwt) ResponseEntity~SessaoResponse~
+        +listar(UUID pacienteId, Jwt jwt) List~SessaoResponse~
+        +buscar(UUID pacienteId, UUID id, Jwt jwt) SessaoResponse
     }
     class SessaoService {
         <<Service>>
-        -SessaoRepository sessaoRepository
-        -PacienteService pacienteService
-        -SessaoMapper mapper
-        +criar(Long pacienteId, SessaoRequest req, Usuario autor) SessaoResponse
-        +listar(Long pacienteId, Usuario solicitante) List~SessaoResponse~
+        -SessaoRepository repository
+        -PacienteService pacientes
+        +registrar(UUID pacienteId, UUID responsavelId, SessaoRequest req) SessaoResponse
+        +listar(UUID pacienteId, UUID responsavelId) List~SessaoResponse~
+        +buscar(UUID pacienteId, UUID sessaoId, UUID responsavelId) SessaoResponse
     }
     class PacienteService {
         <<Service>>
-        +buscarDoResponsavel(Long pacienteId, Usuario solicitante) Paciente
+        +buscarDoResponsavel(UUID pacienteId, UUID responsavelId) Paciente
     }
     class SessaoRepository {
         <<interface>>
-        +findByPacienteIdOrderByDataHoraDesc(Long id) List~Sessao~
+        +findByPacienteIdOrderByDataHoraDesc(UUID id) List~Sessao~
+        +findByIdAndPacienteId(UUID id, UUID pacienteId) Optional~Sessao~
     }
     class JpaRepository {
         <<interface>>
     }
-    class SessaoMapper {
-        +toEntity(SessaoRequest req) Sessao
-        +toResponse(Sessao s) SessaoResponse
-    }
     class SessaoRequest {
         <<record>>
-        LocalDateTime dataHora
+        Instant dataHora
         String objetivo
         Modalidade modalidade
-        Long aparelhoId
-        List~ParametroRequest~ parametros
-        List~EletrodoRequest~ eletrodos
-        String resposta
+        String aparelho
+        List~CanalDto~ canais
+        Set~String~ checklist
     }
     class SessaoResponse {
         <<record>>
-        Long id
-        LocalDateTime dataHora
-        String autor
-        Modalidade modalidade
+        UUID id
+        Instant dataHora
+        UUID profissionalId
+        +de(Sessao s)$ SessaoResponse
     }
     class GlobalExceptionHandler {
         <<RestControllerAdvice>>
-        +handle(Exception e) ProblemDetail
     }
 
     SessaoController ..> SessaoService : usa
@@ -635,7 +586,6 @@ classDiagram
     SessaoController ..> SessaoResponse : retorna
     SessaoService ..> PacienteService : valida posse
     SessaoService ..> SessaoRepository : usa
-    SessaoService ..> SessaoMapper : converte
     SessaoRepository --|> JpaRepository
 ```
 
@@ -647,8 +597,7 @@ classDiagram
 sequenceDiagram
     autonumber
     actor P as Profissional
-    participant UI as React (NovaSessaoPage)
-    participant Hook as useCriarSessao (TanStack Query)
+    participant UI as React (SessaoFormPage)
     participant Api as axios + interceptor JWT
     participant Sec as Spring Security
     participant C as SessaoController
@@ -656,24 +605,23 @@ sequenceDiagram
     participant PS as PacienteService
     participant DB as PostgreSQL
 
-    P->>UI: Preenche formulário e confirma revisão
+    P->>UI: Preenche formulário e marca o checklist
     UI->>UI: Validação Zod (erros anunciados via aria-live)
-    UI->>Hook: mutate(dados)
-    Hook->>Api: POST /api/v1/pacientes/{id}/sessoes
+    UI->>Api: registrarSessao: POST /api/v1/pacientes/{id}/sessoes
     Api->>Sec: Authorization: Bearer JWT
-    Sec->>C: Perfil PROFISSIONAL ok
+    Sec->>C: PROFISSIONAL e aal2 ok
     C->>C: @Valid SessaoRequest
-    C->>S: criar(pacienteId, req, usuario)
-    S->>PS: buscarDoResponsavel(pacienteId, usuario)
-    alt não é o responsável
-        PS-->>C: PacienteNaoEncontradoException
+    C->>S: registrar(pacienteId, sub, req)
+    S->>PS: buscarDoResponsavel(pacienteId, sub)
+    alt não é o responsável ou paciente excluído
+        PS-->>C: RecursoNaoEncontradoException
         C-->>UI: 404 ProblemDetail
     else é o responsável
-        S->>DB: INSERT sessao (+ auditoria Envers)
+        S->>DB: INSERT sessao, sessao_canal, sessao_checklist (criado_por = sub)
         DB-->>S: Sessao salva
         S-->>C: SessaoResponse
-        C-->>Hook: 201 Created
-        Hook->>Hook: invalida cache ["sessoes", pacienteId]
+        C-->>UI: 201 Created
+        UI->>UI: invalida a query das sessões do paciente
         UI-->>P: Confirmação anunciada ao leitor de tela
     end
 ```
@@ -722,7 +670,20 @@ Regras:
 |---|---|---|
 | Unitário | JUnit 5 + Mockito | Regra de negócio no Service |
 | Integração | `@SpringBootTest` + Testcontainers (PostgreSQL 17) | Controller → banco real, migrations, segurança |
-| Segurança | `spring-security-test` | 403 para estudante, 404 para paciente de outro profissional |
+| Segurança | `spring-security-test` | 401 sem token, 403 para estudante e sem MFA, 404 para paciente de outro profissional |
+
+Estado: 135 testes, todos verdes (`.\mvnw.cmd test`, 2026-10-16). Uma classe de integração por feature (`*IntegracaoTest`) sobe o contexto com PostgreSQL 17 e roda as migrations:
+
+| Classe | Cobre |
+|---|---|
+| `PacienteIntegracaoTest` | CRUD, busca sem acento e por prefixo, ordenação, paginação, identificador único por responsável, exclusão lógica, 404 entre profissionais, 403 sem `aal2` |
+| `AvaliacaoIntegracaoTest` | Validações (queixa, objetivo, data antes do nascimento e de 1900, dor 0 a 10 com tarefa e momento), triagem e achado omitidos como `NAO_AVALIADO`, achado com lado, região e método, 404 entre profissionais |
+| `SessaoIntegracaoTest` | Blocos obrigatórios, canal repetido, limite físico dos parâmetros, checklist só por código, ordem da lista, 404 entre profissionais |
+| `UsuarioIntegracaoTest` | Cadastro, 409, `CHECK` do banco, troca para profissional, aceite e versão dos termos, 403 sem cadastro ou inativo |
+| `ConteudoIntegracaoTest`, `ParametroDicionarioIntegracaoTest`, `FaixaParametroIntegracaoTest` | Seeds, só `APROVADO`, página técnica, faixas por modo |
+| `RestricaoPorPerfilTest`, `RestricaoPorPerfilIntegracaoTest` | 401, 403 por perfil e sem MFA |
+| `SwaggerIntegracaoTest` | Swagger desligado por padrão |
+| Unitários (`*ServiceTest`, `*ControllerTest`, `PerfilJwtConverterTest`, `CadastroRequestTest`, `GlobalExceptionHandlerTest`) | Regras sem banco e formato dos erros |
 
 Regras:
 
@@ -807,21 +768,24 @@ O que vale lembrar do backend:
 Pronto:
 
 - Spring Boot 4.1.1 / Java 25 com Lombok; build e testes ok.
-- Pacotes `config`, `shared/exception` e `usuario` (camadas em subpastas). Os demais pacotes da árvore nascem com a primeira classe de cada feature.
-- Validação do JWT do Supabase (ES256, JWKS, emissor, `aud`) e conversão do perfil do banco em papéis.
-- `GET`/`POST /api/v1/usuarios/me` com validação por perfil, erros por campo e 409 em cadastro duplicado.
-- Migrations `V1__seguranca_base.sql` (revoga `anon`/`authenticated`) e `V2__usuario.sql`, aplicadas no Supabase. `V3__aceite_termos.sql` roda no próximo deploy do backend.
-- Tratamento global de erros em `ProblemDetail`.
-- Log de inicialização enxuto (banner Fisiotech e resumo) e senha fora do log.
-- Swagger desligado por padrão; liga com `SWAGGER_ENABLED=true` no `.env`.
-- 34 testes: unitários e de integração com PostgreSQL 17 em container (Testcontainers), cobrindo cadastro, 404/409, 403 sem perfil ou inativo, os `CHECK` do banco e o Swagger desligado.
+- Validação do JWT do Supabase (ES256, JWKS, emissor, `aud`), perfil vindo do banco e `aal2` obrigatório em `/pacientes/**`.
+- Usuário: cadastro por perfil, troca para profissional, aceite e versão dos termos.
+- Conteúdo técnico, página técnica padrão, dicionário de parâmetros e faixas por modo.
+- Pacientes (busca full-text sem acento, ordenação, paginação, exclusão lógica com remoção em 90 dias), avaliação inicial e registro de sessão com checklist.
+- Auditoria por campos (`criado_por`, `alterado_por`).
+- Migrations V1 a V12 (seção 5). Em produção (Supabase) estão aplicadas até a versão do último deploy; V6 a V12 entram no próximo deploy do backend ([DEPLOY.md](../DEPLOY.md)).
+- Erros em `ProblemDetail` com `erros` por campo.
+- Log de inicialização enxuto, senha fora do log, Swagger desligado por padrão.
+- 135 testes verdes (seção 15).
 - Em produção no Render (Docker), com CI e ping de manutenção.
 
 Pendente:
 
-- Frontend do cadastro e login (Supabase Auth + `/api/v1/usuarios/me`).
+- Backend de aparelho, atlas e casos do simulador (hoje dados estáticos no frontend).
+- Fluxo editorial pela API (material, anexo, aprovação por revisor ≠ autor). Hoje o `Conteudo` muda de estado direto no banco e o seed está todo `EM_REVISAO`.
+- Testes de segurança que faltam: assinatura inválida ou token expirado, autor aprovando o próprio material, upload ([SEGURANCA.md](../SEGURANCA.md), seção 8).
 - Limite de requisições na API.
 - Domínio próprio e deploy automático do frontend (DEPLOY.md, seção 5).
-- Envers, Spring AI e pgvector (entram com as features).
+- Spring AI e pgvector (entram com o assistente).
 - Políticas LGPD (retenção, backup, incidentes, exportação). Até lá, só dados fictícios.
 - Aparelho de referência e manual. Provedor de LLM e limite de custo.

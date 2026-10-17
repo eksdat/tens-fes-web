@@ -12,6 +12,7 @@ import type { Modulo } from './tipos'
 
 export function rotasDoModulo(modulo: Modulo): RouteObject {
   const titulo = (aba: string) => ({ titulo: `${modulo.sigla} · ${aba}` })
+  const simulador = `/simulador?modalidade=${modulo.sigla}&modo=${modulo.sigla === 'FES' ? 'FES' : 'Convencional'}`
   return {
     path: modulo.base,
     element: <ModuloLayout modulo={modulo} />,
@@ -22,13 +23,13 @@ export function rotasDoModulo(modulo: Modulo): RouteObject {
         ) : rotulo === 'Aparelho' && modulo.aparelho ? (
           <PaginaAparelho dados={modulo.aparelho} />
         ) : rotulo === 'Casos' && modulo.casos ? (
-          <PaginaCasos dados={modulo.casos} />
+          <PaginaCasos dados={modulo.casos} simulador={simulador} />
         ) : rotulo === 'Segurança' && modulo.seguranca ? (
           <PaginaSeguranca dados={modulo.seguranca} />
         ) : rotulo === 'Eletrodos' && modulo.eletrodos ? (
           <PaginaEletrodos modulo={modulo} />
         ) : rotulo === 'Parâmetros' ? (
-          <PaginaParametros dados={modulo.parametros} />
+          <PaginaParametros dados={modulo.parametros} simulador={simulador} />
         ) : (
           <ConteudoPendente titulo={rotulo} />
         )

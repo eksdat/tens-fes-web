@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
+import static br.unibh.fisiotech.shared.exception.Violacoes.violou;
+
 import br.unibh.fisiotech.shared.exception.ConflitoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
 import br.unibh.fisiotech.usuario.dto.AtualizarPerfilProfissionalRequest;
@@ -23,12 +25,6 @@ import br.unibh.fisiotech.usuario.repository.UsuarioRepository;
 @RequiredArgsConstructor
 public class UsuarioService {
 
-    /**
-     * Versão vigente dos Termos de uso e da Política de privacidade (data da publicação). Mudou o texto das páginas
-     * /termos ou /privacidade: troque aqui, para saber depois quem aceitou qual versão.
-     */
-    public static final String VERSAO_TERMOS = "2026-10-03";
-
     private final UsuarioRepository repository;
 
     @Transactional(readOnly = true)
@@ -40,7 +36,7 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponse cadastrar(UUID id, CadastroRequest req) {
         var usuario = new Usuario(id, req.nome().trim(), req.perfil());
-        usuario.registrarAceiteTermos(VERSAO_TERMOS, Instant.now());
+        usuario.registrarAceiteTermos(Usuario.VERSAO_TERMOS, Instant.now());
         switch (req.perfil()) {
             case ESTUDANTE -> usuario.definirDadosEstudante(req.instituicao().trim(), req.periodo());
             case PROFISSIONAL -> usuario.definirDadosProfissional(req.categoria(), req.registro().trim(), req.uf());
@@ -48,8 +44,20 @@ public class UsuarioService {
         try {
             return UsuarioResponse.de(repository.saveAndFlush(usuario));
         } catch (DataIntegrityViolationException e) {
+            // Só a chave primária repetida é "já cadastrado"; outra violação é defeito e não pode virar 409.
+            if (!violou(e, "usuario_pkey")) {
+                throw e;
+            }
             throw new ConflitoException("Cadastro já concluído.");
         }
+    }
+
+    @Transactional
+    public UsuarioResponse aceitarTermos(UUID id) {
+        var usuario = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cadastro não concluído."));
+        usuario.registrarAceiteTermos(Usuario.VERSAO_TERMOS, Instant.now());
+        return UsuarioResponse.de(repository.saveAndFlush(usuario));
     }
 
     @Transactional

@@ -5,6 +5,8 @@ import { ABAS_MODULO } from '@/features/modulo/abasModulo'
 import { rotasDoModulo } from '@/features/modulo/rotasDoModulo'
 import { FES } from '@/features/fes/conteudoFes'
 
+vi.mock('@/features/modulo/usePaginaTecnica', () => import('./paginaTecnicaFalsa'))
+
 function renderizar(rota: string) {
   const roteador = createMemoryRouter(
     [{ element: <main><Outlet /></main>, children: [rotasDoModulo(FES)] }],
@@ -31,18 +33,18 @@ test('deveAbrirNaVisaoGeralComOTituloDoModulo', () => {
 test('deveMostrarFundamentosAlvosFuncionaisELimites', () => {
   renderizar('/fes')
 
-  for (const titulo of ['O que é FES', 'NMES e FES', 'Alvos funcionais', 'Limites que mudam a decisão']) {
+  for (const titulo of ['O que é FES', 'Diferença entre NMES e FES', 'Alvos funcionais', 'Limites que mudam a decisão']) {
     expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument()
   }
-  expect(screen.getByText(/Dorsiflexão: elevação do antepé/)).toBeInTheDocument()
+  expect(screen.getByText('Dorsiflexão:')).toBeInTheDocument()
   expect(screen.getByText(/não autoriza aumentar a corrente indefinidamente/)).toBeInTheDocument()
 })
 
 test('deveExplicarADiferencaEntreOModoFesDoAparelhoEAFesFuncional', () => {
   renderizar('/fes')
 
-  expect(screen.getByRole('heading', { name: 'O “FES” do aparelho' })).toBeInTheDocument()
-  expect(screen.getAllByText(/nome do modo não garante sincronização com uma tarefa/).length).toBeGreaterThan(0)
+  expect(screen.getByRole('table')).toBeInTheDocument()
+  expect(screen.getByText(/Pode ser só o nome comercial de um programa muscular/)).toBeInTheDocument()
 })
 
 test('deveMostrarOsCincoParametrosMotoresComFaixaEducativaSoOndeHaNumero', () => {

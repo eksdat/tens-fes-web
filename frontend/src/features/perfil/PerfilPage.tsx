@@ -22,6 +22,7 @@ import { Botao } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
 import { CampoSelecao } from '../../shared/ui/CampoSelecao'
 import { TelaCarregando } from '../../shared/ui/TelaCarregando'
+import { useToast } from '../../shared/ui/useToast'
 
 const schemaPerfilProfissional = z
   .object({
@@ -62,7 +63,7 @@ export function PerfilPage() {
   const queryClient = useQueryClient()
   const { data: usuario, isPending } = useUsuarioAtual()
   const [erroGeral, setErroGeral] = useState<string | null>(null)
-  const [sucesso, setSucesso] = useState(false)
+  const { mostrar } = useToast()
 
   const form = useForm<FormPerfilProfissional>({
     resolver: zodResolver(schemaPerfilProfissional),
@@ -90,7 +91,6 @@ export function PerfilPage() {
 
   async function aoSalvarProfissional(valores: FormPerfilProfissional) {
     setErroGeral(null)
-    setSucesso(false)
     try {
       const registroNormalizado = normalizarRegistro(valores.categoria, valores.registro)
       const atualizado = await atualizarPerfilProfissional({
@@ -100,7 +100,11 @@ export function PerfilPage() {
       })
       queryClient.setQueryData(CHAVE_USUARIO_ATUAL, atualizado)
       await queryClient.invalidateQueries({ queryKey: CHAVE_USUARIO_ATUAL })
-      setSucesso(true)
+      mostrar({
+        tipo: 'sucesso',
+        titulo: 'Perfil atualizado',
+        texto: 'Seu perfil agora é Profissional. Você já tem acesso à área de pacientes.',
+      })
     } catch (erro) {
       const lido = lerErroAtualizacaoPerfil(erro)
       setErroGeral(lido.mensagem)
@@ -120,12 +124,6 @@ export function PerfilPage() {
         <h1 className="tf-titulo">Meu perfil</h1>
         <p className="tf-sub">Consulte e gerencie as informações da sua conta.</p>
       </div>
-
-      {sucesso && (
-        <Alerta intencao="sucesso" titulo="Perfil atualizado">
-          Seu perfil agora é Profissional. Você já tem acesso à área de pacientes.
-        </Alerta>
-      )}
 
       {erroGeral && (
         <Alerta intencao="perigo" titulo="Não foi possível atualizar seu perfil">

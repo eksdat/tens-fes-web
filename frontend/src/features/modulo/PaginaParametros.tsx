@@ -1,13 +1,17 @@
 import { Alerta } from '../../shared/ui/Alerta'
+import { BotaoLink } from '../../shared/ui/Botao'
 import { PaginaTecnica } from './PaginaTecnica'
 import type { Modulo } from './tipos'
 
-export function PaginaParametros({ dados }: { dados: Modulo['parametros'] }) {
+export function PaginaParametros({ dados, simulador }: { dados: Modulo['parametros']; simulador: string }) {
   return (
     <PaginaTecnica titulo="Parâmetros" fontes={dados.fontes}>
       <Alerta intencao="atencao" titulo="Faixa educativa, não é prescrição">
         {dados.aviso}
       </Alerta>
+      <div className="tf-linha">
+        <BotaoLink to={simulador}>Testar no simulador</BotaoLink>
+      </div>
 
       <section className="tf-pilha">
         <h3 className="tf-subtitulo">{dados.titulo}</h3>
