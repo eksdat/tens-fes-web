@@ -26,9 +26,15 @@ public record CadastroRequest(
     /** Anti-spam no texto livre: só letras, números, espaço e {@code . - ' ( ) /}, sem {@code www.}. */
     static final String TEXTO_SEGURO = "(?i)(?!.*www\\.)[\\p{L}\\p{N} .'()/-]+";
 
+    /** O service grava o nome sem os espaços das pontas; o check do banco conta as letras depois disso. */
+    @AssertTrue(message = "Informe o nome com pelo menos 2 letras.")
+    boolean isNomeComDuasLetras() {
+        return nome == null || nome.trim().length() >= 2;
+    }
+
     @AssertTrue(message = "Informe instituição e período.")
     boolean isDadosEstudanteCompletos() {
-        return perfil != Perfil.ESTUDANTE || (instituicao != null && periodo != null);
+        return perfil != Perfil.ESTUDANTE || (instituicao != null && !instituicao.isBlank() && periodo != null);
     }
 
     @AssertTrue(message = "Informe categoria, registro e UF.")

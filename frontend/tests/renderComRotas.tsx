@@ -6,7 +6,7 @@ import { ToastsProvider } from '@/shared/ui/Toasts'
 
 export function renderComRotas(rotas: ReactNode, rotaInicial: string) {
   return render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <ToastsProvider>
         <MemoryRouter initialEntries={[rotaInicial]}>
           <Routes>{rotas}</Routes>

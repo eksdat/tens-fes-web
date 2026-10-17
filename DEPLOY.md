@@ -53,6 +53,26 @@ O serviço usa `backend/Dockerfile` (Java 25, JVM limitada para 512 MB). `render
 | `CORS_ALLOWED_ORIGINS` | origens do frontend, separadas por vírgula (seção 3) |
 | `SWAGGER_ENABLED` | **não definir** em produção (Swagger desligado) |
 
+### Migrations no banco de produção
+
+O Flyway roda quando a API sobe. Todo deploy ou reinício do serviço no Render (*Manual Deploy* ou *Restart*) aplica as migrations novas da `main`. Não aplicar SQL pelo painel do Supabase.
+
+O que as migrations V6 a V12 pedem da nuvem:
+
+| Migration | Precisa | Na nuvem |
+|---|---|---|
+| `V8__paciente` | `unaccent` no schema `extensions` | A migration cria; o Supabase já tem o schema `extensions` |
+| `V8__paciente` | `pg_cron` e o job `remover-pacientes-excluidos` (03:00 UTC, apaga paciente excluído há mais de 90 dias) | A migration cria a extensão e o job só se `pg_cron` estiver em `pg_available_extensions`. Não precisa ligar nada no painel antes |
+| V6, V7, V9 a V12 | Nada além do Flyway | — |
+
+Depois do deploy, confira no *SQL Editor* do Supabase:
+
+1. `select version, success from flyway_schema_history order by installed_rank;` mostra até `12` com `success = true`.
+2. `select jobname, schedule from cron.job;` mostra `remover-pacientes-excluidos` com `0 3 * * *`. Sem a linha, o `pg_cron` não estava disponível e a remoção de 90 dias não roda.
+3. *Advisors › Security*: nenhum `WARN` ou `ERROR` novo ([SEGURANCA.md](SEGURANCA.md), seção 2). `rls_enabled_no_policy` (`INFO`) é esperado. Se aparecer `extension_in_public`, a extensão foi criada fora do schema `extensions`.
+
+O frontend que usa pacientes, avaliação e sessão só funciona depois desse deploy do backend: publique o Render antes do Firebase.
+
 ### Comportamento do plano grátis
 
 - Dorme após 15 min sem requisição. Com 0,1 CPU, a API leva **cerca de 3 min** para voltar. O mesmo vale depois de cada deploy.
@@ -146,6 +166,7 @@ A política é estrita (`script-src 'self'`, sem inline). Mudanças esperadas:
 ```
 GET  <API>/actuator/health                                   200
 GET  <API>/api/v1/usuarios/me                                401 (sem token)
+GET  <API>/api/v1/pacientes                                  401 (sem token)
 GET  <API>/v3/api-docs                                       404 (Swagger desligado)
 GET  <SITE>/qualquer/rota                                     200 (SPA)
 GET  <SITE>/  (cabeçalho Cache-Control)                       no-cache
@@ -154,6 +175,8 @@ OPTIONS <API>/api/v1/usuarios/me, Origin: site desconhecido   403
 ```
 
 `<API>` e `<SITE>` são os endereços da tabela do início. No navegador, em `<SITE>`: o console não deve mostrar erro de CORS nem de CSP.
+
+Deploy com migration nova: faça também a conferência do banco (seção 1, "Migrations no banco de produção").
 
 ## 5. Pendências de deploy
 

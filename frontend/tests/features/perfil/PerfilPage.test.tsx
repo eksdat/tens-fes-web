@@ -14,6 +14,7 @@ const { estado } = vi.hoisted(() => ({
       nome: 'Ana Souza',
       perfil: 'ESTUDANTE' as 'ESTUDANTE' | 'PROFISSIONAL',
       revisor: false,
+      termosPendentes: false,
       instituicao: 'UniBH',
       periodo: 5,
       categoria: undefined as 'FISIOTERAPEUTA' | 'TERAPEUTA_OCUPACIONAL' | 'OUTRA' | undefined,
@@ -39,6 +40,7 @@ beforeEach(() => {
     nome: 'Ana Souza',
     perfil: 'ESTUDANTE',
     revisor: false,
+      termosPendentes: false,
     instituicao: 'UniBH',
     periodo: 5,
     categoria: undefined,
@@ -64,7 +66,6 @@ test('deveMostrarMensagemObrigatoriaEFormularioParaEstudante', () => {
   expect(screen.getByLabelText('UF do registro')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Salvar registro profissional' })).toBeInTheDocument()
 
-  // Critério 5: Não mostra selo de profissional verificado
   expect(screen.queryByText(/verificado/i)).not.toBeInTheDocument()
 })
 
@@ -118,6 +119,7 @@ test('deveMostrarDadosDoProfissionalSemFormularioNemSeloDeVerificado', () => {
     nome: 'Bia Lima',
     perfil: 'PROFISSIONAL',
     revisor: false,
+      termosPendentes: false,
     instituicao: 'UFMG',
     periodo: 10,
     categoria: 'FISIOTERAPEUTA',
@@ -133,13 +135,11 @@ test('deveMostrarDadosDoProfissionalSemFormularioNemSeloDeVerificado', () => {
   expect(screen.getByText('654321-F / MG')).toBeInTheDocument()
   expect(screen.getByText(/UFMG \(10º período\)/)).toBeInTheDocument()
 
-  // Não exibe formulário de transição nem texto de estudante formado
   expect(
     screen.queryByText('Após a formação, atualize seu perfil e informe seu registro profissional.'),
   ).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Salvar registro profissional' })).not.toBeInTheDocument()
 
-  // Critério 5: Não exibe selo de profissional verificado
   expect(screen.queryByText(/verificado/i)).not.toBeInTheDocument()
 })
 

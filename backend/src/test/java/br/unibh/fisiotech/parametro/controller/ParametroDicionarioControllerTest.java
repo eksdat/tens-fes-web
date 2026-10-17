@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -21,8 +22,12 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import br.unibh.fisiotech.config.SecurityConfig;
 
+import br.unibh.fisiotech.conteudo.enums.Modalidade;
+import br.unibh.fisiotech.parametro.dto.FaixaParametroResponse;
 import br.unibh.fisiotech.parametro.dto.ParametroDicionarioResponse;
 import br.unibh.fisiotech.parametro.enums.GrupoParametro;
+import br.unibh.fisiotech.parametro.enums.OrigemFaixa;
+import br.unibh.fisiotech.parametro.service.FaixaParametroService;
 import br.unibh.fisiotech.parametro.service.ParametroDicionarioService;
 import br.unibh.fisiotech.usuario.repository.UsuarioRepository;
 import br.unibh.fisiotech.usuario.security.PerfilJwtConverter;
@@ -36,6 +41,9 @@ class ParametroDicionarioControllerTest {
 
     @MockitoBean
     private ParametroDicionarioService service;
+
+    @MockitoBean
+    private FaixaParametroService faixas;
 
     @MockitoBean
     private UsuarioRepository repository;
@@ -79,6 +87,23 @@ class ParametroDicionarioControllerTest {
     void deveRecusarBuscaMaiorQueOLimite() throws Exception {
         mvc.perform(get("/api/v1/parametros").param("busca", "a".repeat(101)).with(estudante()))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deveListarAsFaixasDaModalidade() throws Exception {
+        when(faixas.listar(Modalidade.FES)).thenReturn(List.of(new FaixaParametroResponse(Modalidade.FES, "FES",
+                "Frequência", "Hz", "hertz", OrigemFaixa.APARELHO, new BigDecimal("0.5"), new BigDecimal("250"), "M1")));
+
+        mvc.perform(get("/api/v1/parametros/faixas").param("modalidade", "FES").with(estudante()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].origem").value("APARELHO"))
+                .andExpect(jsonPath("$[0].minimo").value(0.5));
+    }
+
+    @Test
+    void deveExigirAModalidadeNasFaixas() throws Exception {
+        mvc.perform(get("/api/v1/parametros/faixas").with(estudante())).andExpect(status().isBadRequest());
     }
 
     private static RequestPostProcessor estudante() {
