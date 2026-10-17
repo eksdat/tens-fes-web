@@ -207,7 +207,7 @@ O motivo da marca é a folha: um quadrado com **dois cantos opostos arredondados
 
 ## 4. Componentes do design system
 
-O design system do protótipo documenta sete componentes. A coluna "No app" diz o que já existe.
+O design system do protótipo documenta nove componentes. A coluna "No app" diz o que já existe.
 
 | Componente | Descrição | No app |
 |---|---|---|
@@ -217,6 +217,8 @@ O design system do protótipo documenta sete componentes. A coluna "No app" diz 
 | **Campo de parâmetro** | Valor numérico com unidade fixa ao lado | `Campo` (sem o sufixo de unidade, que ainda não é usado) |
 | **Cartão de módulo** | Entrada dos módulos TENS e FES | a implementar |
 | **Navegação** | Cabeçalho com marca, abas fixas e chip de perfil | a implementar |
+| **Toast** | Aviso curto do resultado de uma ação: sucesso, erro, atenção e informação | `ToastsProvider`, `RegiaoToasts`, `useToast` |
+| **Perguntas frequentes** | Acordeão em gaveta com seta que gira | `PerguntasFrequentes` (botão em `h4`; o design system usa `h3`) |
 | **Amostra de início** | Trecho da tela inicial para avaliar o estilo | só referência (não é especificação de layout) |
 
 ### Marca
@@ -252,6 +254,15 @@ Etiqueta de painel com a onda dentro (TENS em `brand-tint`, FES em `accent`, dis
 
 Cabeçalho com marca, abas fixas e chip do perfil atual. Abas: **Início, TENS e FES, Criar conteúdo, Pacientes, Meu perfil**, sempre com o mesmo nome e na mesma posição. "Pacientes" aparece só para o perfil profissional. A aba atual usa `aria-current="page"`, negrito, `brand-strong` e sublinhado de 3 px. O chip mostra o perfil por extenso ("Perfil: Estudante"). Cada aba tem no mínimo `target-min` de altura e quebra de linha em telas estreitas, **sem rolagem horizontal**. A rota permitida por perfil vem do `ProtectedRoute`; esconder aba é conforto, a regra real fica na API.
 
+### Toast
+
+- **Quando:** resultado de uma ação (salvar, excluir, registrar). Nunca erro de campo (fica no campo, com resumo no topo do formulário) nem aviso de segurança durante a estimulação (`Alerta` fixo, que não some).
+- **Onde:** logo abaixo do cabeçalho. No celular e com zoom alto, largura total; a partir de 880 px, canto superior direito, até 420 px. Nunca no rodapé, que é das abas e do teclado. Empilha com o mais novo no topo, no máximo três; o resto espera em fila.
+- **Tempo:** sucesso e informação somem em 8 s e pausam com mouse ou foco. Erro e atenção ficam até serem fechados. Todo toast tem o botão de fechar de 44 px "Fechar aviso: <título>".
+- **Leitor de tela:** as duas regiões existem vazias desde o início (`output` para sucesso, informação e atenção; `role="alert"` só para erro). O foco não se move; o toast fica na ordem de leitura logo depois do menu.
+- **Texto:** título de uma ou duas palavras sobre o que aconteceu; texto com a ação primeiro. **Nunca** nome de paciente, e-mail ou dado de saúde: a tela pode estar à vista na recepção. O app não oferece "Desfazer": registro clínico não se desfaz e a exclusão já pede confirmação (`agent_docs/decisoes.md`).
+- **Contraste:** com alto contraste (`data-contraste="alto"`) ou cores forçadas, borda de 3 px, faixa de 12 px, sem sombra e título sublinhado.
+
 ### Hero e etiqueta de painel
 
 - **Hero** (`brand-deep`, texto `on-deep`, botões `accent`, canto `radius-lg`): título de até `heading-xl`, texto de `body-lg`; as folhas laterais são decorativas e somem em telas estreitas (abaixo de 720 px o texto ocupa a largura toda).
@@ -259,7 +270,7 @@ Cabeçalho com marca, abas fixas e chip do perfil atual. Abas: **Início, TENS e
 
 > As classes `tf-card`, `tf-grid`, `tf-tag`, `tf-hero` e `tf-nav` do design system ainda não foram portadas para `ui.css`; ao implementar o componente, copie o comportamento do `bundle.css` de origem usando os tokens do app.
 >
-> Nomes de classe do design system versus os do app: o app usa nomes em português. `tf-btn--primary` → `tf-btn--primario`, `tf-btn--secondary` → `tf-btn--secundario`, `tf-alert--warn` → `tf-alert--atencao`, `tf-alert--danger` → `tf-alert--perigo`, `tf-alert--ok` → `tf-alert--sucesso`, `tf-field--error` → `tf-field--erro`, `tf-field__error` → `tf-field__erro`. Ao implementar um componente novo, siga o português.
+> Nomes de classe do design system versus os do app: o app usa nomes em português. `tf-btn--primary` → `tf-btn--primario`, `tf-btn--secondary` → `tf-btn--secundario`, `tf-alert--warn` → `tf-alert--atencao`, `tf-alert--danger` → `tf-alert--perigo`, `tf-alert--ok` → `tf-alert--sucesso`, `tf-field--error` → `tf-field--erro`, `tf-field__error` → `tf-field__erro`, `tf-toast--error` → `tf-toast--erro`, `tf-toast--warn` → `tf-toast--atencao`, `tf-toast__title` → `tf-toast__titulo`, `tf-toast__text` → `tf-toast__texto`, `tf-toast__act` → `tf-toast__acao`, `tf-toast__x` → `tf-toast__fechar`. Ao implementar um componente novo, siga o português.
 
 ---
 
@@ -285,6 +296,8 @@ Em `src/shared/ui`, com testes de acessibilidade em `tests/shared/ui/ui.test.tsx
 | `BotaoAcessibilidade` | nenhuma | Botão com ícone de acesso universal que abre `Dialogo` com tamanho do texto (100/125/150 % na raiz), alto contraste (`data-contraste="alto"` em `tokens.css`) e reduzir movimento (`data-movimento="reduzido"`). Padrão vem de `prefers-contrast` e `prefers-reduced-motion`; escolha fica em `localStorage`. Está no `MenuPrincipal` e no `AuthLayout`. Lógica em `src/shared/acessibilidade/preferencias.ts` |
 | `BuscaRapida` | `perfil`, `aoSair` | Lupa no menu (e Ctrl/Cmd+K) abre `Dialogo` com campo de busca e lista de botões. Enter abre o primeiro resultado; Tab percorre os demais. Atalhos em `src/app/atalhos.ts`: módulos vêm de `src/app/abas.ts`, filtrados por perfil, mais ações que existem de verdade (Meu perfil, Sair). Ignora acento e caixa; exige todas as palavras digitadas |
 | `ModuloLayout` / `PaginaTecnica` | `modulo` (dados do módulo) | Entrada do módulo (kicker, título, aviso educativo) e as 6 abas fixas (Visão geral, Aparelho, Eletrodos, Parâmetros, Segurança, Casos), cada uma uma rota (`/tens/parametros`). `PaginaTecnica` é a página padrão: corpo mais rodapé "Fonte e data de revisão". Conteúdo em `features/<modulo>/conteudo*.ts`; abas sem conteúdo mostram "Conteúdo ainda não liberado". Em `src/features/modulo/` |
+| `ToastsProvider` + `RegiaoToasts` | nenhuma | Montados no `LayoutLogado`, a região logo depois do `MenuPrincipal`. Guardam a fila e mostram até três toasts (seção 4). Testes de tela que conferem toast põem `RegiaoToasts` na rota de layout; `renderComRotas` já traz o provider |
+| `useToast` | `mostrar({ tipo, titulo, texto?, acao? })` | `tipo`: `sucesso` \| `info` \| `atencao` \| `erro`. `acao` (`rotulo`, `aoClicar`) vira botão de texto que executa e fecha. Chame antes do `navigate`: o toast sobrevive à troca de tela |
 | `PerguntasFrequentes` | `itens` (`pergunta`, `destaque`, `detalhe?`, `alerta?`, `acao?`), `fonteHref` | Acordeão em gaveta do design system: seta para baixo fechada e para cima aberta, cabeçalho aberto escuro com `shadow-card`, altura animada por grid (220 ms). Botão dentro de `h4` com `aria-expanded`/`aria-controls`; resposta em `section` ligada por `aria-labelledby`. A primeira vem aberta, várias podem ficar abertas; Enter e Espaço alternam, setas, Home e End percorrem. Resposta em três camadas: destaque, detalhe e rodapé com ação e "Fonte e data de revisão". Alerta de segurança com `role="note"` |
 | `AtlasEletrodos` | `modalidade`, `base`, `compacto?` | Placa anatômica (músculos de frente e de costas, CC BY-SA 4.0) com pontos clicáveis e lista de regiões (o controle acessível); cada região recorta a placa e mostra os eletrodos em escala. Completo: detalhe com desenho ampliado, eletrodos por canal com códigos 1A/1B/2A/2B (cor é redundante), montagem, cuidados e fonte; a região vive em `?regiao=`. Compacto (Visão geral): só corpo e links para a aba Eletrodos. Dados em `features/atlas/montagens.ts` (guia, seções 11A–11E) |
 
@@ -421,6 +434,14 @@ Meta: **WCAG 2.2 AA**. O design system já embute as regras; o app as segue e as
 - **Elementos decorativos** (folhas, ícones ao lado de texto) com `aria-hidden`.
 - **Elementos de terceiros**, como o CAPTCHA, ficam em um grupo com legenda e têm o resultado anunciado.
 - **Anúncios sem ruído**: o checklist da senha fala só quando o número de requisitos atendidos muda, não a cada tecla.
+- **Resultado de ação em toast** (seção 4), anunciado sem tirar o foco.
+
+Comportamento por perfil, das personas do projeto:
+
+- **Leitor de tela e só teclado:** nome visível igual ao nome acessível, ordem de tabulação igual à visual, avisos em região ao vivo sem tirar o foco, unidade por extenso e erro em palavras junto do campo, sem perder o que foi digitado.
+- **Zoom de 150 % a 200 %:** recompõe sem rolagem horizontal até 320 px; toast em largura total, sem cobrir o botão da ação.
+- **Profissional com pressa e tela à vista:** registrar sessão em menos de dois minutos, confirmação curta e nenhum nome de paciente em toast, título ou aba.
+- **Celular, um trecho de cada vez:** alvos de 44 px, toast no topo (o rodapé é do teclado e das abas), texto curto e erro que diz a ação primeiro.
 
 Como é verificado:
 
@@ -470,5 +491,6 @@ Estrutura mínima de uma tela de autenticação:
 | Título repetido no leitor de tela | O painel verde também tem título grande | O `h1` é só o do cartão; o título do painel é decorativo |
 | Cópia dos tokens gerados do design system | O `tokens.css` de origem está desatualizado | Copie os valores do `src/styles/tokens.css` do app |
 | Dois botões primários na mesma tela | Ação principal não definida | Um `primario` por contexto; o resto é `secundario` ou `ghost` |
+| Teste acha vários `alert` ou `status` | As regiões do toast ficam vazias na página o tempo todo | Na tela com `RegiaoToasts`, procure pelo texto e suba com `closest('output')` ou `closest('[role="alert"]')`, ou confira a descrição do campo |
 
 Veja também: `../../README.md` (arquitetura, autenticação e testes) e `../../../SEGURANCA.md`.

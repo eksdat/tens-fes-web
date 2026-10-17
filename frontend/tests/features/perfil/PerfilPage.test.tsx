@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe'
 import { renderComRotas } from '../../renderComRotas'
 import { PerfilPage } from '@/features/perfil/PerfilPage'
 import * as apiPerfil from '@/features/usuario/atualizarPerfil'
+import { RegiaoToasts } from '@/shared/ui/Toasts'
 
 const { estado } = vi.hoisted(() => ({
   estado: {
@@ -28,7 +29,7 @@ vi.mock('@/features/usuario/useUsuarioAtual', () => ({
 }))
 
 function renderizar() {
-  return renderComRotas(<Route path="/perfil" element={<PerfilPage />} />, '/perfil')
+  return renderComRotas(<Route path="/perfil" element={<><RegiaoToasts /><PerfilPage /></>} />, '/perfil')
 }
 
 beforeEach(() => {
@@ -83,7 +84,7 @@ test('deveValidarFormatoDoRegistroConformeCategoria', async () => {
   await userEvent.selectOptions(screen.getByLabelText('UF do registro'), 'MG')
   await userEvent.click(screen.getByRole('button', { name: 'Salvar registro profissional' }))
 
-  expect(screen.getByRole('alert')).toHaveTextContent('Use o formato 123456-F')
+  expect(screen.getByLabelText('Número do registro')).toHaveAccessibleDescription(/Erro: Use o formato 123456-F/)
 })
 
 test('devePromoverParaProfissionalAoSalvarFormularioComSucesso', async () => {
@@ -107,9 +108,8 @@ test('devePromoverParaProfissionalAoSalvarFormularioComSucesso', async () => {
     uf: 'MG',
   })
 
-  expect(
-    await screen.findByText('Seu perfil agora é Profissional. Você já tem acesso à área de pacientes.'),
-  ).toBeInTheDocument()
+  const texto = await screen.findByText('Seu perfil agora é Profissional. Você já tem acesso à área de pacientes.')
+  expect(texto.closest('output')).toHaveTextContent('Perfil atualizado')
 })
 
 test('deveMostrarDadosDoProfissionalSemFormularioNemSeloDeVerificado', () => {
