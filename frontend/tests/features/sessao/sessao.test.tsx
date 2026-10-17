@@ -6,6 +6,7 @@ import { renderComRotas } from '../../renderComRotas'
 import { SessaoFormPage } from '@/features/sessao/SessaoFormPage'
 import * as api from '@/features/sessao/api'
 import * as apiAvaliacao from '@/features/avaliacao/api'
+import { RegiaoToasts } from '@/shared/ui/Toasts'
 
 vi.mock('@/features/usuario/useUsuarioAtual', () => ({
   CHAVE_USUARIO_ATUAL: ['usuario', 'me'],
@@ -45,7 +46,7 @@ const ANTERIOR: api.Sessao = {
 
 function renderizar() {
   return renderComRotas(
-    <Route element={<main><Outlet /></main>}>
+    <Route element={<><RegiaoToasts /><main><Outlet /></main></>}>
       <Route path="/pacientes/:id" element={<p>paciente</p>} />
       <Route path="/pacientes/:id/sessoes/nova" element={<SessaoFormPage />} />
     </Route>,
@@ -94,7 +95,7 @@ test('deveMostrarAUnidadeEmCadaParametro', () => {
   }
 })
 
-test('deveRevisarAntesDeSalvarEAnunciarAConfirmacao', async () => {
+test('deveRevisarAntesDeSalvarEVoltarAoPacienteComConfirmacao', async () => {
   const registrar = vi.spyOn(api, 'registrarSessao').mockResolvedValue(ANTERIOR)
   renderizar()
   const usuario = userEvent.setup()
@@ -110,7 +111,8 @@ test('deveRevisarAntesDeSalvarEAnunciarAConfirmacao', async () => {
 
   await waitFor(() => expect(registrar).toHaveBeenCalled())
   expect(registrar.mock.calls[0][1]).toMatchObject({ duracaoRealMin: 20, canais: [{ canal: 1, frequenciaHz: 80 }] })
-  expect((await screen.findByText(/^Sessão registrada./)).closest('output')).not.toBeNull()
+  expect(await screen.findByText('paciente')).toBeInTheDocument()
+  expect(screen.getByText('Sessão registrada').closest('output')).not.toBeNull()
 })
 
 test('deveVoltarDaRevisaoParaCorrigir', async () => {

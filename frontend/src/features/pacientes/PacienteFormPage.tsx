@@ -9,6 +9,7 @@ import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
 import { Dialogo } from '../../shared/ui/Dialogo'
 import { TelaCarregando } from '../../shared/ui/TelaCarregando'
+import { useToast } from '../../shared/ui/useToast'
 import { AvaliacoesDoPaciente } from '../avaliacao/AvaliacoesDoPaciente'
 import { SessoesDoPaciente } from '../sessao/SessoesDoPaciente'
 import { AvisoDadosFicticios } from './AvisoDadosFicticios'
@@ -61,6 +62,7 @@ export function PacienteFormPage() {
   const editando = Boolean(id)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { mostrar } = useToast()
   const [erroGeral, setErroGeral] = useState<string | null>(null)
   const [confirmarExclusao, setConfirmarExclusao] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
@@ -111,6 +113,7 @@ export function PacienteFormPage() {
       if (id) await atualizarPaciente(id, corpo)
       else await criarPaciente(corpo)
       await queryClient.invalidateQueries({ queryKey: CHAVE_PACIENTES })
+      mostrar({ tipo: 'sucesso', titulo: id ? 'Paciente atualizado' : 'Paciente cadastrado', texto: 'Os dados foram salvos.' })
       navigate('/pacientes')
     } catch (erro) {
       const lido = lerErroPaciente(erro)
@@ -136,6 +139,7 @@ export function PacienteFormPage() {
       // repetiria a chamada por segundos antes de liberar o redirecionamento. A lista rebusca sozinha.
       queryClient.removeQueries({ queryKey: [...CHAVE_PACIENTES, id] })
       void queryClient.invalidateQueries({ queryKey: CHAVE_PACIENTES })
+      mostrar({ tipo: 'sucesso', titulo: 'Paciente excluído', texto: 'O cadastro saiu da lista e será apagado de vez em 90 dias.' })
       navigate('/pacientes')
     } catch (erro) {
       setExcluindo(false)

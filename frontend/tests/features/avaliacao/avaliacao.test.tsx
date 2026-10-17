@@ -7,6 +7,7 @@ import { AvaliacaoFormPage } from '@/features/avaliacao/AvaliacaoFormPage'
 import { AvaliacoesDoPaciente } from '@/features/avaliacao/AvaliacoesDoPaciente'
 import * as api from '@/features/avaliacao/api'
 import * as apiPacientes from '@/features/pacientes/api'
+import { RegiaoToasts } from '@/shared/ui/Toasts'
 
 const AVALIACAO: api.Avaliacao = {
   id: 'av1',
@@ -37,7 +38,7 @@ const AVALIACAO: api.Avaliacao = {
 
 function renderizarForm(rota = '/pacientes/p1/avaliacoes/nova') {
   return renderComRotas(
-    <Route element={<main><Outlet /></main>}>
+    <Route element={<><RegiaoToasts /><main><Outlet /></main></>}>
       <Route path="/pacientes/:id" element={<p>paciente</p>} />
       <Route path="/pacientes/:id/avaliacoes/nova" element={<AvaliacaoFormPage />} />
       <Route path="/pacientes/:id/avaliacoes/:avaliacaoId" element={<AvaliacaoFormPage />} />
@@ -96,6 +97,8 @@ describe('formulário de avaliação', () => {
     await waitFor(() => expect(criar).toHaveBeenCalled())
     expect(criar.mock.calls[0][1]).toMatchObject({ dorEscala: null })
     expect(criar.mock.calls[0][1].triagem.GESTACAO).toBe('NAO_AVALIADO')
+    expect(await screen.findByText('paciente')).toBeInTheDocument()
+    expect(screen.getByText('Avaliação salva').closest('output')).not.toBeNull()
   })
 
   test('deveExigirLadoRegiaoEMetodoNoAchado', async () => {

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ChangeEvent, type ReactNode } from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { z } from 'zod'
 import { agoraLocal } from '../../shared/datas'
 import { Alerta } from '../../shared/ui/Alerta'
@@ -10,6 +10,7 @@ import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Campo, type CampoProps } from '../../shared/ui/Campo'
 import { CampoSelecao } from '../../shared/ui/CampoSelecao'
 import { CampoTextoLongo } from '../../shared/ui/CampoTextoLongo'
+import { useToast } from '../../shared/ui/useToast'
 import { ROTULO_LADO, type Lado } from '../avaliacao/api'
 import { MONTAGENS, type Lado as LadoDaPrancha } from '../atlas/montagens'
 import { AvisoDadosFicticios } from '../pacientes/AvisoDadosFicticios'
@@ -185,8 +186,10 @@ const pranchasDa = (modalidade: Valores['modalidade']) =>
 export function SessaoFormPage() {
   const { id: pacienteId = '' } = useParams()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const { mostrar } = useToast()
   const usuario = useUsuarioAtual()
-  const [etapa, setEtapa] = useState<'preencher' | 'revisar' | 'salva'>('preencher')
+  const [etapa, setEtapa] = useState<'preencher' | 'revisar'>('preencher')
   const [reaproveitado, setReaproveitado] = useState(false)
   const [erroGeral, setErroGeral] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
@@ -236,7 +239,8 @@ export function SessaoFormPage() {
     try {
       await registrarSessao(pacienteId, paraRequest(getValues(), checklist))
       await queryClient.invalidateQueries({ queryKey: chaveSessoes(pacienteId) })
-      setEtapa('salva')
+      mostrar({ tipo: 'sucesso', titulo: 'Sessão registrada', texto: 'Ela já aparece no histórico do paciente.' })
+      navigate(`/pacientes/${pacienteId}`)
     } catch (erro) {
       const resposta = (erro as { response?: { status?: number; data?: { erros?: Record<string, string> } } }).response
       const motivos = resposta?.status === 400 ? Object.values(resposta.data?.erros ?? {}) : []
@@ -257,16 +261,6 @@ export function SessaoFormPage() {
       </div>
       <AvisoDadosFicticios />
       <AvisoTriagem pacienteId={pacienteId} />
-
-      <output className="tf-sessao__confirmacao">
-        {etapa === 'salva' && (
-          <div className="tf-alert tf-alert--sucesso">
-            <p className="tf-alert__titulo">Sessão registrada.</p>
-            <p className="tf-alert__texto">Ela já aparece no histórico do paciente.</p>
-          </div>
-        )}
-      </output>
-      {etapa === 'salva' && <BotaoLink to={`/pacientes/${pacienteId}`}>Voltar ao paciente</BotaoLink>}
 
       {etapa === 'revisar' && (
         <Revisao

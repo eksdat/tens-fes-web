@@ -490,6 +490,169 @@
   color: var(--brand-strong);
 }
 
+/*
+ * Toast: resultado de uma ação. Logo abaixo do cabeçalho, nunca no rodapé (teclado e abas do celular).
+ * Largura total no celular e com zoom alto; canto superior direito a partir de 880 px.
+ */
+.tf-toasts {
+  position: fixed;
+  z-index: 25;
+  top: calc(56px + var(--space-2));
+  left: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  gap: var(--space-3);
+  pointer-events: none;
+}
+
+.tf-toasts__lista {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tf-toasts__lista:empty {
+  display: none;
+}
+
+.tf-toast {
+  --faixa: var(--brand);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3) var(--space-1) var(--space-3) var(--space-4);
+  background: var(--surface-200);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--faixa);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+  pointer-events: auto;
+  animation: tf-toast-entrada 0.18s ease-out;
+  --icon-knock: var(--surface-200);
+}
+
+.tf-toast .tf-icon {
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  color: var(--faixa);
+}
+
+.tf-toast__titulo {
+  font: 700 var(--fs-base) / 1.5 var(--font-sans);
+}
+
+.tf-toast__texto {
+  font: 400 var(--fs-base) / 1.5 var(--font-sans);
+}
+
+.tf-toast__acao {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  margin-top: var(--space-1);
+  padding: 0 var(--space-1);
+  background: none;
+  border: 0;
+  color: var(--brand-strong);
+  font: 700 var(--fs-base) / 1.5 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.tf-toast__fechar {
+  display: grid;
+  place-items: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tf-toast__fechar svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: square;
+}
+
+.tf-toast__fechar:hover,
+.tf-toast__acao:hover {
+  background: var(--brand-tint);
+}
+
+.tf-toast__fechar:focus-visible,
+.tf-toast__acao:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.tf-toast--erro {
+  --faixa: var(--danger);
+}
+
+.tf-toast--atencao {
+  --faixa: var(--warning);
+}
+
+.tf-toast--info {
+  --faixa: var(--info);
+}
+
+/* Mais contraste: borda e faixa mais grossas, sem sombra e título sublinhado. */
+:root[data-contraste='alto'] .tf-toast {
+  border-width: 3px;
+  border-left-width: 12px;
+  box-shadow: none;
+}
+
+:root[data-contraste='alto'] .tf-toast__titulo {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (forced-colors: active) {
+  .tf-toast {
+    border-width: 3px;
+    border-left-width: 12px;
+    box-shadow: none;
+  }
+
+  .tf-toast__titulo {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+
+@keyframes tf-toast-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 880px) {
+  .tf-toasts {
+    top: calc(64px + var(--space-3));
+    left: auto;
+    right: var(--space-4);
+    width: min(420px, calc(100vw - 2 * var(--space-4)));
+  }
+}
+
 /* Layout das telas de autenticação: mobile primeiro */
 .tf-auth {
   min-height: 100vh;

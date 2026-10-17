@@ -11,6 +11,7 @@ import { Campo } from '../../shared/ui/Campo'
 import { CampoSelecao } from '../../shared/ui/CampoSelecao'
 import { CampoTextoLongo } from '../../shared/ui/CampoTextoLongo'
 import { TelaCarregando } from '../../shared/ui/TelaCarregando'
+import { useToast } from '../../shared/ui/useToast'
 import { buscarPaciente, CHAVE_PACIENTES } from '../pacientes/api'
 import { AvisoDadosFicticios } from '../pacientes/AvisoDadosFicticios'
 import {
@@ -149,6 +150,7 @@ export function AvaliacaoFormPage() {
   const editando = Boolean(avaliacaoId)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { mostrar } = useToast()
   const [erroGeral, setErroGeral] = useState<string | null>(null)
 
   const existente = useQuery({
@@ -205,6 +207,7 @@ export function AvaliacaoFormPage() {
       if (avaliacaoId) await atualizarAvaliacao(pacienteId, avaliacaoId, corpo)
       else await criarAvaliacao(pacienteId, corpo)
       await queryClient.invalidateQueries({ queryKey: chaveAvaliacoes(pacienteId) })
+      mostrar({ tipo: 'sucesso', titulo: 'Avaliação salva', texto: 'Ela já aparece no histórico do paciente.' })
       navigate(`/pacientes/${pacienteId}`)
     } catch (erro) {
       const campos = (erro as { response?: { status?: number; data?: { erros?: Record<string, string> } } }).response

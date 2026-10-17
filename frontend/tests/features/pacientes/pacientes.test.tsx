@@ -8,6 +8,7 @@ import { PacienteFormPage } from '@/features/pacientes/PacienteFormPage'
 import * as api from '@/features/pacientes/api'
 import * as apiAvaliacao from '@/features/avaliacao/api'
 import * as apiSessao from '@/features/sessao/api'
+import { RegiaoToasts } from '@/shared/ui/Toasts'
 
 const MARIA: api.Paciente = {
   id: 'a1',
@@ -115,7 +116,7 @@ describe('lista de pacientes', () => {
 describe('formulário de paciente', () => {
   function renderizarForm(rota = '/pacientes/novo') {
     return renderComRotas(
-      <Route element={<main><Outlet /></main>}>
+      <Route element={<><RegiaoToasts /><main><Outlet /></main></>}>
         <Route path="/pacientes" element={<p>lista</p>} />
         <Route path="/pacientes/novo" element={<PacienteFormPage />} />
         <Route path="/pacientes/:id" element={<PacienteFormPage />} />
@@ -149,6 +150,9 @@ describe('formulário de paciente', () => {
       }),
     )
     expect(await screen.findByText('lista')).toBeInTheDocument()
+    const toast = screen.getByText('Paciente cadastrado').closest('output')
+    expect(toast).not.toBeNull()
+    expect(toast).not.toHaveTextContent('Maria')
   })
 
   test('deveMostrarErroDosCamposObrigatorios', async () => {
@@ -295,6 +299,7 @@ describe('formulário de paciente', () => {
 
     await waitFor(() => expect(excluir).toHaveBeenCalledWith('a1'))
     expect(await screen.findByText('lista')).toBeInTheDocument()
+    expect(screen.getByText('Paciente excluído').closest('output')).not.toBeNull()
   })
 
   test('deveSerAcessivelSemViolacoes', async () => {
