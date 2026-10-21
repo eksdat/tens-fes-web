@@ -51,7 +51,7 @@ Documentos de origem (fora deste repositório, pasta `docs/` do projeto): `Proto
 | Aparelho 3D | react-three-fiber *(a adicionar, card próprio)* | Hoje: desenho do painel + lista textual de controles |
 | Tipos da API | `openapi-typescript` | Gerados do contrato do backend |
 | Lint | oxlint com plugin `jsx-a11y` | Lint rápido + regras de acessibilidade |
-| Testes | Vitest + Testing Library + jsdom; `vitest-axe`; Playwright *(a adicionar)* | Unitário, componente, a11y, e2e |
+| Testes | Vitest + Testing Library + jsdom; `vitest-axe`; Playwright + `@axe-core/playwright` | Unitário, componente, a11y, e2e |
 | Deploy | Firebase Hosting (Spark) | Guia em [DEPLOY.md](../DEPLOY.md) |
 
 > A doc de arquitetura cita ESLint + `eslint-plugin-jsx-a11y`. O template atual do Vite traz **oxlint**, que tem o mesmo conjunto de regras `jsx-a11y`. Ficamos com o oxlint para não manter dois linters.
@@ -119,6 +119,9 @@ Toda variável com prefixo `VITE_` vai para o bundle e **fica pública** no nave
 | `npm run lint` | oxlint (inclui regras de acessibilidade) |
 | `npm test` | Vitest, uma execução |
 | `npx vitest` | Vitest em modo watch |
+| `npx playwright install chromium` | Uma vez por máquina: baixa o navegador dos testes ponta a ponta |
+| `npm run e2e` | Testes ponta a ponta (Playwright) no build de produção, sem backend e sem Supabase |
+| `npx playwright test --ui` | Os mesmos testes com a janela do Playwright, passo a passo |
 | `npm run api:types` | Gera `src/shared/api/schema.d.ts` a partir de `http://localhost:8080/v3/api-docs` (backend precisa estar rodando) |
 
 ---
@@ -172,6 +175,7 @@ flowchart TB
 ```text
 frontend/
 ├── index.html, package.json, vite.config.ts (alias @/ e config do Vitest)
+├── playwright.config.ts         # testes ponta a ponta: build com endereços falsos, computador e celular (360 px)
 ├── firebase.json, .firebaserc   # Firebase Hosting (ver DEPLOY.md)
 ├── docs/design-system/          # guia visual e capturas
 ├── public/favicon.svg
@@ -205,7 +209,8 @@ frontend/
 │       ├── pacientes/           # PacientesPage, PacienteFormPage, api.ts, formatar.ts, AvisoDadosFicticios
 │       ├── avaliacao/           # AvaliacaoFormPage, AvaliacoesDoPaciente, api.ts
 │       └── sessao/              # SessaoFormPage, SessoesDoPaciente, AvisoTriagem, api.ts
-└── tests/                       # espelha src/ (alias @/); setup.ts, renderComRotas.tsx
+├── tests/                       # espelha src/ (alias @/); setup.ts, renderComRotas.tsx
+└── e2e/                         # testes ponta a ponta; apoio/ tem o Supabase e a API falsos e os dados fictícios
 ```
 
 Regras de cada módulo (o que faz, regras de negócio, erros comuns) ficam em `agent_docs/modulos/` do vault: `pacientes.md`, `avaliacao.md`, `sessao.md`, `simulador.md`, `atlas-eletrodos.md`, `modulos-tens-fes.md`. Este README só aponta os caminhos.
@@ -452,7 +457,7 @@ Meta: **WCAG 2.2 AA**. Testes automáticos com `vitest-axe`; teste com leitor de
 |---|---|---|
 | Unitário / componente | Vitest + Testing Library + jsdom | `tests/**/*.test.tsx` |
 | Acessibilidade automática | `vitest-axe` | nos testes de componente |
-| End-to-end | Playwright *(a adicionar)* | `e2e/` |
+| End-to-end | Playwright + `@axe-core/playwright` | `e2e/*.spec.ts` |
 
 Regras:
 
@@ -462,7 +467,33 @@ Regras:
 - Sem dependência de ordem, relógio real ou rede. Chamadas HTTP mockadas.
 - `tests/setup.ts` limpa o DOM e o `localStorage` depois de cada teste.
 
-Hoje: 42 arquivos de teste, cerca de 530 testes (`npm test`). Cálculos do simulador e máscaras têm testes de função pura (`tests/features/simulador/tracado.test.ts`, `calculos.test.ts`, `pacientes/formatar.test.ts`).
+Hoje: 44 arquivos de teste, cerca de 560 testes (`npm test`). Cálculos do simulador e máscaras têm testes de função pura (`tests/features/simulador/tracado.test.ts`, `calculos.test.ts`, `pacientes/formatar.test.ts`).
+
+### Testes ponta a ponta
+
+Abrem o site num Chromium de verdade e fazem o caminho que a pessoa faz, do login até salvar. Não precisam de
+backend, Supabase nem `.env`:
+
+- O `playwright.config.ts` gera um build com `VITE_API_URL` e `VITE_SUPABASE_URL` apontando para endereços que não
+  existem (`e2e/apoio/enderecos.ts`) e serve esse build na porta 4180.
+- `e2e/apoio/supabaseFalso.ts` responde o Supabase Auth (login, cadastro, link do e-mail, código do autenticador) e
+  `e2e/apoio/apiFalsa.ts` responde a API com as mesmas regras de acesso do backend (`/pacientes/**` só para
+  PROFISSIONAL). Tudo em memória: cada teste começa do zero.
+- Contas são as personas do grupo (Sininho, Peter Pan e Capitão Gancho) e os pacientes são fictícios
+  (`e2e/apoio/dados.ts`).
+- O teste falha se a tela fizer uma chamada que os falsos não conhecem ou se der erro de JavaScript.
+- Cada teste roda duas vezes: computador e celular com 360 px de largura (definição de pronto).
+
+| Arquivo | Fluxos |
+|---|---|
+| `acesso.spec.ts` | Rota protegida, senha errada, login do estudante, estudante fora de Pacientes, recarregar, sair |
+| `cadastro.spec.ts` | Criar conta, link de confirmação, completar cadastro, e-mail não confirmado, aceite dos termos |
+| `estudo.spec.ts` | Conteúdo pendente e aprovado, abas de TENS e FES, atlas, parâmetros → simulador, limite do aparelho |
+| `profissional.spec.ts` | Código do autenticador, paciente → avaliação → sessão com checklist, identificador repetido, busca |
+| `acessibilidade.spec.ts` | Uso só com teclado, "Pular para o conteúdo" e axe (WCAG 2.2 AA) nas telas principais |
+
+No CI, o job "Testes ponta a ponta" do `frontend.yml` roda em todo PR. Se falhar, o relatório fica nos artefatos da
+execução (`relatorio-ponta-a-ponta`); abra com `npx playwright show-report <pasta>`.
 
 ---
 
@@ -539,6 +570,7 @@ Pronto (ver `agent_docs/modulos/` para o detalhe de cada um):
 - Simulador (modo explorar): osciloscópio ao vivo com câmera lenta, modos contínuos, Burst e FES síncrono/recíproco, mensagens do guia.
 - Pacientes, avaliação inicial e registro de sessão, com validação no formulário e no backend.
 - Acessibilidade: botão flutuante, anúncios, `vitest-axe` nos testes de tela.
+- Testes ponta a ponta (Playwright) dos fluxos principais, no computador e no celular, rodando em todo PR.
 
 Pendente:
 
@@ -548,5 +580,5 @@ Pendente:
 - Tipos de pacientes, avaliação, sessão, simulador e página técnica escritos à mão em `features/*/api.ts`: rodar `npm run api:types` com o backend no ar e trocar pelos tipos gerados.
 - Criar conteúdo, revisão, biblioteca, dicionário em tela própria, casos para a IA, evolução e relatório do paciente.
 - Revisão jurídica/LGPD dos Termos e da Política (texto preliminar).
-- Teste com leitor de tela real; Playwright; CI do frontend.
+- Teste com leitor de tela real (NVDA e TalkBack).
 - `openapi-typescript` roda por `npx` (pede TypeScript 5).
