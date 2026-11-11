@@ -201,6 +201,7 @@ Como pegar a conexão:
 | `V10__sessao` | `sessao`, `sessao_canal`, `sessao_checklist` |
 | `V11__paciente_sem_telefone` | Remove o telefone do paciente (minimização) |
 | `V12__sessao_checklist_codigo` | Itens do checklist da sessão passam a código fixo |
+| `V13__revisao_conteudo` | Autor, revisor e motivo da devolução no `conteudo`; o autor não revisa o próprio texto (`CHECK`) |
 
 Tabelas, colunas e índices: `agent_docs/database.md` no vault do projeto.
 
@@ -263,6 +264,9 @@ Regras de desenho:
 | `GET /conteudos?modalidade=` | com perfil | Conteúdos `APROVADO` |
 | `GET /conteudos/pagina?modalidade=&secao=` | com perfil | Página técnica padrão: blocos na ordem, `liberada` |
 | `GET /conteudos/{id}` | com perfil | Um conteúdo aprovado |
+| `GET /revisao/conteudos` | REVISOR + aal2 | Fila de revisão: conteúdos `EM_REVISAO` na ordem do site |
+| `POST /revisao/conteudos/{id}/aprovar` | REVISOR + aal2 | `APROVADO`, com revisor e data de revisão (fuso de Brasília) |
+| `POST /revisao/conteudos/{id}/devolver` | REVISOR + aal2 | Volta para `RASCUNHO` com `motivo` (obrigatório, até 500) |
 | `GET /parametros?busca=` | com perfil | Dicionário de parâmetros |
 | `GET /parametros/faixas?modalidade=` | com perfil | Faixas educativas e do aparelho por modo |
 | `GET /pacientes?busca=&ordenar=&direcao=&pagina=&tamanho=` | PROFISSIONAL + aal2 | Pacientes do responsável, paginados |
@@ -279,6 +283,7 @@ Regras de cada módulo (campos, validações, erros comuns): `agent_docs/modulos
 - Todo o resto exige autenticação.
 - `@EnableMethodSecurity` ativa `@PreAuthorize` nos controllers.
 - `/api/v1/pacientes/**` exige `PROFISSIONAL` **e** sessão `aal2` (MFA) no token (`SESSAO_COM_MFA`); sem MFA, 403.
+- `/api/v1/revisao/**` exige `REVISOR` **e** sessão `aal2`.
 - `AuditoriaConfig` preenche `criado_por` e `alterado_por` com o `sub` do token.
 - CORS liberado só para `/api/**` e para as origens de `CORS_ALLOWED_ORIGINS`.
 - O JWT é validado pelo resource server do Spring (chaves públicas do Supabase); o perfil vem do banco (`PerfilJwtConverter`).
@@ -338,7 +343,7 @@ Regras obrigatórias no backend:
 2. Todo acesso a paciente, avaliação ou sessão confere `paciente.responsavelId == sub do token`. Se falhar, responde **404**, não 403. Assim não revela que o registro existe. O ponto único dessa verificação é `PacienteService.buscarDoResponsavel` (`findByIdAndResponsavelId`).
 3. Paciente não é usuário: sem login, sem conta.
 4. Registro profissional digitado (CREFITO etc.) **não** gera selo de "verificado".
-5. Só usuário com `revisor = true` (PROFISSIONAL) aprova material, e nunca o próprio. `revisor` não muda por endpoint: liga-se no banco para pessoas conhecidas (docente).
+5. Só usuário com `revisor = true` (PROFISSIONAL) aprova ou devolve conteúdo, e nunca o próprio (`RevisaoConteudoService`, 403). `revisor` não muda por endpoint: liga-se no banco para pessoas conhecidas (docente).
 6. `Anexo`: só PDF e imagem, até 10 MB.
 7. Senha, e-mail, redefinição de senha e MFA ficam no Supabase Auth. Nossa tabela `usuario` não guarda e-mail nem senha. Perfil nunca no `user_metadata`. Regras de campo e validações em [SEGURANCA.md](../SEGURANCA.md) e no "Cadastro" abaixo.
 8. Até as políticas LGPD estarem definidas: **somente dados fictícios**.
@@ -469,6 +474,9 @@ classDiagram
         +String referencias
         +EstadoEditorial estado
         +LocalDate dataRevisao
+        +UUID autorId
+        +UUID revisorId
+        +String motivoDevolucao
     }
     class ParametroDicionario {
         +Long id
@@ -514,7 +522,7 @@ Planejado, sem código ainda: `Aparelho` e `Controle`, `PranchaAtlas`, `CasoPrat
 - `CasoPratica` = os casos fictícios do simulador. `CasoClinico` = caso que o estudante envia para a IA.
 - `Material` é criado por usuário. Aprovado, vira `Conteudo` publicado.
 
-Fluxo editorial de `Material`/`Conteudo` (hoje o `Conteudo` só muda de estado direto no banco):
+Fluxo editorial de `Material`/`Conteudo`. Aprovar e devolver já passam pela API (`/api/v1/revisao/conteudos`); enviar para revisão chega com o card de material de estudo, e arquivar ainda não tem endpoint:
 
 ```mermaid
 stateDiagram-v2
@@ -681,6 +689,7 @@ Estado: 135 testes, todos verdes (`.\mvnw.cmd test`, 2026-10-16). Uma classe de 
 | `SessaoIntegracaoTest` | Blocos obrigatórios, canal repetido, limite físico dos parâmetros, checklist só por código, ordem da lista, 404 entre profissionais |
 | `UsuarioIntegracaoTest` | Cadastro, 409, `CHECK` do banco, troca para profissional, aceite e versão dos termos, 403 sem cadastro ou inativo |
 | `ConteudoIntegracaoTest`, `ParametroDicionarioIntegracaoTest`, `FaixaParametroIntegracaoTest` | Seeds, só `APROVADO`, página técnica, faixas por modo |
+| `RevisaoConteudoIntegracaoTest` | Fila só `EM_REVISAO`, aprovação grava revisor e data, devolução com motivo, página liberada com os 5 blocos aprovados, 403 para o autor, 409 para aprovação repetida, 403 sem `REVISOR` ou sem `aal2` |
 | `RestricaoPorPerfilTest`, `RestricaoPorPerfilIntegracaoTest` | 401, 403 por perfil e sem MFA |
 | `SwaggerIntegracaoTest` | Swagger desligado por padrão |
 | Unitários (`*ServiceTest`, `*ControllerTest`, `PerfilJwtConverterTest`, `CadastroRequestTest`, `GlobalExceptionHandlerTest`) | Regras sem banco e formato dos erros |
@@ -782,8 +791,8 @@ Pronto:
 Pendente:
 
 - Backend de aparelho, atlas e casos do simulador (hoje dados estáticos no frontend).
-- Fluxo editorial pela API (material, anexo, aprovação por revisor ≠ autor). Hoje o `Conteudo` muda de estado direto no banco e o seed está todo `EM_REVISAO`.
-- Testes de segurança que faltam: assinatura inválida ou token expirado, autor aprovando o próprio material, upload ([SEGURANCA.md](../SEGURANCA.md), seção 8).
+- Fluxo editorial do material de estudo (criar, anexar, enviar para revisão) e arquivar conteúdo. A revisão (aprovar e devolver) já existe; falta a docente receber `revisor = true` no banco e aprovar o seed, que está todo `EM_REVISAO`.
+- Testes de segurança que faltam: assinatura inválida ou token expirado, upload ([SEGURANCA.md](../SEGURANCA.md), seção 8).
 - Limite de requisições na API.
 - Domínio próprio e deploy automático do frontend (DEPLOY.md, seção 5).
 - Spring AI e pgvector (entram com o assistente).
