@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test'
-import { FAIXAS, paginaAprovada, type Conta } from './dados'
+import { conteudosIniciais, FAIXAS, type Conta, type ConteudoFalso } from './dados'
 import { URL_API } from './enderecos'
 import { lerCorpo, liberarPreflight, responder } from './http'
 import type { SupabaseFalso } from './supabaseFalso'
@@ -15,26 +15,45 @@ type Sessao = DadosSessao & { id: string; pacienteId: string }
 
 const agora = () => new Date().toISOString()
 
+/** Data de hoje em Brasília (aaaa-mm-dd), como o RelogioConfig do backend. */
+const hojeEmBrasilia = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+
+const ORDEM = {
+  modalidade: ['TENS', 'NMES', 'FES'],
+  secao: ['VISAO_GERAL', 'APARELHO', 'ELETRODOS', 'PARAMETROS', 'SEGURANCA', 'CASOS'],
+  bloco: ['O_QUE_E', 'PARA_QUE_SERVE', 'COMO_INTERPRETAR', 'EXEMPLO', 'CUIDADOS', null],
+}
+
+/** Mesma ordem do site (RevisaoConteudoService): módulo, aba, bloco (sem bloco por último) e id. */
+const ordemDoSite = (a: ConteudoFalso, b: ConteudoFalso) =>
+  ORDEM.modalidade.indexOf(a.modalidade) - ORDEM.modalidade.indexOf(b.modalidade) ||
+  ORDEM.secao.indexOf(a.secao) - ORDEM.secao.indexOf(b.secao) ||
+  ORDEM.bloco.indexOf(a.bloco) - ORDEM.bloco.indexOf(b.bloco) ||
+  a.id - b.id
+
 /**
  * Faz o papel do backend (/api/v1) com as mesmas regras de acesso: sem token, 401; paciente, avaliação e sessão só
- * para PROFISSIONAL (403) e só os pacientes do próprio profissional. Tudo em memória, um estado por teste.
+ * para PROFISSIONAL (403) e só os pacientes do próprio profissional; revisão só para REVISOR. Tudo em memória, um
+ * estado por teste.
  */
 export class ApiFalsa {
   readonly pacientes: Paciente[] = []
   readonly avaliacoes: Avaliacao[] = []
   readonly sessoes: Sessao[] = []
+  readonly conteudos: ConteudoFalso[] = conteudosIniciais()
   /** Chamadas que este falso não sabe responder. O teste falha se sobrar alguma. */
   readonly naoAtendidas: string[] = []
-  private readonly paginasAprovadas = new Set<string>()
   private readonly supabase: SupabaseFalso
 
   constructor(supabase: SupabaseFalso) {
     this.supabase = supabase
   }
 
-  /** Simula a revisão docente concluída para uma aba do módulo. */
+  /** Simula a revisão docente concluída para uma aba do módulo: os cinco blocos aprovados em 15/10/2026. */
   aprovarPagina(modalidade: string, secao: string) {
-    this.paginasAprovadas.add(`${modalidade}/${secao}`)
+    for (const c of this.blocosDaPagina(modalidade, secao)) {
+      Object.assign(c, { estado: 'APROVADO', dataRevisao: '2026-10-15' })
+    }
   }
 
   /** Paciente que o profissional já tinha cadastrado antes do teste. */
@@ -64,6 +83,12 @@ export class ApiFalsa {
     if (rota === 'GET /conteudos/pagina') return this.pagina(route, url.searchParams)
     if (rota === 'GET /parametros/faixas') return responder(route, 200, FAIXAS[url.searchParams.get('modalidade') ?? ''] ?? [])
 
+    if (caminho.startsWith('/revisao/conteudos')) {
+      // Mesma barreira do SecurityConfig: só REVISOR (docente).
+      if (!conta.revisor) return this.problema(route, 403, 'Acesso negado.')
+      return this.revisao(route, caminho)
+    }
+
     if (caminho.startsWith('/pacientes')) {
       // Mesma barreira do SecurityConfig: estudante não entra em /pacientes/**.
       if (conta.perfil !== 'PROFISSIONAL' || conta.semCadastro) return this.problema(route, 403, 'Acesso negado.')
@@ -83,11 +108,48 @@ export class ApiFalsa {
     return responder(route, 201, usuarioDaApi(conta))
   }
 
+  private blocosDaPagina(modalidade: string, secao: string) {
+    return this.conteudos.filter((c) => c.modalidade === modalidade && c.secao === secao && c.bloco)
+  }
+
+  /** Igual ao ConteudoService.paginaTecnica: só abre com os cinco blocos aprovados. */
   private pagina(route: Route, params: URLSearchParams) {
     const modalidade = params.get('modalidade') ?? ''
     const secao = params.get('secao') ?? ''
-    if (this.paginasAprovadas.has(`${modalidade}/${secao}`)) return responder(route, 200, paginaAprovada(modalidade, secao))
-    return responder(route, 200, { modalidade, secao, liberada: false, blocos: [], referencias: [], dataRevisao: null })
+    const blocos = this.blocosDaPagina(modalidade, secao).sort(ordemDoSite)
+    if (blocos.length !== 5 || blocos.some((c) => c.estado !== 'APROVADO')) {
+      return responder(route, 200, { modalidade, secao, liberada: false, blocos: [], referencias: [], dataRevisao: null })
+    }
+    return responder(route, 200, {
+      modalidade,
+      secao,
+      liberada: true,
+      blocos: blocos.map(({ bloco, titulo, corpo, referencias }) => ({ bloco, titulo, corpo, referencias })),
+      referencias: [...new Set(blocos.map((c) => c.referencias).filter(Boolean))],
+      dataRevisao: blocos.map((c) => c.dataRevisao ?? '').sort().at(-1),
+    })
+  }
+
+  private revisao(route: Route, caminho: string) {
+    const metodo = route.request().method()
+    if (caminho === '/revisao/conteudos' && metodo === 'GET') {
+      return responder(route, 200, this.conteudos.filter((c) => c.estado === 'EM_REVISAO').sort(ordemDoSite))
+    }
+
+    const [, id, acao] = caminho.match(/^\/revisao\/conteudos\/(\d+)\/(aprovar|devolver)$/) ?? []
+    const conteudo = this.conteudos.find((c) => c.id === Number(id))
+    if (!acao || metodo !== 'POST') return this.naoSimulada(route, `${metodo} ${caminho}`)
+    if (!conteudo) return this.problema(route, 404, 'Conteúdo não encontrado.')
+    if (conteudo.estado !== 'EM_REVISAO') return this.problema(route, 409, 'Este conteúdo não está mais em revisão.')
+
+    if (acao === 'aprovar') {
+      Object.assign(conteudo, { estado: 'APROVADO', dataRevisao: hojeEmBrasilia(), motivoDevolucao: null })
+      return responder(route, 200, conteudo)
+    }
+    const motivo = String(lerCorpo(route).motivo ?? '').trim()
+    if (!motivo) return this.problema(route, 400, 'Dados inválidos.', { motivo: 'Escreva o motivo da devolução.' })
+    Object.assign(conteudo, { estado: 'RASCUNHO', motivoDevolucao: motivo })
+    return responder(route, 200, conteudo)
   }
 
   private pacientesDe(route: Route, conta: Conta, caminho: string, params: URLSearchParams) {
@@ -200,7 +262,8 @@ export class ApiFalsa {
 
 function usuarioDaApi(conta: Conta) {
   const { id, nome, perfil, instituicao, periodo, categoria, registro, uf } = conta
-  return { id, nome, perfil, revisor: false, instituicao, periodo, categoria, registro, uf, termosPendentes: false }
+  const revisor = conta.revisor ?? false
+  return { id, nome, perfil, revisor, instituicao, periodo, categoria, registro, uf, termosPendentes: false }
 }
 
 /** Página de pacientes com busca por nome ou identificador, ordenada pela coluna pedida. */

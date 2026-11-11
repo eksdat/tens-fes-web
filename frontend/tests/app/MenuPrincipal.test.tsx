@@ -6,14 +6,14 @@ import { renderComRotas } from '../renderComRotas'
 import { MenuPrincipal } from '@/app/MenuPrincipal'
 
 const { estado, sair } = vi.hoisted(() => ({
-  estado: { perfil: 'ESTUDANTE' as 'ESTUDANTE' | 'PROFISSIONAL' },
+  estado: { perfil: 'ESTUDANTE' as 'ESTUDANTE' | 'PROFISSIONAL', revisor: false },
   sair: vi.fn(),
 }))
 
 vi.mock('@/shared/auth/useAuth', () => ({ useAuth: () => ({ sair }) }))
 vi.mock('@/features/usuario/useUsuarioAtual', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/usuario/useUsuarioAtual')>()),
-  useUsuarioAtual: () => ({ data: { nome: 'Ana Souza', perfil: estado.perfil } }),
+  useUsuarioAtual: () => ({ data: { nome: 'Ana Souza', perfil: estado.perfil, revisor: estado.revisor } }),
 }))
 
 const ABAS = [
@@ -33,6 +33,7 @@ function renderizarComAbasPadrao(rota = '/') {
 beforeEach(() => {
   vi.clearAllMocks()
   estado.perfil = 'ESTUDANTE'
+  estado.revisor = false
 })
 
 test('deveExporOMenuComoNavegacaoPrincipal', () => {
@@ -125,6 +126,17 @@ test('deveOferecerMeuPerfilDentroDoMenuDaConta', async () => {
 
   expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toHaveAttribute('href', '/perfil')
   expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Meu perfil', 'Sair'])
+})
+
+test('deveOferecerARevisaoDeConteudoSoParaRevisor', async () => {
+  estado.perfil = 'PROFISSIONAL'
+  estado.revisor = true
+  renderizarComAbasPadrao()
+
+  await userEvent.click(screen.getByRole('button', { name: /Ana Souza/ }))
+
+  expect(screen.getByRole('menuitem', { name: 'Revisar conteúdo' })).toHaveAttribute('href', '/revisao')
+  expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Revisar conteúdo', 'Meu perfil', 'Sair'])
 })
 
 test('deveSairDaContaAoEscolherSair', async () => {

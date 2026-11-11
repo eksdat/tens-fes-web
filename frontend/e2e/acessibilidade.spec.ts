@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from './apoio/fixtures'
-import { GANCHO, PETER_PAN, SININHO } from './apoio/dados'
+import { GANCHO, PETER_PAN, SININHO, WENDY } from './apoio/dados'
 
 // Peter Pan usa só teclado e leitor de tela. Meta do projeto: WCAG 2.2 nível AA.
 
@@ -82,4 +82,12 @@ test.describe('telas sem violações de acessibilidade', () => {
       expect(await violacoes(page)).toEqual([])
     })
   }
+
+  test('deveCumprirAWcagNaTela /revisao da revisora', async ({ page, entrarComo }) => {
+    await entrarComo(WENDY)
+    await page.goto('/revisao')
+    await expect(page.getByRole('heading', { name: 'O que é TENS' })).toBeVisible()
+
+    expect(await violacoes(page)).toEqual([])
+  })
 })
