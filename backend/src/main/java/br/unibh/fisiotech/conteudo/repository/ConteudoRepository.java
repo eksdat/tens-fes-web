@@ -18,4 +18,6 @@ public interface ConteudoRepository extends JpaRepository<Conteudo, Long> {
     Optional<Conteudo> findByIdAndEstado(Long id, EstadoEditorial estado);
 
     List<Conteudo> findByModalidadeAndSecaoAndBlocoIsNotNull(Modalidade modalidade, Secao secao);
+
+    List<Conteudo> findByEstado(EstadoEditorial estado);
 }
