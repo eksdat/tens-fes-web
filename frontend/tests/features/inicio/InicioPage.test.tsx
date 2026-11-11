@@ -60,10 +60,10 @@ test('deveOferecerUmaAcaoPrincipalNoDestaque', () => {
   expect(screen.getByRole('link', { name: 'Começar pelo TENS' })).toHaveAttribute('href', '/tens')
 })
 
-test('deveManterOAtalhoDaVerificacaoEmDuasEtapas', () => {
+test('naoDeveMostrarAVerificacaoEmDuasEtapasNoInicio', () => {
   renderizar()
 
-  expect(screen.getByRole('link', { name: 'Verificação em duas etapas' })).toHaveAttribute('href', '/mfa/ativar')
+  expect(screen.queryByRole('link', { name: 'Verificação em duas etapas' })).not.toBeInTheDocument()
 })
 
 test('deveLevarAoSimuladorPelasFerramentas', () => {
