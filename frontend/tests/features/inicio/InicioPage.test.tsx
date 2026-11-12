@@ -4,12 +4,17 @@ import { axe } from 'vitest-axe'
 import { InicioPage } from '@/features/inicio/InicioPage'
 import { renderComRotas } from '../../renderComRotas'
 
-vi.mock('@/features/usuario/useUsuarioAtual', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/features/usuario/useUsuarioAtual')>()),
-  useUsuarioAtual: () => ({ data: { nome: 'Ana Souza Lima', perfil: 'ESTUDANTE' } }),
+const { estado } = vi.hoisted(() => ({
+  estado: { usuario: { nome: 'Ana Souza Lima', perfil: 'ESTUDANTE' as 'ESTUDANTE' | 'PROFISSIONAL' } },
 }))
 
-function renderizar() {
+vi.mock('@/features/usuario/useUsuarioAtual', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/usuario/useUsuarioAtual')>()),
+  useUsuarioAtual: () => ({ data: estado.usuario }),
+}))
+
+function renderizar(perfil: 'ESTUDANTE' | 'PROFISSIONAL' = 'ESTUDANTE') {
+  estado.usuario = { nome: 'Ana Souza Lima', perfil }
   return renderComRotas(
     <Route
       path="*"
@@ -21,6 +26,11 @@ function renderizar() {
     />,
     '/',
   )
+}
+
+function linksDosAtalhos() {
+  const atalhos = within(screen.getByRole('region', { name: 'Atalhos' }))
+  return atalhos.getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])
 }
 
 test('deveTerUmSoTituloDePrimeiroNivel', () => {
@@ -47,17 +57,11 @@ test('deveListarOsDoisModulosComNumeroETitulo', () => {
   expect(modulos.getByRole('heading', { name: 'Movimento e função' })).toBeInTheDocument()
 })
 
-test('deveLevarCadaCartaoParaOSeuModulo', () => {
-  renderizar()
+test.each(['ESTUDANTE', 'PROFISSIONAL'] as const)('deveLevarCadaCartaoParaOSeuModulo (%s)', (perfil) => {
+  renderizar(perfil)
 
   expect(screen.getByRole('link', { name: 'Estudar TENS' })).toHaveAttribute('href', '/tens')
   expect(screen.getByRole('link', { name: 'Estudar FES' })).toHaveAttribute('href', '/fes')
-})
-
-test('deveOferecerUmaAcaoPrincipalNoDestaque', () => {
-  renderizar()
-
-  expect(screen.getByRole('link', { name: 'Começar pelo TENS' })).toHaveAttribute('href', '/tens')
 })
 
 test('deveManterOAtalhoDaVerificacaoEmDuasEtapas', () => {
@@ -66,15 +70,50 @@ test('deveManterOAtalhoDaVerificacaoEmDuasEtapas', () => {
   expect(screen.getByRole('link', { name: 'Verificação em duas etapas' })).toHaveAttribute('href', '/mfa/ativar')
 })
 
-test('deveLevarAoSimuladorPelasFerramentas', () => {
-  renderizar()
+describe('estudante', () => {
+  test('deveComecarPeloTensNoDestaque', () => {
+    renderizar('ESTUDANTE')
 
-  const ferramentas = screen.getByRole('region', { name: 'Ferramentas' })
-  expect(within(ferramentas).getByRole('link', { name: 'Abrir o simulador' })).toHaveAttribute('href', '/simulador')
+    expect(screen.getByRole('link', { name: 'Começar pelo TENS' })).toHaveAttribute('href', '/tens')
+  })
+
+  test('deveMostrarSimuladorAtlasEDicionarioNosAtalhos', () => {
+    renderizar('ESTUDANTE')
+
+    expect(linksDosAtalhos()).toEqual([
+      ['Abrir o simulador', '/simulador'],
+      ['Abrir o atlas de eletrodos', '/tens/eletrodos'],
+      ['Abrir o dicionário de parâmetros', '/tens/parametros'],
+    ])
+  })
+
+  test('naoDeveOferecerAAreaDePacientes', () => {
+    renderizar('ESTUDANTE')
+
+    expect(screen.queryByRole('link', { name: /pacientes/i })).not.toBeInTheDocument()
+  })
 })
 
-test('deveSerAcessivelSemViolacoes', async () => {
-  renderizar()
+describe('profissional', () => {
+  test('deveLevarAosPacientesNoDestaque', () => {
+    renderizar('PROFISSIONAL')
+
+    expect(screen.getByRole('link', { name: 'Ver meus pacientes' })).toHaveAttribute('href', '/pacientes')
+    expect(screen.queryByRole('link', { name: 'Começar pelo TENS' })).not.toBeInTheDocument()
+  })
+
+  test('deveMostrarPacientesEAtlasNosAtalhos', () => {
+    renderizar('PROFISSIONAL')
+
+    expect(linksDosAtalhos()).toEqual([
+      ['Abrir a lista de pacientes', '/pacientes'],
+      ['Abrir o atlas de eletrodos', '/tens/eletrodos'],
+    ])
+  })
+})
+
+test.each(['ESTUDANTE', 'PROFISSIONAL'] as const)('deveSerAcessivelSemViolacoes (%s)', async (perfil) => {
+  renderizar(perfil)
 
   expect(await axe(document.body)).toHaveNoViolations()
 })
