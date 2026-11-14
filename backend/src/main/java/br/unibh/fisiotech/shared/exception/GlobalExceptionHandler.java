@@ -47,7 +47,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(Exception e, Object corpo, HttpHeaders headers,
             HttpStatusCode status, WebRequest request) {
         if (corpo instanceof ProblemDetail problema && !(e instanceof RecursoNaoEncontradoException)
-                && !(e instanceof ConflitoException) && !(e instanceof DadoInvalidoException)) {
+                && !(e instanceof ConflitoException) && !(e instanceof DadoInvalidoException)
+                && !(e instanceof AcaoProibidaException)) {
             problema.setDetail(status.is5xxServerError() ? MENSAGEM_ERRO_INTERNO : "Requisição inválida.");
         }
         return super.handleExceptionInternal(e, corpo, headers, status, request);

@@ -97,7 +97,7 @@ Regras:
 3. `@PreAuthorize("hasRole('PROFISSIONAL')")` em todo endpoint de paciente, avaliação e sessão. `ESTUDANTE` recebe **403**. Segunda barreira na `SecurityConfig`: `/api/v1/pacientes/**` exige `PROFISSIONAL` e `aal2` (testes em `RestricaoPorPerfilTest` e `RestricaoPorPerfilIntegracaoTest`).
 4. **Posse:** toda consulta a paciente, avaliação ou sessão passa por `PacienteService.buscarDoResponsavel`. Paciente de outro profissional ou excluído: **404**, nunca 403.
 5. **Sem IDOR:** id da URL nunca é confiado sozinho. A consulta sempre filtra pelo responsável (`findByIdAndResponsavelId`).
-6. Autor não aprova o próprio material (regra no Service, com teste).
+6. Autor não aprova nem devolve o próprio conteúdo: regra no `RevisaoConteudoService` (403, `AcaoProibidaException`) e `CHECK` no banco (`conteudo_autor_nao_revisa`), com teste. Aprovar e devolver (`/api/v1/revisao/**`) exigem `REVISOR` e `aal2` na `SecurityConfig`.
 7. Endpoints de paciente, avaliação e sessão exigem `aal = aal2` no token; sem isso, 403. **Ativo** desde 2026-10-16 (`SecurityConfig.SESSAO_COM_MFA`).
 
 ### Entrada e saída
@@ -181,7 +181,8 @@ Cada regra abaixo precisa de teste no backend. Estado em 2026-10-16:
 | PROFISSIONAL A cria ou lê avaliação em paciente de B | 404 | `AvaliacaoIntegracaoTest.deveResponder404AOutroProfissionalAoCriarListarVerOuAlterar` |
 | PROFISSIONAL A cria sessão em paciente de B | 404 | `SessaoIntegracaoTest.deveResponder404AOutroProfissionalAoRegistrarOuVerSessoes` |
 | Responsável enviado no corpo é ignorado | dono = `sub` | `PacienteIntegracaoTest.deveIgnorarResponsavelEnviadoNoCorpo` |
-| Autor aprova o próprio material | 403 | **Falta** (fluxo editorial ainda não existe) |
+| Autor aprova o próprio conteúdo | 403 | `RevisaoConteudoIntegracaoTest.deveImpedirQueOAutorAproveOProprioConteudo`, `RevisaoConteudoServiceTest` |
+| ESTUDANTE, PROFISSIONAL sem `revisor` ou revisor sem `aal2` em `/api/v1/revisao/**` | 403 | `RevisaoConteudoControllerTest`, `RevisaoConteudoIntegracaoTest` |
 | Upload de `.exe` renomeado para `.pdf` | 400 | **Falta** (upload ainda não existe) |
 | Upload de 11 MB | 413 | **Falta** (upload ainda não existe) |
 | Token válido sem linha em `usuario` acessando outra rota | 403 | `UsuarioIntegracaoTest.deveNegarRotaComPerfilParaQuemNaoCompletouCadastro` |

@@ -20,6 +20,8 @@ export type Conta = {
   uf?: string
   /** Conta com aplicativo autenticador: o login pede o código de 6 dígitos. */
   autenticador?: boolean
+  /** Docente que aprova ou devolve conteúdo (só PROFISSIONAL). */
+  revisor?: boolean
   /** Sem cadastro na API (GET /usuarios/me responde 404): caso de quem acabou de confirmar o e-mail. */
   semCadastro?: boolean
   /** Guardado no Supabase ao criar a conta (user_metadata.cadastro). */
@@ -59,6 +61,19 @@ export const GANCHO: Conta = {
   registro: '123456-F',
   uf: 'MG',
   autenticador: true,
+}
+
+export const WENDY: Conta = {
+  id: '00000000-0000-4000-8000-000000000004',
+  email: 'wendy@exemplo.com',
+  senha: 'Agulha-Linha-Sombra5!',
+  nome: 'Wendy Darling',
+  perfil: 'PROFISSIONAL',
+  categoria: 'FISIOTERAPEUTA',
+  registro: '654321-F',
+  uf: 'MG',
+  autenticador: true,
+  revisor: true,
 }
 
 /** Faixas do simulador, iguais às da migration V7 (guia técnico e manual do Neurodyn Portable). */
@@ -121,21 +136,42 @@ export const FAIXAS: Record<string, Faixa[]> = {
   ],
 }
 
-/** Página técnica já aprovada pela revisão docente (os cinco blocos do guia, seção 06). Texto curto e fictício. */
-export function paginaAprovada(modalidade: string, secao: string) {
-  const bloco = (bloco: string, titulo: string, corpo: string) => ({ bloco, titulo, corpo, referencias: 'Guia técnico TENS + FES' })
-  return {
-    modalidade,
-    secao,
-    liberada: true,
-    blocos: [
-      bloco('O_QUE_E', `O que é ${modalidade}`, 'Texto de teste: estimulação elétrica pela pele.'),
-      bloco('PARA_QUE_SERVE', 'Para que serve', 'Texto de teste: objetivo da aplicação.'),
-      bloco('COMO_INTERPRETAR', 'Como interpretar', 'Texto de teste: resposta esperada.'),
-      bloco('EXEMPLO', 'Exemplo didático', 'Texto de teste: caso fictício.'),
-      bloco('CUIDADOS', 'Cuidados', 'Texto de teste: interrompa se houver queimação.'),
-    ],
-    referencias: ['Guia técnico TENS + FES'],
-    dataRevisao: '2026-10-15',
-  }
+/** Conteúdo como a API guarda (tabela conteudo). */
+export type ConteudoFalso = {
+  id: number
+  titulo: string
+  modalidade: 'TENS' | 'NMES' | 'FES'
+  secao: string
+  bloco: string | null
+  corpo: string
+  referencias: string | null
+  versao: number
+  estado: 'RASCUNHO' | 'EM_REVISAO' | 'APROVADO' | 'ARQUIVADO'
+  dataRevisao: string | null
+  motivoDevolucao: string | null
+}
+
+/**
+ * No lugar do guia técnico, textos curtos e fictícios, todos em revisão como no banco: os cinco blocos da Visão
+ * geral de TENS e de FES e um caso de FES sem fonte.
+ */
+export function conteudosIniciais(): ConteudoFalso[] {
+  const blocos = (modalidade: 'TENS' | 'FES') =>
+    [
+      ['O_QUE_E', `O que é ${modalidade}`],
+      ['PARA_QUE_SERVE', 'Para que serve'],
+      ['COMO_INTERPRETAR', 'Como interpretar'],
+      ['EXEMPLO', 'Exemplo didático'],
+      ['CUIDADOS', 'Cuidados'],
+    ].map(([bloco, titulo]) => ({ modalidade, secao: 'VISAO_GERAL', bloco, titulo, referencias: 'Guia técnico TENS + FES' }))
+  const caso = { modalidade: 'FES' as const, secao: 'CASOS', bloco: null, titulo: 'Caso do pé caído', referencias: null }
+  return [...blocos('TENS'), ...blocos('FES'), caso].map((c, i) => ({
+    ...c,
+    id: i + 1,
+    corpo: `Texto de teste: ${c.titulo.toLowerCase()}.`,
+    versao: 1,
+    estado: 'EM_REVISAO',
+    dataRevisao: null,
+    motivoDevolucao: null,
+  }))
 }

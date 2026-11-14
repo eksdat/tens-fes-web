@@ -18,7 +18,7 @@ vi.mock('@/shared/auth/useAuth', () => ({ useAuth: () => ({ ...estado.auth, sair
 vi.mock('@/features/mfa/useNivelMfa', () => ({ useNivelMfa: () => estado.mfa }))
 vi.mock('@/features/usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ ...estado.usuario, refetch }) }))
 
-function renderizar(perfil?: 'ESTUDANTE' | 'PROFISSIONAL', semMfa = false) {
+function renderizar(perfil?: 'ESTUDANTE' | 'PROFISSIONAL', semMfa = false, soRevisor = false) {
   return renderComRotas(
     <>
       <Route path="/login" element={<p>tela de login</p>} />
@@ -27,7 +27,7 @@ function renderizar(perfil?: 'ESTUDANTE' | 'PROFISSIONAL', semMfa = false) {
       <Route path="/mfa/verificar" element={<p>tela de verificar mfa</p>} />
       <Route path="/mfa/ativar" element={<p>tela de ativar mfa</p>} />
       <Route path="/termos/aceitar" element={<p>tela de aceitar termos</p>} />
-      <Route element={<ProtectedRoute perfil={perfil} semMfa={semMfa} />}>
+      <Route element={<ProtectedRoute perfil={perfil} semMfa={semMfa} soRevisor={soRevisor} />}>
         <Route path="/area" element={<p>area protegida</p>} />
       </Route>
     </>,
@@ -146,6 +146,22 @@ test('deveLevarParaONovoAceiteQuandoOsTermosMudaram', () => {
 test('deveLiberarAsTelasSemMfaMesmoComTermosPendentes', () => {
   estado.usuario = { isPending: false, isError: false, data: { perfil: 'ESTUDANTE', termosPendentes: true } }
   renderizar(undefined, true)
+
+  expect(screen.getByText('area protegida')).toBeInTheDocument()
+})
+
+test('deveLevarParaOInicioOProfissionalQueNaoERevisor', () => {
+  estado.usuario = { isPending: false, isError: false, data: { perfil: 'PROFISSIONAL', revisor: false } }
+  estado.mfa = { atual: 'aal2', proximo: 'aal2' }
+  renderizar('PROFISSIONAL', false, true)
+
+  expect(screen.getByText('tela inicial')).toBeInTheDocument()
+})
+
+test('devePermitirORevisorNaAreaDeRevisao', () => {
+  estado.usuario = { isPending: false, isError: false, data: { perfil: 'PROFISSIONAL', revisor: true } }
+  estado.mfa = { atual: 'aal2', proximo: 'aal2' }
+  renderizar('PROFISSIONAL', false, true)
 
   expect(screen.getByText('area protegida')).toBeInTheDocument()
 })

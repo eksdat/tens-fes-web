@@ -41,6 +41,11 @@ class GlobalExceptionHandlerTest {
             throw new ConflitoException("Cadastro já concluído.");
         }
 
+        @GetMapping("/proibida")
+        void proibida() {
+            throw new AcaoProibidaException("Quem escreveu o conteúdo não pode revisá-lo.");
+        }
+
         @PostMapping("/validacao")
         void validacao(@Valid @RequestBody Entrada entrada) {
         }
@@ -72,6 +77,13 @@ class GlobalExceptionHandlerTest {
     @Test
     void deveResponder409ParaConflito() throws Exception {
         mvc.perform(get("/conflito")).andExpect(status().isConflict());
+    }
+
+    @Test
+    void deveResponder403ComAMensagemDoDominioParaAcaoProibida() throws Exception {
+        mvc.perform(get("/proibida"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("Quem escreveu o conteúdo não pode revisá-lo."));
     }
 
     @Test
