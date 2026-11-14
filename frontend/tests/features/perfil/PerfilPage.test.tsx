@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
@@ -141,6 +141,13 @@ test('deveMostrarDadosDoProfissionalSemFormularioNemSeloDeVerificado', () => {
   expect(screen.queryByRole('button', { name: 'Salvar registro profissional' })).not.toBeInTheDocument()
 
   expect(screen.queryByText(/verificado/i)).not.toBeInTheDocument()
+})
+
+test('deveLevarAVerificacaoEmDuasEtapasPelaSegurancaDaConta', () => {
+  renderizar()
+
+  const seguranca = within(screen.getByRole('region', { name: 'Segurança da conta' }))
+  expect(seguranca.getByRole('link', { name: 'Verificação em duas etapas' })).toHaveAttribute('href', '/mfa/ativar')
 })
 
 test('deveRenderizarSemViolacoesDeAcessibilidade', async () => {
