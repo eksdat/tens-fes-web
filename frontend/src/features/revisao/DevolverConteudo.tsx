@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { Alerta } from '../../shared/ui/Alerta'
 import { Botao } from '../../shared/ui/Botao'
 import { CampoTextoLongo } from '../../shared/ui/CampoTextoLongo'
 import { Dialogo } from '../../shared/ui/Dialogo'
@@ -15,12 +16,19 @@ type Valores = z.infer<typeof schema>
 
 type Props = {
   titulo: string
-  /** Devolve true quando a API aceitou; aí o diálogo fecha. */
-  aoDevolver: (motivo: string) => Promise<boolean>
+  /** Null quando a API aceitou (o diálogo fecha); senão, a mensagem de erro, mostrada dentro do diálogo. */
+  aoDevolver: (motivo: string) => Promise<string | null>
+  /** Chamado ao fechar sem devolver (Cancelar, Esc ou X). */
+  aoFechar?: () => void
 }
 
-export function DevolverConteudo({ titulo, aoDevolver }: Props) {
+/**
+ * O erro fica dentro do diálogo: fora dele, atrás da camada escura, ninguém vê e o leitor de tela não lê
+ * (revisão do PR #38).
+ */
+export function DevolverConteudo({ titulo, aoDevolver, aoFechar }: Props) {
   const [aberto, setAberto] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -31,13 +39,19 @@ export function DevolverConteudo({ titulo, aoDevolver }: Props) {
   function fechar() {
     if (isSubmitting) return
     setAberto(false)
+    setErro(null)
     reset()
+    aoFechar?.()
   }
 
   async function enviar({ motivo }: Valores) {
-    if (await aoDevolver(motivo)) {
+    setErro(null)
+    const falha = await aoDevolver(motivo)
+    if (falha === null) {
       setAberto(false)
       reset()
+    } else {
+      setErro(falha)
     }
   }
 
@@ -61,6 +75,11 @@ export function DevolverConteudo({ titulo, aoDevolver }: Props) {
           erro={errors.motivo?.message}
           {...register('motivo')}
         />
+        {erro && (
+          <Alerta intencao="perigo" titulo="Não foi possível devolver">
+            {erro}
+          </Alerta>
+        )}
         <div className="tf-acoes">
           <Botao type="submit" carregando={isSubmitting}>
             Devolver para rascunho

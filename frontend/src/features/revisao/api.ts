@@ -60,11 +60,18 @@ export async function linkDoAnexoEmRevisao(id: number, anexoId: string): Promise
   return (await api.get<LinkAnexo>(`/revisao/conteudos/${id}/anexos/${anexoId}/link`)).data
 }
 
-/** 403 (autor revisando o próprio texto) e 409 (já revisado por outra pessoa) trazem a explicação no "detail". */
+/** 409: outra pessoa decidiu este texto antes (a API trava a linha e só a primeira decisão vale). */
+export function jaFoiDecidido(erro: unknown): boolean {
+  return axios.isAxiosError(erro) && erro.response?.status === 409
+}
+
+/** 400 (motivo inválido ou texto sem fonte) e 403 (autor revisando o próprio texto) trazem a explicação. */
 export function lerErroRevisao(erro: unknown): string {
   if (axios.isAxiosError(erro) && erro.response) {
     const dados = erro.response.data as { detail?: string; erros?: Record<string, string> } | undefined
-    if (erro.response.status === 400) return dados?.erros?.motivo ?? 'Confira o motivo da devolução.'
+    if (erro.response.status === 400) {
+      return dados?.erros?.motivo ?? dados?.erros?.referencias ?? 'Confira o motivo da devolução.'
+    }
     if ([403, 404, 409].includes(erro.response.status) && dados?.detail) return dados.detail
   }
   return 'Não foi possível salvar a revisão agora. Tente de novo em instantes.'

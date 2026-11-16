@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route } from 'react-router'
 import { axe } from 'vitest-axe'
@@ -137,7 +137,23 @@ test('deveMostrarAExplicacaoDaApiQuandoOAutorTentaAprovar', async () => {
   expect(item.getByRole('button', { name: 'Aprovar O que é TENS' })).toBeEnabled()
 })
 
-test('deveManterODialogoAbertoSeADevolucaoFalhar', async () => {
+test('deveMostrarOErroDaDevolucaoDentroDoDialogo', async () => {
+  vi.spyOn(api, 'devolverConteudo').mockRejectedValue(new Error('rede'))
+  renderizar()
+  const usuario = userEvent.setup()
+
+  await usuario.click(await screen.findByRole('button', { name: 'Devolver Caso do pé caído' }))
+  await usuario.type(screen.getByLabelText('Motivo da devolução'), 'Rever o caso.')
+  await usuario.click(screen.getByRole('button', { name: 'Devolver para rascunho' }))
+
+  const dialogo = within(screen.getByRole('dialog'))
+  expect(await dialogo.findByRole('alert')).toHaveTextContent(
+    'Não foi possível salvar a revisão agora. Tente de novo em instantes.',
+  )
+  expect(dialogo.getByLabelText('Motivo da devolução')).toHaveValue('Rever o caso.')
+})
+
+test('deveAvisarNoDialogoQueOutraPessoaJaRevisouEAtualizarAFilaAoFechar', async () => {
   vi.spyOn(api, 'devolverConteudo').mockRejectedValue(
     erroDaApi(409, { detail: 'Este conteúdo não está mais em revisão.' }),
   )
@@ -148,8 +164,35 @@ test('deveManterODialogoAbertoSeADevolucaoFalhar', async () => {
   await usuario.type(screen.getByLabelText('Motivo da devolução'), 'Rever o caso.')
   await usuario.click(screen.getByRole('button', { name: 'Devolver para rascunho' }))
 
-  expect(await screen.findByText('Este conteúdo não está mais em revisão.')).toBeInTheDocument()
-  expect(screen.getByRole('dialog')).toBeInTheDocument()
+  const dialogo = within(screen.getByRole('dialog'))
+  expect(await dialogo.findByRole('alert')).toHaveTextContent('Outra pessoa já revisou este texto enquanto você lia.')
+  expect(api.listarEmRevisao).toHaveBeenCalledTimes(1)
+
+  await usuario.click(dialogo.getByRole('button', { name: 'Cancelar' }))
+
+  expect(await screen.findByText('Fila atualizada')).toBeInTheDocument()
+  await waitFor(() => expect(api.listarEmRevisao).toHaveBeenCalledTimes(2))
+})
+
+test('deveAtualizarAFilaQuandoOutraPessoaJaAprovou', async () => {
+  vi.spyOn(api, 'aprovarConteudo').mockRejectedValue(erroDaApi(409, { detail: 'Este conteúdo não está mais em revisão.' }))
+  renderizar()
+  const usuario = userEvent.setup()
+
+  await usuario.click(await screen.findByRole('button', { name: 'Aprovar O que é TENS' }))
+
+  expect(await screen.findByText('Fila atualizada')).toBeInTheDocument()
+  expect(screen.getByText('Outra pessoa já revisou "O que é TENS".')).toBeInTheDocument()
+  await waitFor(() => expect(api.listarEmRevisao).toHaveBeenCalledTimes(2))
+})
+
+test('naoDeveOferecerAprovarTextoSemFonte', async () => {
+  renderizar()
+
+  const item = within(await screen.findByRole('article', { name: 'Cuidados' }))
+  expect(item.getByText('Sem fonte não dá para aprovar. Devolva pedindo a referência.')).toBeInTheDocument()
+  expect(item.queryByRole('button', { name: 'Aprovar Cuidados' })).not.toBeInTheDocument()
+  expect(item.getByRole('button', { name: 'Devolver Cuidados' })).toBeInTheDocument()
 })
 
 test('deveAvisarQuandoNaoHaNadaParaRevisar', async () => {

@@ -18,7 +18,7 @@ test('deveCriarAnexarEEnviarOMaterialParaRevisao', async ({ page, entrarComo, ap
   await page.getByLabel('Modalidade').selectOption('TENS')
   await page.getByLabel('Tema').selectOption({ label: 'Parâmetros' })
   await page.getByLabel('Texto', { exact: true }).fill(TEXTO)
-  await page.getByLabel('Referências (opcional)').fill('[R1] Johnson, 2007')
+  await page.getByLabel('Referências').fill('[R1] Johnson, 2007')
   await page.getByRole('button', { name: 'Salvar rascunho' }).click()
 
   await expect(page.getByText('Rascunho salvo', { exact: true })).toBeVisible()

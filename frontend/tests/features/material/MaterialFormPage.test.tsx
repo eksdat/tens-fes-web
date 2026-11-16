@@ -164,6 +164,20 @@ test('deveSalvarOQueEstaNaTelaEEnviarParaRevisaoDepoisDeConfirmar', async () => 
   expect(await screen.findByText('Enviado para revisão')).toBeInTheDocument()
 })
 
+test('deveExigirAFonteAntesDeEnviarParaRevisao', async () => {
+  vi.spyOn(api, 'buscarMaterial').mockResolvedValue(material(7, 'Resumo de TENS', { referencias: null }))
+  const enviar = vi.spyOn(api, 'enviarParaRevisao')
+  renderizar('/criar-conteudo/7')
+  const usuario = userEvent.setup()
+
+  await usuario.click(await screen.findByRole('button', { name: 'Enviar para revisão' }))
+
+  expect(await screen.findByText('Informe a fonte antes de enviar para revisão.')).toBeInTheDocument()
+  expect(screen.getByLabelText('Referências')).toHaveFocus()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(enviar).not.toHaveBeenCalled()
+})
+
 test('deveMostrarOMotivoDaDevolucaoNoRascunho', async () => {
   vi.spyOn(api, 'buscarMaterial').mockResolvedValue(material(7, 'Resumo de TENS', { motivoDevolucao: 'Cite a fonte da faixa.' }))
   renderizar('/criar-conteudo/7')

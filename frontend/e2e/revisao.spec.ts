@@ -33,6 +33,8 @@ test('deveDevolverOCasoSemFonteComOMotivo', async ({ page, entrarComo, api }) =>
   await abrirARevisao(page)
   const caso = page.getByRole('article', { name: 'Caso do pé caído' })
   await expect(caso).toContainText('nenhuma informada')
+  await expect(caso).toContainText('Sem fonte não dá para aprovar. Devolva pedindo a referência.')
+  await expect(caso.getByRole('button', { name: 'Aprovar Caso do pé caído' })).toHaveCount(0)
 
   await caso.getByRole('button', { name: 'Devolver Caso do pé caído' }).click()
   const dialogo = page.getByRole('dialog', { name: 'Devolver para rascunho?' })

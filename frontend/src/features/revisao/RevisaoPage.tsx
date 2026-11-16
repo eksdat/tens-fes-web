@@ -11,6 +11,7 @@ import {
   aprovarConteudo,
   CHAVE_REVISAO,
   devolverConteudo,
+  jaFoiDecidido,
   lerErroRevisao,
   linkDoAnexoEmRevisao,
   listarEmRevisao,
@@ -59,6 +60,12 @@ export function RevisaoPage() {
     }
   }
 
+  /** Outra pessoa decidiu antes (409): avisa e traz a fila de novo, sem o texto que já saiu dela. */
+  function desatualizado(titulo: string) {
+    mostrar({ tipo: 'info', titulo: 'Fila atualizada', texto: `Outra pessoa já revisou "${titulo}".` })
+    void queryClient.invalidateQueries({ queryKey: CHAVE_REVISAO })
+  }
+
   const pendentes = fila.data?.filter((c) => !decididos[c.id]).length ?? 0
 
   return (
@@ -93,7 +100,13 @@ export function RevisaoPage() {
               {grupo.titulo}
             </h2>
             {grupo.conteudos.map((conteudo) => (
-              <ItemDaFila key={conteudo.id} conteudo={conteudo} decidido={decididos[conteudo.id]} aoDecidir={registrar} />
+              <ItemDaFila
+                key={conteudo.id}
+                conteudo={conteudo}
+                decidido={decididos[conteudo.id]}
+                aoDecidir={registrar}
+                aoDesatualizar={desatualizado}
+              />
             ))}
           </section>
         ))}
@@ -105,13 +118,19 @@ type ItemProps = {
   conteudo: ConteudoEmRevisao
   decidido?: ConteudoEmRevisao
   aoDecidir: (decidido: ConteudoEmRevisao) => void
+  /** Outra pessoa decidiu este texto antes (409). */
+  aoDesatualizar: (titulo: string) => void
 }
 
-function ItemDaFila({ conteudo, decidido, aoDecidir }: ItemProps) {
+const JA_REVISADO = 'Outra pessoa já revisou este texto enquanto você lia. Ao fechar, a fila é atualizada.'
+
+function ItemDaFila({ conteudo, decidido, aoDecidir, aoDesatualizar }: ItemProps) {
   const [erro, setErro] = useState<string | null>(null)
   const [aprovando, setAprovando] = useState(false)
   const resultado = useRef<HTMLParagraphElement>(null)
+  const desatualizado = useRef(false)
   const idTitulo = `conteudo-${conteudo.id}`
+  const semFonte = !conteudo.referencias?.trim()
 
   // Os botões somem depois da decisão: o foco vai para o resultado, e não para o começo da página.
   useEffect(() => {
@@ -124,7 +143,8 @@ function ItemDaFila({ conteudo, decidido, aoDecidir }: ItemProps) {
     try {
       aoDecidir(await aprovarConteudo(conteudo.id))
     } catch (e) {
-      setErro(lerErroRevisao(e))
+      if (jaFoiDecidido(e)) aoDesatualizar(conteudo.titulo)
+      else setErro(lerErroRevisao(e))
     } finally {
       setAprovando(false)
     }
@@ -137,14 +157,16 @@ function ItemDaFila({ conteudo, decidido, aoDecidir }: ItemProps) {
     }
   }
 
+  /** O erro volta para o diálogo, que mostra a mensagem dentro dele. */
   async function devolver(motivo: string) {
     setErro(null)
     try {
       aoDecidir(await devolverConteudo(conteudo.id, motivo))
-      return true
+      return null
     } catch (e) {
-      setErro(lerErroRevisao(e))
-      return false
+      if (!jaFoiDecidido(e)) return lerErroRevisao(e)
+      desatualizado.current = true
+      return JA_REVISADO
     }
   }
 
@@ -159,7 +181,7 @@ function ItemDaFila({ conteudo, decidido, aoDecidir }: ItemProps) {
       </h3>
       <CorpoMarkdown texto={conteudo.corpo} />
       <p className="tf-sub">
-        <strong>Fonte:</strong> {conteudo.referencias ?? 'nenhuma informada. Conteúdo sem fonte não deve ser aprovado.'}
+        <strong>Fonte:</strong> {semFonte ? 'nenhuma informada.' : conteudo.referencias}
       </p>
 
       {conteudo.anexos.length > 0 && (
@@ -198,12 +220,24 @@ function ItemDaFila({ conteudo, decidido, aoDecidir }: ItemProps) {
             : `Devolvido para rascunho. Motivo: ${decidido.motivoDevolucao}`}
         </p>
       ) : (
-        <div className="tf-acoes">
-          {/* O nome do texto vai no rótulo: no leitor de tela, "Aprovar" sozinho se repete a cada item. */}
-          <Botao carregando={aprovando} aria-label={`Aprovar ${conteudo.titulo}`} onClick={() => void aprovar()}>
-            Aprovar
-          </Botao>
-          <DevolverConteudo titulo={conteudo.titulo} aoDevolver={devolver} />
+        <div className="tf-pilha">
+          {/* "Conteúdo sem fonte não entra": a API recusa, e a tela nem oferece o botão. */}
+          {semFonte && <p className="tf-sub">Sem fonte não dá para aprovar. Devolva pedindo a referência.</p>}
+          <div className="tf-acoes">
+            {/* O nome do texto vai no rótulo: no leitor de tela, "Aprovar" sozinho se repete a cada item. */}
+            {!semFonte && (
+              <Botao carregando={aprovando} aria-label={`Aprovar ${conteudo.titulo}`} onClick={() => void aprovar()}>
+                Aprovar
+              </Botao>
+            )}
+            <DevolverConteudo
+              titulo={conteudo.titulo}
+              aoDevolver={devolver}
+              aoFechar={() => {
+                if (desatualizado.current) aoDesatualizar(conteudo.titulo)
+              }}
+            />
+          </div>
         </div>
       )}
     </article>

@@ -156,6 +156,11 @@ export class ApiFalsa {
     if (conteudo.estado !== 'EM_REVISAO') return this.problema(route, 409, 'Este conteúdo não está mais em revisão.')
 
     if (acao === 'aprovar') {
+      if (!conteudo.referencias?.trim()) {
+        return this.problema(route, 400, 'Dados inválidos.', {
+          referencias: 'Conteúdo sem fonte não pode ser aprovado. Devolva pedindo a referência.',
+        })
+      }
       Object.assign(conteudo, { estado: 'APROVADO', dataRevisao: hojeEmBrasilia(), motivoDevolucao: null })
       return responder(route, 200, paraRevisao(conteudo))
     }
@@ -227,6 +232,9 @@ export class ApiFalsa {
       return responder(route, 204)
     }
     if (metodo === 'POST' && partes[2] === 'enviar') {
+      if (!material.referencias?.trim()) {
+        return this.problema(route, 400, 'Dados inválidos.', { referencias: 'Informe a fonte antes de enviar para revisão.' })
+      }
       Object.assign(material, { estado: 'EM_REVISAO', atualizadoEm: agora() })
       return responder(route, 200, paraMaterial(material))
     }

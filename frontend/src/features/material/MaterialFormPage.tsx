@@ -117,6 +117,7 @@ function FormularioDoMaterial({ material }: { material?: Material }) {
   const {
     register,
     handleSubmit,
+    getValues,
     reset,
     setError,
     formState: { errors, isSubmitting },
@@ -152,6 +153,15 @@ function FormularioDoMaterial({ material }: { material?: Material }) {
     } catch (erro) {
       mostrarErro(erro)
     }
+  }
+
+  /** O revisor não aprova sem fonte: melhor pedir antes de abrir a confirmação do que receber o material de volta. */
+  function pedirConfirmacaoDoEnvio() {
+    if (!getValues('referencias').trim()) {
+      setError('referencias', { message: 'Informe a fonte antes de enviar para revisão.' }, { shouldFocus: true })
+      return
+    }
+    setConfirmarEnvio(true)
   }
 
   /** Salva o que está na tela antes de enviar: o revisor recebe o texto que a pessoa está vendo. */
@@ -231,9 +241,9 @@ function FormularioDoMaterial({ material }: { material?: Material }) {
           {...register('corpo')}
         />
         <CampoTextoLongo
-          rotulo="Referências (opcional)"
+          rotulo="Referências"
           maxLength={2000}
-          dica="Autor, ano e título de cada fonte. Exemplo: Johnson, 2007."
+          dica="Obrigatório para enviar para revisão. Autor, ano e título de cada fonte. Exemplo: Johnson, 2007."
           erro={errors.referencias?.message}
           {...register('referencias')}
         />
@@ -260,7 +270,7 @@ function FormularioDoMaterial({ material }: { material?: Material }) {
             aoFechar={() => {
               if (!ocupado) setConfirmarEnvio(false)
             }}
-            gatilho={<Botao onClick={() => setConfirmarEnvio(true)}>Enviar para revisão</Botao>}
+            gatilho={<Botao onClick={pedirConfirmacaoDoEnvio}>Enviar para revisão</Botao>}
             acoes={
               <>
                 <Botao variante="secundario" disabled={ocupado} onClick={() => setConfirmarEnvio(false)}>
