@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Alerta } from '../../shared/ui/Alerta'
 import { Botao } from '../../shared/ui/Botao'
 import { useToast } from '../../shared/ui/useToast'
+import { abrirAnexo } from '../material/abrirAnexo'
+import { AVISOS, formatarTamanho } from '../material/api'
 import { CorpoMarkdown } from '../modulo/CorpoMarkdown'
 import { formatarData } from '../pacientes/formatar'
 import {
@@ -10,6 +12,7 @@ import {
   CHAVE_REVISAO,
   devolverConteudo,
   lerErroRevisao,
+  linkDoAnexoEmRevisao,
   listarEmRevisao,
   ROTULO_BLOCO,
   ROTULO_SECAO,
@@ -127,6 +130,13 @@ function ItemDaFila({ conteudo, decidido, aoDecidir }: ItemProps) {
     }
   }
 
+  async function abrir(anexoId: string) {
+    setErro(null)
+    if (!(await abrirAnexo(() => linkDoAnexoEmRevisao(conteudo.id, anexoId)))) {
+      setErro('Não foi possível abrir o anexo agora. Tente de novo em instantes.')
+    }
+  }
+
   async function devolver(motivo: string) {
     setErro(null)
     try {
@@ -141,7 +151,8 @@ function ItemDaFila({ conteudo, decidido, aoDecidir }: ItemProps) {
   return (
     <article className="tf-cartao tf-pilha" aria-labelledby={idTitulo}>
       <p className="tf-modulo__kicker">
-        {conteudo.bloco ? ROTULO_BLOCO[conteudo.bloco] : 'Texto da aba'} · versão {conteudo.versao}
+        {conteudo.material ? 'Material de estudo' : conteudo.bloco ? ROTULO_BLOCO[conteudo.bloco] : 'Texto da aba'} · versão{' '}
+        {conteudo.versao}
       </p>
       <h3 id={idTitulo} className="tf-cartao__titulo">
         {conteudo.titulo}
@@ -150,6 +161,29 @@ function ItemDaFila({ conteudo, decidido, aoDecidir }: ItemProps) {
       <p className="tf-sub">
         <strong>Fonte:</strong> {conteudo.referencias ?? 'nenhuma informada. Conteúdo sem fonte não deve ser aprovado.'}
       </p>
+
+      {conteudo.anexos.length > 0 && (
+        <div className="tf-pilha">
+          <p className="tf-sub">
+            <strong>Anexos.</strong> {AVISOS.validacao}
+          </p>
+          <ul className="tf-anexos">
+            {conteudo.anexos.map((a) => (
+              <li key={a.id} className="tf-anexos__item">
+                <span>
+                  <strong>{a.nome}</strong>{' '}
+                  <span className="tf-sub">
+                    {a.tipo} · {formatarTamanho(a.tamanhoBytes)}
+                  </span>
+                </span>
+                <Botao variante="secundario" aria-label={`Abrir ${a.nome}`} onClick={() => void abrir(a.id)}>
+                  Abrir
+                </Botao>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {erro && (
         <Alerta intencao="perigo" titulo="Não foi possível concluir a revisão">

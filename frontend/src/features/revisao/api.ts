@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { api } from '../../shared/api/client'
+import type { Anexo, LinkAnexo } from '../material/api'
 import type { Bloco, PaginaTecnicaApi } from '../modulo/usePaginaTecnica'
 
 export type EstadoEditorial = 'RASCUNHO' | 'EM_REVISAO' | 'APROVADO' | 'ARQUIVADO'
@@ -19,6 +20,9 @@ export type ConteudoEmRevisao = {
   /** ISO (aaaa-mm-dd), preenchida ao aprovar. */
   dataRevisao: string | null
   motivoDevolucao: string | null
+  /** Material de estudo escrito na tela "Criar conteúdo" (os textos do guia não têm autor). */
+  material: boolean
+  anexos: Anexo[]
 }
 
 export const CHAVE_REVISAO = ['revisao', 'conteudos'] as const
@@ -50,6 +54,10 @@ export async function aprovarConteudo(id: number): Promise<ConteudoEmRevisao> {
 
 export async function devolverConteudo(id: number, motivo: string): Promise<ConteudoEmRevisao> {
   return (await api.post<ConteudoEmRevisao>(`/revisao/conteudos/${id}/devolver`, { motivo })).data
+}
+
+export async function linkDoAnexoEmRevisao(id: number, anexoId: string): Promise<LinkAnexo> {
+  return (await api.get<LinkAnexo>(`/revisao/conteudos/${id}/anexos/${anexoId}/link`)).data
 }
 
 /** 403 (autor revisando o próprio texto) e 409 (já revisado por outra pessoa) trazem a explicação no "detail". */
