@@ -51,11 +51,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status, WebRequest request) {
         if (corpo instanceof ProblemDetail problema && !(e instanceof RecursoNaoEncontradoException)
                 && !(e instanceof ConflitoException) && !(e instanceof DadoInvalidoException)
-                && !(e instanceof AcaoProibidaException) && !(e instanceof ArmazenamentoIndisponivelException)) {
-            problema.setDetail(e instanceof MaxUploadSizeExceededException ? ARQUIVO_GRANDE
-                    : status.is5xxServerError() ? MENSAGEM_ERRO_INTERNO : "Requisição inválida.");
+                && !(e instanceof AcaoProibidaException) && !(e instanceof ArmazenamentoIndisponivelException)
+                && !(e instanceof MaxUploadSizeExceededException)) {
+            problema.setDetail(status.is5xxServerError() ? MENSAGEM_ERRO_INTERNO : "Requisição inválida.");
         }
         return super.handleExceptionInternal(e, corpo, headers, status, request);
+    }
+
+    /**
+     * O Spring manda o corpo vazio para cá e depois preenche em inglês ("Maximum upload size exceeded"). Com o
+     * corpo já montado, a pessoa lê o limite.
+     */
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return handleExceptionInternal(e, ProblemDetail.forStatusAndDetail(status, ARQUIVO_GRANDE), headers, status,
+                request);
     }
 
     /**
