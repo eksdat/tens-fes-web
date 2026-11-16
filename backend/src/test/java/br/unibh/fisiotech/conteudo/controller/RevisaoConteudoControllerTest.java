@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -35,6 +36,7 @@ import br.unibh.fisiotech.conteudo.enums.EstadoEditorial;
 import br.unibh.fisiotech.conteudo.enums.Modalidade;
 import br.unibh.fisiotech.conteudo.enums.Secao;
 import br.unibh.fisiotech.conteudo.service.RevisaoConteudoService;
+import br.unibh.fisiotech.material.dto.LinkAnexoResponse;
 import br.unibh.fisiotech.shared.exception.ConflitoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
 import br.unibh.fisiotech.usuario.repository.UsuarioRepository;
@@ -92,6 +94,27 @@ class RevisaoConteudoControllerTest {
                 .andExpect(jsonPath("$[0].titulo").value("O que é TENS"))
                 .andExpect(jsonPath("$[0].bloco").value("O_QUE_E"))
                 .andExpect(jsonPath("$[0].estado").value("EM_REVISAO"));
+    }
+
+    @Test
+    void deveDarAoRevisorOLinkTemporarioDoAnexo() throws Exception {
+        var anexo = UUID.fromString("00000000-0000-4000-8000-0000000000a1");
+        when(service.linkDoAnexo(7L, anexo)).thenReturn(new LinkAnexoResponse(
+                "https://teste.supabase.co/storage/v1/object/sign/materiais/material-7-a.pdf?token=t",
+                Instant.parse("2026-11-11T15:05:00Z")));
+
+        mvc.perform(get("/api/v1/revisao/conteudos/7/anexos/" + anexo + "/link").with(revisora()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(
+                        "https://teste.supabase.co/storage/v1/object/sign/materiais/material-7-a.pdf?token=t"));
+    }
+
+    @Test
+    void deveNegarOLinkDoAnexoAQuemNaoERevisor() throws Exception {
+        mvc.perform(get("/api/v1/revisao/conteudos/7/anexos/00000000-0000-4000-8000-0000000000a1/link")
+                        .with(papeis("aal2", "ESTUDANTE")))
+                .andExpect(status().isForbidden());
+        verify(service, never()).linkDoAnexo(any(), any());
     }
 
     @Test
@@ -166,6 +189,6 @@ class RevisaoConteudoControllerTest {
     private static RevisaoConteudoResponse resposta(EstadoEditorial estado, String motivo) {
         return new RevisaoConteudoResponse(7L, "O que é TENS", Modalidade.TENS, Secao.VISAO_GERAL, Bloco.O_QUE_E,
                 "texto", "[R1]", 1, estado, estado == EstadoEditorial.APROVADO ? LocalDate.of(2026, 11, 11) : null,
-                motivo);
+                motivo, false, List.of());
     }
 }

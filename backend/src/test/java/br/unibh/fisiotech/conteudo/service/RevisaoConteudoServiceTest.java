@@ -26,6 +26,7 @@ import br.unibh.fisiotech.conteudo.enums.EstadoEditorial;
 import br.unibh.fisiotech.conteudo.enums.Modalidade;
 import br.unibh.fisiotech.conteudo.enums.Secao;
 import br.unibh.fisiotech.conteudo.repository.ConteudoRepository;
+import br.unibh.fisiotech.material.service.AnexoService;
 import br.unibh.fisiotech.shared.exception.AcaoProibidaException;
 import br.unibh.fisiotech.shared.exception.ConflitoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
@@ -42,11 +43,15 @@ class RevisaoConteudoServiceTest {
     @Mock
     private ConteudoRepository repository;
 
+    /** Sem anexo nos testes daqui: o mock devolve mapa e lista vazios. */
+    @Mock
+    private AnexoService anexos;
+
     private RevisaoConteudoService service;
 
     @BeforeEach
     void setUp() {
-        service = new RevisaoConteudoService(repository, RELOGIO);
+        service = new RevisaoConteudoService(repository, RELOGIO, anexos);
     }
 
     @Test

@@ -2,6 +2,7 @@ package br.unibh.fisiotech.conteudo.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -20,4 +21,8 @@ public interface ConteudoRepository extends JpaRepository<Conteudo, Long> {
     List<Conteudo> findByModalidadeAndSecaoAndBlocoIsNotNull(Modalidade modalidade, Secao secao);
 
     List<Conteudo> findByEstado(EstadoEditorial estado);
+
+    List<Conteudo> findByAutorIdOrderByAtualizadoEmDesc(UUID autorId);
+
+    Optional<Conteudo> findByIdAndAutorId(Long id, UUID autorId);
 }

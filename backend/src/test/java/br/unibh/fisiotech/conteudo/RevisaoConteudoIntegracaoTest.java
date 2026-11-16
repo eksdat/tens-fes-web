@@ -4,7 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -12,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -37,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 
 import br.unibh.fisiotech.TestcontainersConfiguration;
+import br.unibh.fisiotech.shared.armazenamento.ArmazenamentoArquivos;
 
 /**
  * Revisão com PostgreSQL real: migration V13, segurança (REVISOR + aal2) e a página técnica liberada depois da
@@ -49,6 +55,8 @@ import br.unibh.fisiotech.TestcontainersConfiguration;
 class RevisaoConteudoIntegracaoTest {
 
     private static final ZoneId BRASILIA = ZoneId.of("America/Sao_Paulo");
+
+    private static final String LINK = "https://teste.supabase.co/storage/v1/object/sign/materiais/aula.pdf?token=t";
 
     @Autowired
     private MockMvc mvc;
@@ -64,6 +72,9 @@ class RevisaoConteudoIntegracaoTest {
 
     @MockitoBean
     private Clock relogio;
+
+    @MockitoBean
+    private ArmazenamentoArquivos armazenamento;
 
     private UUID wendy;
 
@@ -173,6 +184,34 @@ class RevisaoConteudoIntegracaoTest {
     }
 
     @Test
+    void deveMostrarOsAnexosDoMaterialEAbrirPorLinkTemporario() throws Exception {
+        var id = conteudo("Material com anexo", "EM_REVISAO", estudante());
+        var anexo = anexo(id, "aula.pdf");
+        when(armazenamento.linkTemporario(eq("material-" + id + "-aula.pdf"), eq(Duration.ofMinutes(5))))
+                .thenReturn(LINK);
+
+        mvc.perform(get("/api/v1/revisao/conteudos").header(HttpHeaders.AUTHORIZATION, "Bearer " + wendy))
+                .andExpect(jsonPath("$[?(@.id == " + id + ")].material", hasItem(true)))
+                .andExpect(jsonPath("$[?(@.id == " + id + ")].anexos[0].nome", hasItem("aula.pdf")));
+        mvc.perform(get("/api/v1/revisao/conteudos/" + id + "/anexos/" + anexo + "/link")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + wendy))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(LINK))
+                .andExpect(jsonPath("$.expiraEm").value("2026-11-11T15:05:00Z"));
+    }
+
+    @Test
+    void naoDeveAbrirAnexoDeRascunhoParaORevisor() throws Exception {
+        var id = conteudo("Rascunho com anexo", "RASCUNHO", estudante());
+        var anexo = anexo(id, "rascunho.pdf");
+
+        mvc.perform(get("/api/v1/revisao/conteudos/" + id + "/anexos/" + anexo + "/link")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + wendy))
+                .andExpect(status().isNotFound());
+        verify(armazenamento, never()).linkTemporario(any(), any());
+    }
+
+    @Test
     void deveExigirVerificacaoEmDuasEtapas() throws Exception {
         mvc.perform(get("/api/v1/revisao/conteudos").header(HttpHeaders.AUTHORIZATION, "Bearer " + wendy + "~aal1"))
                 .andExpect(status().isForbidden());
@@ -216,6 +255,13 @@ class RevisaoConteudoIntegracaoTest {
                 insert into conteudo (titulo, modalidade, secao, corpo, referencias, estado, autor_id)
                 values (?, 'NMES', 'CASOS', 'Texto de teste.', '[R3]', ?, ?)
                 returning id""", Long.class, titulo, estado, autor);
+    }
+
+    private UUID anexo(Long conteudo, String nome) {
+        return jdbc.queryForObject("""
+                insert into anexo (conteudo_id, nome, tipo, tamanho_bytes, caminho)
+                values (?, ?, 'PDF', 2048, ?)
+                returning id""", UUID.class, conteudo, nome, "material-" + conteudo + "-" + nome);
     }
 
     /** O que está gravado de fato: descarrega o JPA antes de ler pelo JDBC. */

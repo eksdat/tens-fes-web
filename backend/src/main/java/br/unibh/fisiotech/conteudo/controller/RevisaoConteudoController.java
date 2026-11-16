@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import br.unibh.fisiotech.conteudo.dto.DevolucaoRequest;
 import br.unibh.fisiotech.conteudo.dto.RevisaoConteudoResponse;
 import br.unibh.fisiotech.conteudo.service.RevisaoConteudoService;
+import br.unibh.fisiotech.material.dto.LinkAnexoResponse;
 
 /** Fila do revisor (docente). O revisor é sempre o {@code sub} do token, nunca um campo do corpo. */
 @RestController
@@ -44,6 +45,11 @@ public class RevisaoConteudoController {
     public RevisaoConteudoResponse devolver(@AuthenticationPrincipal Jwt jwt, @PathVariable("id") Long id,
             @Valid @RequestBody DevolucaoRequest req) {
         return service.devolver(id, revisor(jwt), req.motivo());
+    }
+
+    @GetMapping("/{id}/anexos/{anexoId}/link")
+    public LinkAnexoResponse linkDoAnexo(@PathVariable("id") Long id, @PathVariable("anexoId") UUID anexoId) {
+        return service.linkDoAnexo(id, anexoId);
     }
 
     private static UUID revisor(Jwt jwt) {

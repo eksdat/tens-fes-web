@@ -92,6 +92,27 @@ public class Conteudo {
         this.dataRevisao = dataRevisao;
     }
 
+    /** Material da tela "Criar conteúdo": tem autor, não é bloco de página técnica e nasce em rascunho. */
+    public static Conteudo rascunho(UUID autor, String titulo, Modalidade modalidade, Secao secao, String corpo,
+            String referencias) {
+        var c = new Conteudo(titulo, modalidade, secao, corpo, referencias, EstadoEditorial.RASCUNHO, null);
+        c.autorId = autor;
+        return c;
+    }
+
+    public void editar(String titulo, Modalidade modalidade, Secao secao, String corpo, String referencias) {
+        this.titulo = titulo;
+        this.modalidade = modalidade;
+        this.secao = secao;
+        this.corpo = corpo;
+        this.referencias = referencias;
+    }
+
+    /** O motivo da última devolução fica: o revisor vê o que tinha pedido. */
+    public void enviarParaRevisao() {
+        this.estado = EstadoEditorial.EM_REVISAO;
+    }
+
     /** A data vira a "Revisão docente" mostrada no rodapé da página técnica. */
     public void aprovar(UUID revisor, LocalDate data) {
         this.estado = EstadoEditorial.APROVADO;
