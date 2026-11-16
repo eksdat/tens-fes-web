@@ -1,6 +1,6 @@
 import type { Page, Route } from '@playwright/test'
-import { conteudosIniciais, FAIXAS, type Conta, type ConteudoFalso } from './dados'
-import { URL_API } from './enderecos'
+import { conteudosIniciais, FAIXAS, type AnexoFalso, type Conta, type ConteudoFalso } from './dados'
+import { URL_API, URL_SUPABASE } from './enderecos'
 import { lerCorpo, liberarPreflight, responder } from './http'
 import type { SupabaseFalso } from './supabaseFalso'
 
@@ -89,6 +89,11 @@ export class ApiFalsa {
       return this.revisao(route, caminho)
     }
 
+    if (caminho.startsWith('/materiais')) {
+      if (conta.semCadastro) return this.problema(route, 403, 'Acesso negado.')
+      return this.materiaisDe(route, conta, caminho)
+    }
+
     if (caminho.startsWith('/pacientes')) {
       // Mesma barreira do SecurityConfig: estudante não entra em /pacientes/**.
       if (conta.perfil !== 'PROFISSIONAL' || conta.semCadastro) return this.problema(route, 403, 'Acesso negado.')
@@ -133,7 +138,15 @@ export class ApiFalsa {
   private revisao(route: Route, caminho: string) {
     const metodo = route.request().method()
     if (caminho === '/revisao/conteudos' && metodo === 'GET') {
-      return responder(route, 200, this.conteudos.filter((c) => c.estado === 'EM_REVISAO').sort(ordemDoSite))
+      return responder(route, 200, this.conteudos.filter((c) => c.estado === 'EM_REVISAO').sort(ordemDoSite).map(paraRevisao))
+    }
+
+    // Rascunho é só do autor: o revisor recebe 404, como no RevisaoConteudoService.
+    const link = caminho.match(/^\/revisao\/conteudos\/(\d+)\/anexos\/([^/]+)\/link$/)
+    if (link && metodo === 'GET') {
+      const conteudo = this.conteudos.find((c) => c.id === Number(link[1]) && c.estado !== 'RASCUNHO')
+      const anexo = conteudo?.anexos?.find((a) => a.id === link[2])
+      return anexo ? responder(route, 200, linkAssinado(anexo)) : this.problema(route, 404, 'Anexo não encontrado.')
     }
 
     const [, id, acao] = caminho.match(/^\/revisao\/conteudos\/(\d+)\/(aprovar|devolver)$/) ?? []
@@ -144,12 +157,101 @@ export class ApiFalsa {
 
     if (acao === 'aprovar') {
       Object.assign(conteudo, { estado: 'APROVADO', dataRevisao: hojeEmBrasilia(), motivoDevolucao: null })
-      return responder(route, 200, conteudo)
+      return responder(route, 200, paraRevisao(conteudo))
     }
     const motivo = String(lerCorpo(route).motivo ?? '').trim()
     if (!motivo) return this.problema(route, 400, 'Dados inválidos.', { motivo: 'Escreva o motivo da devolução.' })
     Object.assign(conteudo, { estado: 'RASCUNHO', motivoDevolucao: motivo })
-    return responder(route, 200, conteudo)
+    return responder(route, 200, paraRevisao(conteudo))
+  }
+
+  /** Material de estudo já criado antes do teste (com autor, como os da tela "Criar conteúdo"). */
+  adicionarMaterial(autor: Conta, dados: Pick<ConteudoFalso, 'titulo' | 'modalidade' | 'secao' | 'corpo' | 'estado'>, anexos: string[] = []) {
+    const material: ConteudoFalso = {
+      ...dados,
+      id: this.proximoId(),
+      bloco: null,
+      referencias: '[R1] Johnson, 2007',
+      versao: 1,
+      dataRevisao: null,
+      motivoDevolucao: null,
+      autorId: autor.id,
+      anexos: anexos.map((nome) => ({ id: crypto.randomUUID(), nome, tipo: 'PDF', tamanhoBytes: 2048, criadoEm: agora() })),
+      atualizadoEm: agora(),
+    }
+    this.conteudos.push(material)
+    return material
+  }
+
+  private proximoId() {
+    return Math.max(...this.conteudos.map((c) => c.id)) + 1
+  }
+
+  /** Mesmas regras do MaterialService: rascunho só do autor (404 para os outros) e só rascunho muda. */
+  private materiaisDe(route: Route, conta: Conta, caminho: string) {
+    const metodo = route.request().method()
+    const partes = caminho.split('/').filter(Boolean) // ['materiais', id?, 'enviar' | 'anexos'?, anexoId?, 'link'?]
+    const meus = this.conteudos.filter((c) => c.autorId === conta.id)
+
+    if (partes.length === 1 && metodo === 'GET') {
+      const recentes = [...meus].sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)))
+      return responder(route, 200, recentes.map(paraMaterial))
+    }
+    if (partes.length === 1 && metodo === 'POST') {
+      const corpo = lerCorpo<ConteudoFalso>(route)
+      if (/<[a-zA-Z/!?]/.test(corpo.corpo)) {
+        return this.problema(route, 400, 'Dados inválidos.', { corpo: 'Use texto simples ou Markdown, sem HTML.' })
+      }
+      const novo = this.adicionarMaterial(conta, { ...corpo, estado: 'RASCUNHO' })
+      novo.referencias = corpo.referencias
+      return responder(route, 201, paraMaterial(novo))
+    }
+
+    const material = meus.find((c) => c.id === Number(partes[1]))
+    if (!material) return this.problema(route, 404, 'Material não encontrado.')
+    if (metodo === 'GET' && partes.length === 2) return responder(route, 200, paraMaterial(material))
+    if (metodo === 'GET' && partes[4] === 'link') {
+      const anexo = material.anexos?.find((a) => a.id === partes[3])
+      return anexo ? responder(route, 200, linkAssinado(anexo)) : this.problema(route, 404, 'Anexo não encontrado.')
+    }
+    if (material.estado !== 'RASCUNHO') {
+      return this.problema(route, 409, 'Este material já foi enviado para revisão e não pode ser alterado.')
+    }
+
+    if (metodo === 'PUT' && partes.length === 2) {
+      Object.assign(material, lerCorpo(route), { atualizadoEm: agora() })
+      return responder(route, 200, paraMaterial(material))
+    }
+    if (metodo === 'DELETE' && partes.length === 2) {
+      this.conteudos.splice(this.conteudos.indexOf(material), 1)
+      return responder(route, 204)
+    }
+    if (metodo === 'POST' && partes[2] === 'enviar') {
+      Object.assign(material, { estado: 'EM_REVISAO', atualizadoEm: agora() })
+      return responder(route, 200, paraMaterial(material))
+    }
+    if (metodo === 'POST' && partes[2] === 'anexos') return this.anexar(route, material)
+    if (metodo === 'DELETE' && partes[2] === 'anexos') {
+      material.anexos = material.anexos?.filter((a) => a.id !== partes[3])
+      return responder(route, 204)
+    }
+    return this.naoSimulada(route, `${metodo} ${caminho}`)
+  }
+
+  /** Lê o arquivo do multipart/form-data e confere o tipo pelos primeiros bytes, como o AnexoService. */
+  private anexar(route: Route, material: ConteudoFalso) {
+    const pedido = route.request()
+    const fronteira = pedido.headers()['content-type']?.split('boundary=')[1] ?? ''
+    const corpo = pedido.postDataBuffer() ?? Buffer.alloc(0)
+    const nome = /filename="([^"]*)"/.exec(corpo.toString('latin1'))?.[1] ?? 'anexo'
+    const inicio = corpo.indexOf('\r\n\r\n') + 4
+    const arquivo = corpo.subarray(inicio, corpo.indexOf(`\r\n--${fronteira}`, inicio))
+    const tipo = arquivo.subarray(0, 5).toString('latin1') === '%PDF-' ? 'PDF' : null
+    if (!tipo) return this.problema(route, 400, 'Dados inválidos.', { arquivo: 'Envie um PDF ou uma imagem PNG ou JPEG.' })
+
+    const anexo: AnexoFalso = { id: crypto.randomUUID(), nome, tipo, tamanhoBytes: arquivo.length, criadoEm: agora() }
+    material.anexos = [...(material.anexos ?? []), anexo]
+    return responder(route, 201, anexo)
   }
 
   private pacientesDe(route: Route, conta: Conta, caminho: string, params: URLSearchParams) {
@@ -258,6 +360,23 @@ export class ApiFalsa {
     this.naoAtendidas.push(`API: ${rota}`)
     return this.problema(route, 501, `Sem resposta no teste para ${rota}`)
   }
+}
+
+/** RevisaoConteudoResponse: sem o autor, com a marca de material e os anexos. */
+function paraRevisao({ autorId, atualizadoEm: _atualizadoEm, ...conteudo }: ConteudoFalso) {
+  return { ...conteudo, material: autorId !== undefined, anexos: conteudo.anexos ?? [] }
+}
+
+/** MaterialResponse. */
+function paraMaterial(c: ConteudoFalso) {
+  const { id, titulo, modalidade, secao, corpo, referencias, estado, motivoDevolucao, dataRevisao } = c
+  const anexos = c.anexos ?? []
+  return { id, titulo, modalidade, secao, corpo, referencias, estado, motivoDevolucao, dataRevisao, anexos, criadoEm: c.atualizadoEm, atualizadoEm: c.atualizadoEm }
+}
+
+/** Link assinado do Supabase Storage (o teste responde esse endereço quando precisa abrir a aba). */
+function linkAssinado(anexo: AnexoFalso) {
+  return { url: `${URL_SUPABASE}/storage/v1/object/sign/materiais/${anexo.id}.pdf?token=teste`, expiraEm: agora() }
 }
 
 function usuarioDaApi(conta: Conta) {

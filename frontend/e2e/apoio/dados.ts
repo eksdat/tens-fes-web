@@ -149,7 +149,16 @@ export type ConteudoFalso = {
   estado: 'RASCUNHO' | 'EM_REVISAO' | 'APROVADO' | 'ARQUIVADO'
   dataRevisao: string | null
   motivoDevolucao: string | null
+  /** Só no material de estudo (tela "Criar conteúdo"): os textos do guia não têm autor nem anexo. */
+  autorId?: string
+  anexos?: AnexoFalso[]
+  atualizadoEm?: string
 }
+
+export type AnexoFalso = { id: string; nome: string; tipo: 'PDF' | 'PNG' | 'JPEG'; tamanhoBytes: number; criadoEm: string }
+
+/** Começo de um PDF de verdade: o backend confere o tipo pelos primeiros bytes. */
+export const PDF_DE_TESTE = Buffer.from('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n')
 
 /**
  * No lugar do guia técnico, textos curtos e fictícios, todos em revisão como no banco: os cinco blocos da Visão

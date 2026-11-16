@@ -21,6 +21,8 @@ function conteudo(id: number, titulo: string, extra: Partial<ConteudoEmRevisao> 
     estado: 'EM_REVISAO',
     dataRevisao: null,
     motivoDevolucao: null,
+    material: false,
+    anexos: [],
     ...extra,
   }
 }
@@ -162,6 +164,44 @@ test('deveAvisarQuandoAFilaNaoCarrega', async () => {
   renderizar()
 
   expect(await screen.findByText('Não foi possível carregar a fila de revisão')).toBeInTheDocument()
+})
+
+test('deveMostrarOMaterialDeEstudoComOsAnexosParaAbrir', async () => {
+  const anexo = { id: 'a1', nome: 'aula.pdf', tipo: 'PDF' as const, tamanhoBytes: 2048, criadoEm: '2026-11-10T15:00:00Z' }
+  vi.spyOn(api, 'listarEmRevisao').mockResolvedValue([
+    conteudo(9, 'Resumo de TENS', { bloco: null, secao: 'PARAMETROS', material: true, anexos: [anexo] }),
+  ])
+  const link = vi
+    .spyOn(api, 'linkDoAnexoEmRevisao')
+    .mockResolvedValue({ url: 'https://exemplo.supabase.co/storage/v1/object/sign/materiais/a.pdf?token=t', expiraEm: '' })
+  const aba = { opener: {}, location: { href: '' }, close: vi.fn() }
+  vi.spyOn(window, 'open').mockReturnValue(aba as unknown as Window)
+  renderizar()
+  const usuario = userEvent.setup()
+
+  const item = within(await screen.findByRole('article', { name: 'Resumo de TENS' }))
+  expect(item.getByText('Material de estudo · versão 1')).toBeInTheDocument()
+  expect(item.getByText(/Publicar um anexo não equivale a validá-lo clinicamente\./)).toBeInTheDocument()
+  await usuario.click(item.getByRole('button', { name: 'Abrir aula.pdf' }))
+
+  expect(link).toHaveBeenCalledWith(9, 'a1')
+  expect(aba.location.href).toBe('https://exemplo.supabase.co/storage/v1/object/sign/materiais/a.pdf?token=t')
+  expect(aba.opener).toBeNull()
+})
+
+test('deveAvisarQuandoOAnexoNaoAbre', async () => {
+  const anexo = { id: 'a1', nome: 'aula.pdf', tipo: 'PDF' as const, tamanhoBytes: 2048, criadoEm: '2026-11-10T15:00:00Z' }
+  vi.spyOn(api, 'listarEmRevisao').mockResolvedValue([conteudo(9, 'Resumo de TENS', { material: true, anexos: [anexo] })])
+  vi.spyOn(api, 'linkDoAnexoEmRevisao').mockRejectedValue(new Error('503'))
+  const aba = { opener: {}, location: { href: '' }, close: vi.fn() }
+  vi.spyOn(window, 'open').mockReturnValue(aba as unknown as Window)
+  renderizar()
+  const usuario = userEvent.setup()
+
+  await usuario.click(await screen.findByRole('button', { name: 'Abrir aula.pdf' }))
+
+  expect(await screen.findByText('Não foi possível abrir o anexo agora. Tente de novo em instantes.')).toBeInTheDocument()
+  expect(aba.close).toHaveBeenCalled()
 })
 
 test('deveSerAcessivelSemViolacoes', async () => {
