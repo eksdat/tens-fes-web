@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -27,6 +28,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final String MENSAGEM_ERRO_INTERNO = "Erro interno.";
+
+    private static final String ARQUIVO_GRANDE = "O arquivo passa de 10 MB.";
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException e,
@@ -48,8 +51,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status, WebRequest request) {
         if (corpo instanceof ProblemDetail problema && !(e instanceof RecursoNaoEncontradoException)
                 && !(e instanceof ConflitoException) && !(e instanceof DadoInvalidoException)
-                && !(e instanceof AcaoProibidaException)) {
-            problema.setDetail(status.is5xxServerError() ? MENSAGEM_ERRO_INTERNO : "Requisição inválida.");
+                && !(e instanceof AcaoProibidaException) && !(e instanceof ArmazenamentoIndisponivelException)) {
+            problema.setDetail(e instanceof MaxUploadSizeExceededException ? ARQUIVO_GRANDE
+                    : status.is5xxServerError() ? MENSAGEM_ERRO_INTERNO : "Requisição inválida.");
         }
         return super.handleExceptionInternal(e, corpo, headers, status, request);
     }

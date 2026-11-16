@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -63,6 +64,16 @@ class GlobalExceptionHandlerTest {
         void negado() {
             throw new AccessDeniedException("sem permissão");
         }
+
+        @GetMapping("/armazenamento")
+        void armazenamento() {
+            throw new ArmazenamentoIndisponivelException("Não foi possível acessar os anexos agora.");
+        }
+
+        @GetMapping("/arquivo-grande")
+        void arquivoGrande() {
+            throw new MaxUploadSizeExceededException(10L * 1024 * 1024);
+        }
     }
 
     private final MockMvc mvc = standaloneSetup(new ControllerDeTeste())
@@ -72,6 +83,20 @@ class GlobalExceptionHandlerTest {
     @Test
     void deveResponder404ParaRecursoNaoEncontrado() throws Exception {
         mvc.perform(get("/inexistente")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveResponder503ComAMensagemQuandoOArmazenamentoFalha() throws Exception {
+        mvc.perform(get("/armazenamento"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.detail").value("Não foi possível acessar os anexos agora."));
+    }
+
+    @Test
+    void deveResponder413ComOLimiteQuandoOArquivoEGrandeDemais() throws Exception {
+        mvc.perform(get("/arquivo-grande"))
+                .andExpect(status().is(413))
+                .andExpect(jsonPath("$.detail").value("O arquivo passa de 10 MB."));
     }
 
     @Test
