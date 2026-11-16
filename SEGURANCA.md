@@ -77,7 +77,7 @@ Regras:
 - **Perfil nunca no `user_metadata`.** O próprio usuário altera esse campo com `supabase.auth.updateUser()`. Perfil fica em `usuario.perfil`, que só o Spring altera.
 - "Esqueci a senha" responde a mesma mensagem exista ou não a conta (o Supabase já faz assim; a tela não pode quebrar isso).
 - Registro profissional digitado não gera selo de "verificado".
-- Exclusão de conta: o Spring apaga os dados próprios e chama a Admin API do Supabase para apagar o `auth.users`. Só nesse ponto o backend usa a `service_role` key.
+- Exclusão de conta: o Spring apaga os dados próprios e chama a Admin API do Supabase para apagar o `auth.users`. A chave secreta (`service_role` ou `sb_secret_...`) só é usada aí e no Storage dos anexos.
 
 ---
 
@@ -108,8 +108,9 @@ Regras:
 - Erro do framework (parâmetro inválido, JSON malformado) sai com texto fixo "Requisição inválida."; exceção não tratada sai como 500 "Erro interno.", detalhe só no log. Só as exceções de domínio mantêm a própria mensagem (`GlobalExceptionHandler`): `RecursoNaoEncontradoException` (404), `ConflitoException` (409) e `DadoInvalidoException` (400 com `erros` por campo, para regra que depende do banco).
 - Dado de paciente mínimo: sem telefone (removido na `V11`), sem CPF (o identificador recusa 11 dígitos), e-mail opcional.
 - Todo parâmetro de texto livre leva `@Size` (ex.: `busca` até 100).
-- Upload (`Anexo`): só PDF, PNG e JPEG; até 10 MB (`spring.servlet.multipart.max-file-size=10MB`); conferir o tipo pelos primeiros bytes do arquivo, não pela extensão; nome do arquivo gerado pelo servidor.
-- Arquivos em bucket **privado** do Supabase Storage, acessado só pelo backend. Download por URL assinada de curta duração (5 min).
+- Upload (`Anexo`): só PDF, PNG e JPEG; até 10 MB (`spring.servlet.multipart.max-file-size=10MB`); conferir o tipo pelos primeiros bytes do arquivo, não pela extensão; nome do arquivo gerado pelo servidor. **Feito** em `AnexoService` e `TipoAnexo` (até 5 anexos por material; o nome que a pessoa deu ao arquivo só aparece na tela, sem pasta).
+- Arquivos em bucket **privado** do Supabase Storage (`materiais`, criado pela V14 com o mesmo limite de tipo e tamanho), acessado só pelo backend com `SUPABASE_SECRET_KEY` (`SupabaseStorage`). Download por URL assinada de curta duração (5 min): o autor abre os próprios anexos; o revisor, os de material enviado. Rascunho de outra pessoa responde 404.
+- Material de estudo (texto) é texto simples ou Markdown: HTML é **recusado** (400), não "limpo", e a tela mostra o Markdown sem HTML cru.
 - Texto rico (`Conteudo.corpo`) é sanitizado no backend antes de salvar.
 
 ### Logs e auditoria
@@ -130,7 +131,7 @@ Regras:
 ### Segredos
 
 - Só em variável de ambiente (`.env` local, painel do Render). `.env` no `.gitignore`.
-- `DB_PASSWORD` e `service_role` key só no backend.
+- `DB_PASSWORD` e a chave secreta do Supabase (`SUPABASE_SECRET_KEY`, `sb_secret_...` ou a `service_role` antiga) só no backend.
 - Vazou? Trocar na hora no Supabase e avisar o outro dev. Apagar do histórico do git não basta.
 
 ---
@@ -183,8 +184,10 @@ Cada regra abaixo precisa de teste no backend. Estado em 2026-10-16:
 | Responsável enviado no corpo é ignorado | dono = `sub` | `PacienteIntegracaoTest.deveIgnorarResponsavelEnviadoNoCorpo` |
 | Autor aprova o próprio conteúdo | 403 | `RevisaoConteudoIntegracaoTest.deveImpedirQueOAutorAproveOProprioConteudo`, `RevisaoConteudoServiceTest` |
 | ESTUDANTE, PROFISSIONAL sem `revisor` ou revisor sem `aal2` em `/api/v1/revisao/**` | 403 | `RevisaoConteudoControllerTest`, `RevisaoConteudoIntegracaoTest` |
-| Upload de `.exe` renomeado para `.pdf` | 400 | **Falta** (upload ainda não existe) |
-| Upload de 11 MB | 413 | **Falta** (upload ainda não existe) |
+| Upload de `.exe` renomeado para `.pdf` | 400 | `MaterialIntegracaoTest.deveRecusarArquivoQueNaoEPdfNemImagemMesmoComExtensaoPdf`, `TipoAnexoTest` |
+| Upload acima de 10 MB | 413 no limite do multipart; 400 se passar dele | `GlobalExceptionHandlerTest.deveResponder413ComOLimiteQuandoOArquivoEGrandeDemais`, `MaterialIntegracaoTest.deveRecusarArquivoMaiorQue10MB` |
+| Outra pessoa lê, altera ou abre anexo de rascunho alheio | 404 | `MaterialIntegracaoTest.deveMostrarORascunhoSoParaOAutor`, `MaterialIntegracaoTest.deveDarOLinkTemporarioSoParaOAutor`, `RevisaoConteudoIntegracaoTest.naoDeveAbrirAnexoDeRascunhoParaORevisor` |
+| HTML no texto do material | 400 | `MaterialIntegracaoTest.deveRecusarHtmlMasAceitarOSinalDeMenor` |
 | Token válido sem linha em `usuario` acessando outra rota | 403 | `UsuarioIntegracaoTest.deveNegarRotaComPerfilParaQuemNaoCompletouCadastro` |
 
 E, no Supabase, depois de cada migration: chamar a Data API com a publishable key em qualquer tabela deve falhar.

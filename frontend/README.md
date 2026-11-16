@@ -188,7 +188,7 @@ frontend/
 │   │   ├── LayoutLogado.tsx     # menu + <main>; envolve o EstadoDoAparelhoProvider
 │   │   ├── MenuPrincipal.tsx, abas.ts, BuscaRapida.tsx, atalhos.ts
 │   │   ├── RaizApp.tsx          # "Pular para o conteúdo", document.title e anúncio da página
-│   │   └── EmConstrucao.tsx     # só "Criar conteúdo" ainda usa
+│   │   └── EmConstrucao.tsx     # tela "em construção" (nenhuma rota usa hoje)
 │   ├── shared/
 │   │   ├── api/                 # supabase.ts (só auth), client.ts (axios + JWT), schema.d.ts (gerado)
 │   │   ├── auth/                # AuthProvider, useAuth, "Manter conectado"
@@ -209,6 +209,7 @@ frontend/
 │       ├── pacientes/           # PacientesPage, PacienteFormPage, api.ts, formatar.ts, AvisoDadosFicticios
 │       ├── avaliacao/           # AvaliacaoFormPage, AvaliacoesDoPaciente, api.ts
 │       ├── sessao/              # SessaoFormPage, SessoesDoPaciente, AvisoTriagem, api.ts
+│       ├── material/            # MateriaisPage, MaterialFormPage, AnexosDoMaterial, abrirAnexo.ts, api.ts
 │       └── revisao/             # RevisaoPage (fila do revisor), DevolverConteudo, api.ts
 ├── tests/                       # espelha src/ (alias @/); setup.ts, renderComRotas.tsx
 └── e2e/                         # testes ponta a ponta; apoio/ tem o Supabase e a API falsos e os dados fictícios
@@ -275,7 +276,8 @@ Regras que o frontend precisa respeitar:
 | `/tens`, `/fes` e as abas `aparelho`, `eletrodos`, `parametros`, `seguranca`, `casos` | ambos | `ModuloLayout` + `Pagina*` | Visão geral vem da API (página padrão); atlas em Eletrodos; checklist em Segurança; lista de controles em Aparelho |
 | `/simulador` | ambos | `SimuladorPage` | Modo explorar; `?modalidade=TENS|FES&modo=` abre direto num modo |
 | `/perfil` | ambos | `PerfilPage` | Troca de estudante para profissional |
-| `/criar-conteudo` | ambos | `EmConstrucao` | Card próprio, ainda não feito |
+| `/criar-conteudo` | ambos | `MateriaisPage` | Materiais de quem está logado, com o estado (rascunho, devolvido com o motivo, em revisão, aprovado) |
+| `/criar-conteudo/novo`, `/criar-conteudo/:id` | ambos (só o autor) | `MaterialFormPage` | Título, modalidade, tema, texto (Markdown, sem HTML) e referências; avisos do guia; anexos depois do primeiro salvamento; enviar para revisão com confirmação. Enviado, fica só para ler |
 | `/pacientes` | profissional | `PacientesPage` | Busca, ordenação por coluna, paginação; aviso de dados fictícios |
 | `/pacientes/novo`, `/pacientes/:id` | profissional | `PacienteFormPage` | Cadastro e edição; no detalhe, listas de avaliações e sessões e exclusão confirmada |
 | `/pacientes/:id/avaliacoes/nova`, `/pacientes/:id/avaliacoes/:avaliacaoId` | profissional | `AvaliacaoFormPage` | Avaliação inicial e reavaliação |
@@ -493,6 +495,7 @@ backend, Supabase nem `.env`:
 | `estudo.spec.ts` | Conteúdo pendente e aprovado, abas de TENS e FES, atlas, parâmetros → simulador, limite do aparelho |
 | `profissional.spec.ts` | Código do autenticador, paciente → avaliação → sessão com checklist, identificador repetido, busca |
 | `revisao.spec.ts` | Wendy aprova os cinco blocos e a Visão geral do TENS abre; devolução com motivo; sem acesso para quem não é revisor |
+| `material.spec.ts` | Sininho cria, anexa um PDF (texto renomeado é recusado) e envia para revisão; Wendy abre o anexo e devolve com motivo; rascunho de outra pessoa não aparece |
 | `acessibilidade.spec.ts` | Uso só com teclado, "Pular para o conteúdo" e axe (WCAG 2.2 AA) nas telas principais |
 
 No CI, o job "Testes ponta a ponta" do `frontend.yml` roda em todo PR. Se falhar, o relatório fica nos artefatos da
@@ -573,6 +576,7 @@ Pronto (ver `agent_docs/modulos/` para o detalhe de cada um):
 - Simulador (modo explorar): osciloscópio ao vivo com câmera lenta, modos contínuos, Burst e FES síncrono/recíproco, mensagens do guia.
 - Pacientes, avaliação inicial e registro de sessão, com validação no formulário e no backend.
 - Revisão de conteúdo para o revisor (docente): aprovar ou devolver com motivo; a página técnica abre quando os cinco blocos estão aprovados.
+- Criar conteúdo: material de estudo em rascunho, anexos (PDF, PNG ou JPEG até 10 MB, abertos por link de 5 minutos) e envio para revisão.
 - Acessibilidade: botão flutuante, anúncios, `vitest-axe` nos testes de tela.
 - Testes ponta a ponta (Playwright) dos fluxos principais, no computador e no celular, rodando em todo PR.
 
@@ -582,7 +586,7 @@ Pendente:
 - Simulador: modos Misto, VF e VIF (variação automática) e o modo praticar.
 - Lista do aparelho só mostra valores; quem ajusta é o simulador. O estado some ao recarregar a página.
 - Tipos de pacientes, avaliação, sessão, simulador e página técnica escritos à mão em `features/*/api.ts`: rodar `npm run api:types` com o backend no ar e trocar pelos tipos gerados.
-- Criar conteúdo, biblioteca, dicionário em tela própria, casos para a IA, evolução e relatório do paciente.
+- Biblioteca (onde o material aprovado vai aparecer), dicionário em tela própria, casos para a IA, evolução e relatório do paciente.
 - Revisão jurídica/LGPD dos Termos e da Política (texto preliminar).
 - Teste com leitor de tela real (NVDA e TalkBack).
 - `openapi-typescript` roda por `npx` (pede TypeScript 5).
