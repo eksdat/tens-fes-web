@@ -282,7 +282,7 @@ Regras que o frontend precisa respeitar:
 | `/pacientes/novo`, `/pacientes/:id` | profissional | `PacienteFormPage` | Cadastro e edição; no detalhe, listas de avaliações e sessões e exclusão confirmada |
 | `/pacientes/:id/avaliacoes/nova`, `/pacientes/:id/avaliacoes/:avaliacaoId` | profissional | `AvaliacaoFormPage` | Avaliação inicial e reavaliação |
 | `/pacientes/:id/sessoes/nova` | profissional | `SessaoFormPage` | Formulário, revisão antes de salvar, confirmação |
-| `/revisao` | profissional com `revisor` | `RevisaoPage` | Fila de conteúdo em revisão por módulo e aba; aprovar ou devolver com motivo. Entra pelo menu da conta ("Revisar conteúdo") |
+| `/revisao` | profissional com `revisor` | `RevisaoPage` | Fila de conteúdo em revisão por módulo e aba; aprovar (só com fonte) ou devolver com motivo. O erro da devolução aparece dentro do diálogo; se outra pessoa já decidiu (409), a fila é atualizada. Entra pelo menu da conta ("Revisar conteúdo") |
 
 Qualquer outra rota leva a `/`. Ainda não existem: dicionário em tela própria, biblioteca, casos para a IA, evolução e relatório do paciente.
 
@@ -494,7 +494,7 @@ backend, Supabase nem `.env`:
 | `cadastro.spec.ts` | Criar conta, link de confirmação, completar cadastro, e-mail não confirmado, aceite dos termos |
 | `estudo.spec.ts` | Conteúdo pendente e aprovado, abas de TENS e FES, atlas, parâmetros → simulador, limite do aparelho |
 | `profissional.spec.ts` | Código do autenticador, paciente → avaliação → sessão com checklist, identificador repetido, busca |
-| `revisao.spec.ts` | Wendy aprova os cinco blocos e a Visão geral do TENS abre; devolução com motivo; sem acesso para quem não é revisor |
+| `revisao.spec.ts` | Wendy aprova os cinco blocos e a Visão geral do TENS abre; texto sem fonte não tem "Aprovar" e é devolvido com motivo; sem acesso para quem não é revisor |
 | `material.spec.ts` | Sininho cria, anexa um PDF (texto renomeado é recusado) e envia para revisão; Wendy abre o anexo e devolve com motivo; rascunho de outra pessoa não aparece |
 | `acessibilidade.spec.ts` | Uso só com teclado, "Pular para o conteúdo" e axe (WCAG 2.2 AA) nas telas principais |
 
@@ -575,7 +575,7 @@ Pronto (ver `agent_docs/modulos/` para o detalhe de cada um):
 - Módulos TENS e FES com 6 abas: Visão geral pela API (página padrão, Markdown seguro), lista de controles do aparelho, atlas com pranchas, parâmetros, checklist de segurança e casos.
 - Simulador (modo explorar): osciloscópio ao vivo com câmera lenta, modos contínuos, Burst e FES síncrono/recíproco, mensagens do guia.
 - Pacientes, avaliação inicial e registro de sessão, com validação no formulário e no backend.
-- Revisão de conteúdo para o revisor (docente): aprovar ou devolver com motivo; a página técnica abre quando os cinco blocos estão aprovados.
+- Revisão de conteúdo para quem tem `revisor` (docente ou integrantes do grupo): aprovar (só com fonte) ou devolver com motivo; a página técnica abre quando os cinco blocos estão aprovados.
 - Criar conteúdo: material de estudo em rascunho, anexos (PDF, PNG ou JPEG até 10 MB, abertos por link de 5 minutos) e envio para revisão.
 - Acessibilidade: botão flutuante, anúncios, `vitest-axe` nos testes de tela.
 - Testes ponta a ponta (Playwright) dos fluxos principais, no computador e no celular, rodando em todo PR.

@@ -267,11 +267,11 @@ Regras de desenho:
 | `GET /conteudos/pagina?modalidade=&secao=` | com perfil | Página técnica padrão: blocos na ordem, `liberada` |
 | `GET /conteudos/{id}` | com perfil | Um conteúdo aprovado |
 | `GET /revisao/conteudos` | REVISOR + aal2 | Fila de revisão: conteúdos `EM_REVISAO` na ordem do site |
-| `POST /revisao/conteudos/{id}/aprovar` | REVISOR + aal2 | `APROVADO`, com revisor e data de revisão (fuso de Brasília) |
+| `POST /revisao/conteudos/{id}/aprovar` | REVISOR + aal2 | `APROVADO`, com revisor e data de revisão (fuso de Brasília). Sem fonte (`referencias` vazia), 400. Já decidido por outra pessoa, 409 |
 | `POST /revisao/conteudos/{id}/devolver` | REVISOR + aal2 | Volta para `RASCUNHO` com `motivo` (obrigatório, até 500) |
 | `GET`, `POST` em `/materiais` | com perfil | Materiais de quem está logado (todos os estados) e criação em `RASCUNHO` |
 | `GET`, `PUT`, `DELETE` em `/materiais/{id}` | autor | Ler; alterar e excluir só em `RASCUNHO` (409 depois de enviado); de outra pessoa, 404 |
-| `POST /materiais/{id}/enviar` | autor | `RASCUNHO` → `EM_REVISAO`: entra na fila do revisor |
+| `POST /materiais/{id}/enviar` | autor | `RASCUNHO` → `EM_REVISAO`: entra na fila do revisor. Sem fonte, 400 |
 | `POST /materiais/{id}/anexos` (multipart, `arquivo`), `DELETE /materiais/{id}/anexos/{anexoId}` | autor | PDF, PNG ou JPEG (pelos bytes), até 10 MB e 5 por material; só em `RASCUNHO` |
 | `GET /materiais/{id}/anexos/{anexoId}/link` | autor | Link assinado do Storage, 5 min |
 | `GET /revisao/conteudos/{id}/anexos/{anexoId}/link` | REVISOR + aal2 | Link do anexo de material enviado; de rascunho, 404 |
@@ -353,7 +353,7 @@ Regras obrigatórias no backend:
 2. Todo acesso a paciente, avaliação ou sessão confere `paciente.responsavelId == sub do token`. Se falhar, responde **404**, não 403. Assim não revela que o registro existe. O ponto único dessa verificação é `PacienteService.buscarDoResponsavel` (`findByIdAndResponsavelId`).
 3. Paciente não é usuário: sem login, sem conta.
 4. Registro profissional digitado (CREFITO etc.) **não** gera selo de "verificado".
-5. Só usuário com `revisor = true` (PROFISSIONAL) aprova ou devolve conteúdo, e nunca o próprio (`RevisaoConteudoService`, 403). `revisor` não muda por endpoint: liga-se no banco para pessoas conhecidas (docente).
+5. Só usuário com `revisor = true` (PROFISSIONAL) aprova ou devolve conteúdo, e nunca o próprio (`RevisaoConteudoService`, 403). `revisor` não muda por endpoint: liga-se no banco para pessoas conhecidas do projeto (docente ou integrantes do grupo enquanto a revisão docente não acontece). Não basta ser PROFISSIONAL: o perfil é declarado no cadastro e qualquer conta troca para ele. Conteúdo sem fonte não é aprovado (400), e a decisão trava a linha (`buscarParaDecidir`, `select ... for update`): aprovar e devolver ao mesmo tempo dá 200 para um e 409 para o outro.
 6. `Anexo`: só PDF e imagem, até 10 MB.
 7. Senha, e-mail, redefinição de senha e MFA ficam no Supabase Auth. Nossa tabela `usuario` não guarda e-mail nem senha. Perfil nunca no `user_metadata`. Regras de campo e validações em [SEGURANCA.md](../SEGURANCA.md) e no "Cadastro" abaixo.
 8. Até as políticas LGPD estarem definidas: **somente dados fictícios**.
@@ -708,8 +708,9 @@ Estado: 135 testes, todos verdes (`.\mvnw.cmd test`, 2026-10-16). Uma classe de 
 | `SessaoIntegracaoTest` | Blocos obrigatórios, canal repetido, limite físico dos parâmetros, checklist só por código, ordem da lista, 404 entre profissionais |
 | `UsuarioIntegracaoTest` | Cadastro, 409, `CHECK` do banco, troca para profissional, aceite e versão dos termos, 403 sem cadastro ou inativo |
 | `ConteudoIntegracaoTest`, `ParametroDicionarioIntegracaoTest`, `FaixaParametroIntegracaoTest` | Seeds, só `APROVADO`, página técnica, faixas por modo |
-| `MaterialIntegracaoTest` | Rascunho só do autor (404 para os outros), HTML recusado, envio para a fila do revisor, devolução volta para rascunho com motivo, 409 depois de enviado, anexo pelo tipo dos bytes, limite de 10 MB e de 5 anexos, 503 com o Storage fora, link só para o autor, exclusão apaga os arquivos |
-| `RevisaoConteudoIntegracaoTest` | Fila só `EM_REVISAO`, aprovação grava revisor e data, devolução com motivo, página liberada com os 5 blocos aprovados, 403 para o autor, 409 para aprovação repetida, 403 sem `REVISOR` ou sem `aal2`, anexos do material na fila e link só fora do rascunho |
+| `MaterialIntegracaoTest` | Rascunho só do autor (404 para os outros), HTML recusado, envio para a fila do revisor (exige fonte), devolução volta para rascunho com motivo, 409 depois de enviado, anexo pelo tipo dos bytes, limite de 10 MB e de 5 anexos, 503 com o Storage fora, link só para o autor, exclusão apaga os arquivos |
+| `RevisaoConteudoIntegracaoTest` | Fila só `EM_REVISAO`, aprovação grava revisor e data, devolução com motivo, página liberada com os 5 blocos aprovados, 403 para o autor, 409 para aprovação repetida, 400 sem fonte, 403 sem `REVISOR` ou sem `aal2`, anexos do material na fila e link só fora do rascunho |
+| `RevisaoConcorrenteIntegracaoTest` | Aprovar e devolver o mesmo texto ao mesmo tempo, com transações de verdade: um recebe 200, o outro 409, e fica gravada a decisão de quem recebeu 200 |
 | `RestricaoPorPerfilTest`, `RestricaoPorPerfilIntegracaoTest` | 401, 403 por perfil e sem MFA |
 | `SwaggerIntegracaoTest` | Swagger desligado por padrão |
 | Unitários (`*ServiceTest`, `*ControllerTest`, `PerfilJwtConverterTest`, `CadastroRequestTest`, `GlobalExceptionHandlerTest`, `TipoAnexoTest`, `SupabaseStorageTest`) | Regras sem banco, formato dos erros, tipo do arquivo pelos bytes e as chamadas ao Storage (servidor falso) |
@@ -812,7 +813,7 @@ Pronto:
 Pendente:
 
 - Backend de aparelho, atlas e casos do simulador (hoje dados estáticos no frontend).
-- Arquivar conteúdo. Falta a docente receber `revisor = true` no banco e aprovar o seed, que está todo `EM_REVISAO`.
+- Arquivar conteúdo. Falta ligar `revisor = true` no banco para quem vai revisar (docente ou integrantes do grupo) e aprovar o seed, que está todo `EM_REVISAO`.
 - Mostrar o material aprovado para os estudantes (biblioteca).
 - Testes de segurança que faltam: assinatura inválida ou token expirado ([SEGURANCA.md](../SEGURANCA.md), seção 8).
 - Limite de requisições na API.

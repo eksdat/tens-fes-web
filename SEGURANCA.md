@@ -184,6 +184,8 @@ Cada regra abaixo precisa de teste no backend. Estado em 2026-10-16:
 | Responsável enviado no corpo é ignorado | dono = `sub` | `PacienteIntegracaoTest.deveIgnorarResponsavelEnviadoNoCorpo` |
 | Autor aprova o próprio conteúdo | 403 | `RevisaoConteudoIntegracaoTest.deveImpedirQueOAutorAproveOProprioConteudo`, `RevisaoConteudoServiceTest` |
 | ESTUDANTE, PROFISSIONAL sem `revisor` ou revisor sem `aal2` em `/api/v1/revisao/**` | 403 | `RevisaoConteudoControllerTest`, `RevisaoConteudoIntegracaoTest` |
+| Aprovar e devolver o mesmo texto ao mesmo tempo | 200 e 409; fica uma decisão | `RevisaoConcorrenteIntegracaoTest` |
+| Aprovar conteúdo sem fonte | 400 | `RevisaoConteudoIntegracaoTest.deveRecusarAprovarConteudoSemFonte`, `RevisaoConteudoServiceTest` |
 | Upload de `.exe` renomeado para `.pdf` | 400 | `MaterialIntegracaoTest.deveRecusarArquivoQueNaoEPdfNemImagemMesmoComExtensaoPdf`, `TipoAnexoTest` |
 | Upload acima de 10 MB | 413 no limite do multipart; 400 se passar dele | `GlobalExceptionHandlerTest.deveResponder413ComOLimiteQuandoOArquivoEGrandeDemais`, `MaterialIntegracaoTest.deveRecusarArquivoMaiorQue10MB` |
 | Outra pessoa lê, altera ou abre anexo de rascunho alheio | 404 | `MaterialIntegracaoTest.deveMostrarORascunhoSoParaOAutor`, `MaterialIntegracaoTest.deveDarOLinkTemporarioSoParaOAutor`, `RevisaoConteudoIntegracaoTest.naoDeveAbrirAnexoDeRascunhoParaORevisor` |
