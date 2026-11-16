@@ -19,6 +19,7 @@ import br.unibh.fisiotech.material.dto.LinkAnexoResponse;
 import br.unibh.fisiotech.material.service.AnexoService;
 import br.unibh.fisiotech.shared.exception.AcaoProibidaException;
 import br.unibh.fisiotech.shared.exception.ConflitoException;
+import br.unibh.fisiotech.shared.exception.DadoInvalidoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
 
 /** Revisão editorial (guia técnico, seção 23): só conteúdo aprovado aparece para o estudante. */
@@ -48,9 +49,14 @@ public class RevisaoConteudoService {
                 .toList();
     }
 
+    /** Sem fonte não aprova: o revisor devolve pedindo a referência ("Conteúdo sem fonte não entra"). */
     @Transactional
     public RevisaoConteudoResponse aprovar(Long id, UUID revisor) {
         var conteudo = emRevisao(id, revisor);
+        if (conteudo.getReferencias() == null || conteudo.getReferencias().isBlank()) {
+            throw new DadoInvalidoException("referencias",
+                    "Conteúdo sem fonte não pode ser aprovado. Devolva pedindo a referência.");
+        }
         conteudo.aprovar(revisor, LocalDate.now(relogio));
         return RevisaoConteudoResponse.de(conteudo, anexos.doMaterial(id));
     }
@@ -71,9 +77,12 @@ public class RevisaoConteudoService {
         return anexos.link(conteudo.getId(), anexoId);
     }
 
-    /** Só o que está em revisão pode ser aprovado ou devolvido, e nunca por quem escreveu. */
+    /**
+     * Só o que está em revisão pode ser aprovado ou devolvido, e nunca por quem escreveu. A leitura trava a linha:
+     * quem chega depois de outra decisão recebe 409, e a decisão anterior fica.
+     */
     private Conteudo emRevisao(Long id, UUID revisor) {
-        var conteudo = repository.findById(id)
+        var conteudo = repository.buscarParaDecidir(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Conteúdo não encontrado."));
         if (conteudo.getEstado() != EstadoEditorial.EM_REVISAO) {
             throw new ConflitoException("Este conteúdo não está mais em revisão.");

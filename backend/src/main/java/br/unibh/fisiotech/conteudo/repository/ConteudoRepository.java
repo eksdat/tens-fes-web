@@ -5,6 +5,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 
 import br.unibh.fisiotech.conteudo.entity.Conteudo;
 import br.unibh.fisiotech.conteudo.enums.EstadoEditorial;
@@ -21,6 +26,14 @@ public interface ConteudoRepository extends JpaRepository<Conteudo, Long> {
     List<Conteudo> findByModalidadeAndSecaoAndBlocoIsNotNull(Modalidade modalidade, Secao secao);
 
     List<Conteudo> findByEstado(EstadoEditorial estado);
+
+    /**
+     * Lê travando a linha até o fim da transação ({@code select ... for update}). Duas decisões ao mesmo tempo sobre o
+     * mesmo texto: a segunda espera a primeira gravar e lê o estado novo, em vez de sobrescrever a decisão.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Conteudo c where c.id = :id")
+    Optional<Conteudo> buscarParaDecidir(@Param("id") Long id);
 
     List<Conteudo> findByAutorIdOrderByAtualizadoEmDesc(UUID autorId);
 

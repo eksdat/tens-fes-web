@@ -15,6 +15,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -29,6 +32,7 @@ import br.unibh.fisiotech.conteudo.repository.ConteudoRepository;
 import br.unibh.fisiotech.material.service.AnexoService;
 import br.unibh.fisiotech.shared.exception.AcaoProibidaException;
 import br.unibh.fisiotech.shared.exception.ConflitoException;
+import br.unibh.fisiotech.shared.exception.DadoInvalidoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,7 +75,7 @@ class RevisaoConteudoServiceTest {
     @Test
     void deveAprovarGravandoORevisorEADataDeBrasilia() {
         var conteudo = conteudo(7L, Modalidade.TENS, Secao.VISAO_GERAL, Bloco.O_QUE_E);
-        when(repository.findById(7L)).thenReturn(Optional.of(conteudo));
+        when(repository.buscarParaDecidir(7L)).thenReturn(Optional.of(conteudo));
 
         var resposta = service.aprovar(7L, WENDY);
 
@@ -83,7 +87,7 @@ class RevisaoConteudoServiceTest {
     @Test
     void deveDevolverParaRascunhoComOMotivo() {
         var conteudo = conteudo(7L, Modalidade.TENS, Secao.VISAO_GERAL, Bloco.EXEMPLO);
-        when(repository.findById(7L)).thenReturn(Optional.of(conteudo));
+        when(repository.buscarParaDecidir(7L)).thenReturn(Optional.of(conteudo));
 
         var resposta = service.devolver(7L, WENDY, "  Falta a fonte do exemplo.  ");
 
@@ -97,7 +101,7 @@ class RevisaoConteudoServiceTest {
     void deveRecusarConteudoQueNaoEstaMaisEmRevisao() {
         var conteudo = conteudo(7L, Modalidade.TENS, Secao.VISAO_GERAL, Bloco.O_QUE_E);
         conteudo.aprovar(UUID.randomUUID(), LocalDate.of(2026, 11, 1));
-        when(repository.findById(7L)).thenReturn(Optional.of(conteudo));
+        when(repository.buscarParaDecidir(7L)).thenReturn(Optional.of(conteudo));
 
         assertThatThrownBy(() -> service.devolver(7L, WENDY, "Rever o texto."))
                 .isInstanceOf(ConflitoException.class);
@@ -109,7 +113,7 @@ class RevisaoConteudoServiceTest {
     void deveImpedirQueOAutorReviseOProprioConteudo() {
         var conteudo = conteudo(7L, Modalidade.TENS, Secao.CASOS, null);
         ReflectionTestUtils.setField(conteudo, "autorId", WENDY);
-        when(repository.findById(7L)).thenReturn(Optional.of(conteudo));
+        when(repository.buscarParaDecidir(7L)).thenReturn(Optional.of(conteudo));
 
         assertThatThrownBy(() -> service.aprovar(7L, WENDY))
                 .isInstanceOf(AcaoProibidaException.class);
@@ -120,14 +124,35 @@ class RevisaoConteudoServiceTest {
     void deveDeixarOutroRevisorAprovarConteudoComAutor() {
         var conteudo = conteudo(7L, Modalidade.TENS, Secao.CASOS, null);
         ReflectionTestUtils.setField(conteudo, "autorId", UUID.randomUUID());
-        when(repository.findById(7L)).thenReturn(Optional.of(conteudo));
+        when(repository.buscarParaDecidir(7L)).thenReturn(Optional.of(conteudo));
 
         assertThat(service.aprovar(7L, WENDY).estado()).isEqualTo(EstadoEditorial.APROVADO);
     }
 
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "   ")
+    void deveRecusarAprovarConteudoSemFonte(String referencias) {
+        var conteudo = conteudo(7L, Modalidade.FES, Secao.CASOS, null);
+        ReflectionTestUtils.setField(conteudo, "referencias", referencias);
+        when(repository.buscarParaDecidir(7L)).thenReturn(Optional.of(conteudo));
+
+        assertThatThrownBy(() -> service.aprovar(7L, WENDY)).isInstanceOf(DadoInvalidoException.class);
+        assertThat(conteudo.getEstado()).isEqualTo(EstadoEditorial.EM_REVISAO);
+    }
+
+    @Test
+    void deveDeixarDevolverConteudoSemFonte() {
+        var conteudo = conteudo(7L, Modalidade.FES, Secao.CASOS, null);
+        ReflectionTestUtils.setField(conteudo, "referencias", null);
+        when(repository.buscarParaDecidir(7L)).thenReturn(Optional.of(conteudo));
+
+        assertThat(service.devolver(7L, WENDY, "Inclua a referência.").estado()).isEqualTo(EstadoEditorial.RASCUNHO);
+    }
+
     @Test
     void deveResponder404ParaConteudoInexistente() {
-        when(repository.findById(99L)).thenReturn(Optional.empty());
+        when(repository.buscarParaDecidir(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.aprovar(99L, WENDY)).isInstanceOf(RecursoNaoEncontradoException.class);
     }

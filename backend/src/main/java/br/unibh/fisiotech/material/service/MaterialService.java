@@ -66,9 +66,13 @@ public class MaterialService {
         repository.delete(material);
     }
 
+    /** O revisor não aprova sem fonte; pedir a referência aqui evita a ida e volta. */
     @Transactional
     public MaterialResponse enviarParaRevisao(Long id, UUID autor) {
         var material = emRascunho(id, autor);
+        if (material.getReferencias() == null || material.getReferencias().isBlank()) {
+            throw new DadoInvalidoException("referencias", "Informe a fonte antes de enviar para revisão.");
+        }
         material.enviarParaRevisao();
         return resposta(repository.saveAndFlush(material));
     }

@@ -161,6 +161,16 @@ class MaterialIntegracaoTest {
     }
 
     @Test
+    void deveExigirAFonteParaEnviarParaRevisao() throws Exception {
+        var id = idDe(criar(sininho, MATERIAL.replace("\"[R1] Johnson, 2007\"", "null")));
+
+        pedir(post("/api/v1/materiais/" + id + "/enviar"), sininho)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.referencias").value("Informe a fonte antes de enviar para revisão."));
+        pedir(get("/api/v1/materiais/" + id), sininho).andExpect(jsonPath("$.estado").value("RASCUNHO"));
+    }
+
+    @Test
     void naoDeveAlterarNemAnexarDepoisDeEnviado() throws Exception {
         var id = idDe(criar(sininho, MATERIAL));
         pedir(post("/api/v1/materiais/" + id + "/enviar"), sininho).andExpect(status().isOk());

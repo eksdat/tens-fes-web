@@ -164,6 +164,21 @@ class RevisaoConteudoIntegracaoTest {
     }
 
     @Test
+    void deveRecusarAprovarConteudoSemFonte() throws Exception {
+        var id = jdbc.queryForObject("""
+                insert into conteudo (titulo, modalidade, secao, corpo, referencias, estado)
+                values ('Caso sem fonte', 'NMES', 'CASOS', 'Texto de teste.', '  ', 'EM_REVISAO')
+                returning id""", Long.class);
+
+        aprovar(wendy, id)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.referencias")
+                        .value("Conteúdo sem fonte não pode ser aprovado. Devolva pedindo a referência."));
+
+        assertThat(linha(id).get("estado")).isEqualTo("EM_REVISAO");
+    }
+
+    @Test
     void deveResponder409AoAprovarDuasVezes() throws Exception {
         var id = conteudo("Caso aprovado duas vezes", "EM_REVISAO", null);
         aprovar(wendy, id).andExpect(status().isOk());
