@@ -51,6 +51,7 @@ O serviço usa `backend/Dockerfile` (Java 25, JVM limitada para 512 MB). `render
 | `DB_PASSWORD` | senha do banco |
 | `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
 | `CORS_ALLOWED_ORIGINS` | origens do frontend, separadas por vírgula (seção 3) |
+| `SUPABASE_SECRET_KEY` | Supabase › *Project Settings › API Keys › Secret keys* (`sb_secret_...`). Só para os anexos de material; sem ela a API sobe e o envio de anexo responde 503 |
 | `SWAGGER_ENABLED` | **não definir** em produção (Swagger desligado) |
 
 ### Migrations no banco de produção
@@ -63,12 +64,14 @@ O que as migrations V6 a V12 pedem da nuvem:
 |---|---|---|
 | `V8__paciente` | `unaccent` no schema `extensions` | A migration cria; o Supabase já tem o schema `extensions` |
 | `V8__paciente` | `pg_cron` e o job `remover-pacientes-excluidos` (03:00 UTC, apaga paciente excluído há mais de 90 dias) | A migration cria a extensão e o job só se `pg_cron` estiver em `pg_available_extensions`. Não precisa ligar nada no painel antes |
-| V6, V7, V9 a V12 | Nada além do Flyway | — |
+| `V14__material_anexo` | Bucket privado `materiais` no Supabase Storage (PDF, PNG e JPEG, até 10 MB) | A migration cria o bucket só se o schema `storage` existir (no Supabase, existe). Não criar pelo painel |
+| V6, V7, V9 a V13 | Nada além do Flyway | — |
 
 Depois do deploy, confira no *SQL Editor* do Supabase:
 
 1. `select version, success from flyway_schema_history order by installed_rank;` mostra até `12` com `success = true`.
 2. `select jobname, schedule from cron.job;` mostra `remover-pacientes-excluidos` com `0 3 * * *`. Sem a linha, o `pg_cron` não estava disponível e a remoção de 90 dias não roda.
+   Depois da V14: `select id, public, file_size_limit from storage.buckets;` mostra `materiais`, `false`, `10485760`.
 3. *Advisors › Security*: nenhum `WARN` ou `ERROR` novo ([SEGURANCA.md](SEGURANCA.md), seção 2). `rls_enabled_no_policy` (`INFO`) é esperado. Se aparecer `extension_in_public`, a extensão foi criada fora do schema `extensions`.
 
 O frontend que usa pacientes, avaliação e sessão só funciona depois desse deploy do backend: publique o Render antes do Firebase.

@@ -2987,3 +2987,35 @@ fieldset.tf-captcha {
 .tf-osciloscopio__tela path {
   vector-effect: non-scaling-stroke;
 }
+
+/* Criar conteúdo: lista de materiais do autor e anexos (também na fila do revisor). */
+.tf-materiais {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tf-anexos {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tf-anexos__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+
+.tf-anexos__item:last-child {
+  border-bottom: 0;
+}

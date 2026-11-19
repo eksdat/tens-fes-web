@@ -36,6 +36,7 @@ public class SecurityConfig {
      * API stateless com JWT do Supabase: sem sessão HTTP, logo sem CSRF.
      * {@code /api/v1/usuarios/me} aceita quem ainda não completou o cadastro (sem papel);
      * {@code /api/v1/pacientes/**} (pacientes, avaliações e sessões) é só de PROFISSIONAL com sessão aal2 (MFA);
+     * {@code /api/v1/revisao/**} (aprovar e devolver conteúdo) é só de REVISOR, também com aal2;
      * todo o resto exige perfil.
      */
     @Bean
@@ -50,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/usuarios/me", "/api/v1/usuarios/me/**").authenticated()
                         .requestMatchers("/api/v1/pacientes/**").access(AuthorizationManagers.allOf(
                                 AuthorityAuthorizationManager.hasRole("PROFISSIONAL"), SESSAO_COM_MFA))
+                        .requestMatchers("/api/v1/revisao/**").access(AuthorizationManagers.allOf(
+                                AuthorityAuthorizationManager.hasRole("REVISOR"), SESSAO_COM_MFA))
                         .anyRequest().hasAnyRole("ESTUDANTE", "PROFISSIONAL"))
                 .build();
     }

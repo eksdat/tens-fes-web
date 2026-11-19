@@ -11,9 +11,18 @@ type Perfil = Usuario['perfil']
 /**
  * Decide só a navegação, em 3 estados: sem sessão (login), logado sem cadastro completo (completar cadastro)
  * e logado com perfil. Com autenticador cadastrado, exige o código nesta sessão; PROFISSIONAL precisa ter um
- * (as telas de MFA usam semMfa para não entrar em laço). Esconder telas é conforto: a regra de acesso de verdade fica na API (403/404).
+ * (as telas de MFA usam semMfa para não entrar em laço). soRevisor deixa passar só quem tem `revisor` (docente).
+ * Esconder telas é conforto: a regra de acesso de verdade fica na API (403/404).
  */
-export function ProtectedRoute({ perfil, semMfa = false }: { perfil?: Perfil; semMfa?: boolean }) {
+export function ProtectedRoute({
+  perfil,
+  semMfa = false,
+  soRevisor = false,
+}: {
+  perfil?: Perfil
+  semMfa?: boolean
+  soRevisor?: boolean
+}) {
   const { sessao, carregando, sair } = useAuth()
   const usuario = useUsuarioAtual()
   const mfa = useNivelMfa()
@@ -45,6 +54,7 @@ export function ProtectedRoute({ perfil, semMfa = false }: { perfil?: Perfil; se
 
   if (usuario.data === null) return <Navigate to="/completar-cadastro" replace />
   if (perfil && usuario.data.perfil !== perfil) return <Navigate to="/" replace />
+  if (soRevisor && !usuario.data.revisor) return <Navigate to="/" replace />
   if (semMfa) return <Outlet />
   if (usuario.data.termosPendentes) return <Navigate to="/termos/aceitar" replace />
 

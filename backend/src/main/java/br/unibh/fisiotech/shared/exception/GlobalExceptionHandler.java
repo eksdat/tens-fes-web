@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -27,6 +28,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final String MENSAGEM_ERRO_INTERNO = "Erro interno.";
+
+    private static final String ARQUIVO_GRANDE = "O arquivo passa de 10 MB.";
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException e,
@@ -47,10 +50,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(Exception e, Object corpo, HttpHeaders headers,
             HttpStatusCode status, WebRequest request) {
         if (corpo instanceof ProblemDetail problema && !(e instanceof RecursoNaoEncontradoException)
-                && !(e instanceof ConflitoException) && !(e instanceof DadoInvalidoException)) {
+                && !(e instanceof ConflitoException) && !(e instanceof DadoInvalidoException)
+                && !(e instanceof AcaoProibidaException) && !(e instanceof ArmazenamentoIndisponivelException)
+                && !(e instanceof MaxUploadSizeExceededException)) {
             problema.setDetail(status.is5xxServerError() ? MENSAGEM_ERRO_INTERNO : "Requisição inválida.");
         }
         return super.handleExceptionInternal(e, corpo, headers, status, request);
+    }
+
+    /**
+     * O Spring manda o corpo vazio para cá e depois preenche em inglês ("Maximum upload size exceeded"). Com o
+     * corpo já montado, a pessoa lê o limite.
+     */
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return handleExceptionInternal(e, ProblemDetail.forStatusAndDetail(status, ARQUIVO_GRANDE), headers, status,
+                request);
     }
 
     /**
