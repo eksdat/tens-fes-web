@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -41,6 +42,11 @@ class GlobalExceptionHandlerTest {
             throw new ConflitoException("Cadastro já concluído.");
         }
 
+        @GetMapping("/proibida")
+        void proibida() {
+            throw new AcaoProibidaException("Quem escreveu o conteúdo não pode revisá-lo.");
+        }
+
         @PostMapping("/validacao")
         void validacao(@Valid @RequestBody Entrada entrada) {
         }
@@ -58,6 +64,16 @@ class GlobalExceptionHandlerTest {
         void negado() {
             throw new AccessDeniedException("sem permissão");
         }
+
+        @GetMapping("/armazenamento")
+        void armazenamento() {
+            throw new ArmazenamentoIndisponivelException("Não foi possível acessar os anexos agora.");
+        }
+
+        @GetMapping("/arquivo-grande")
+        void arquivoGrande() {
+            throw new MaxUploadSizeExceededException(10L * 1024 * 1024);
+        }
     }
 
     private final MockMvc mvc = standaloneSetup(new ControllerDeTeste())
@@ -70,8 +86,29 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void deveResponder503ComAMensagemQuandoOArmazenamentoFalha() throws Exception {
+        mvc.perform(get("/armazenamento"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.detail").value("Não foi possível acessar os anexos agora."));
+    }
+
+    @Test
+    void deveResponder413ComOLimiteQuandoOArquivoEGrandeDemais() throws Exception {
+        mvc.perform(get("/arquivo-grande"))
+                .andExpect(status().is(413))
+                .andExpect(jsonPath("$.detail").value("O arquivo passa de 10 MB."));
+    }
+
+    @Test
     void deveResponder409ParaConflito() throws Exception {
         mvc.perform(get("/conflito")).andExpect(status().isConflict());
+    }
+
+    @Test
+    void deveResponder403ComAMensagemDoDominioParaAcaoProibida() throws Exception {
+        mvc.perform(get("/proibida"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("Quem escreveu o conteúdo não pode revisá-lo."));
     }
 
     @Test

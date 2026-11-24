@@ -79,12 +79,6 @@ export function InicioPage() {
           </li>
         </ul>
       </section>
-
-      <div className="tf-linha">
-        <BotaoLink to="/mfa/ativar" variante="ghost">
-          Verificação em duas etapas
-        </BotaoLink>
-      </div>
     </div>
   )
 }

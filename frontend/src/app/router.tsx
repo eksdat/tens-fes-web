@@ -19,13 +19,11 @@ import { PacientesPage } from '../features/pacientes/PacientesPage'
 import { AvaliacaoFormPage } from '../features/avaliacao/AvaliacaoFormPage'
 import { SessaoFormPage } from '../features/sessao/SessaoFormPage'
 import { SimuladorPage } from '../features/simulador/SimuladorPage'
-import { EmConstrucao } from './EmConstrucao'
+import { MateriaisPage } from '../features/material/MateriaisPage'
+import { MaterialFormPage } from '../features/material/MaterialFormPage'
+import { RevisaoPage } from '../features/revisao/RevisaoPage'
 import { LayoutLogado } from './LayoutLogado'
 import { RaizApp } from './RaizApp'
-
-function emConstrucao(path: string, titulo: string) {
-  return { path, handle: { titulo }, element: <EmConstrucao titulo={titulo} /> }
-}
 
 export const router = createBrowserRouter([
   {
@@ -65,7 +63,9 @@ export const router = createBrowserRouter([
               rotasDoModulo(TENS),
               rotasDoModulo(FES),
               { path: '/simulador', handle: { titulo: 'Simulador' }, element: <SimuladorPage /> },
-              emConstrucao('/criar-conteudo', 'Criar conteúdo'),
+              { path: '/criar-conteudo', handle: { titulo: 'Criar conteúdo' }, element: <MateriaisPage /> },
+              { path: '/criar-conteudo/novo', handle: { titulo: 'Novo material' }, element: <MaterialFormPage /> },
+              { path: '/criar-conteudo/:id', handle: { titulo: 'Material' }, element: <MaterialFormPage /> },
               { path: '/perfil', handle: { titulo: 'Meu perfil' }, element: <PerfilPage /> },
               {
                 element: <ProtectedRoute perfil="PROFISSIONAL" />,
@@ -77,6 +77,10 @@ export const router = createBrowserRouter([
                   { path: '/pacientes/:id/avaliacoes/:avaliacaoId', handle: { titulo: 'Avaliação' }, element: <AvaliacaoFormPage /> },
                   { path: '/pacientes/:id/sessoes/nova', handle: { titulo: 'Registrar sessão' }, element: <SessaoFormPage /> },
                 ],
+              },
+              {
+                element: <ProtectedRoute perfil="PROFISSIONAL" soRevisor />,
+                children: [{ path: '/revisao', handle: { titulo: 'Revisão de conteúdo' }, element: <RevisaoPage /> }],
               },
             ],
           },
