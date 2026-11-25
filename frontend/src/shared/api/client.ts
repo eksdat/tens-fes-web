@@ -11,10 +11,27 @@ api.interceptors.request.use(async (config) => {
   return config
 })
 
-// 401: a sessão não vale mais. Encerrar dispara onAuthStateChange e a rota protegida leva ao login.
+let encerramento: Promise<unknown> | undefined
+let sessaoExpirada = false
+
+export function houveExpiracaoDaSessao() {
+  return sessaoExpirada
+}
+
+export function limparAvisoDeSessao() {
+  sessaoExpirada = false
+}
+
 api.interceptors.response.use(undefined, async (erro) => {
-  if (axios.isAxiosError(erro) && erro.response?.status === 401) {
-    await supabase.auth.signOut()
+  if (axios.isAxiosError(erro) && erro.response?.status === 401 && erro.config?.headers.Authorization) {
+    const { data } = await supabase.auth.getSession()
+    if (data.session && erro.config.headers.Authorization === 'Bearer ' + data.session.access_token) {
+      sessaoExpirada = true
+      encerramento ??= supabase.auth.signOut({ scope: 'local' }).finally(() => {
+        encerramento = undefined
+      })
+      await encerramento
+    }
   }
-  return Promise.reject(erro)
+  throw erro
 })
