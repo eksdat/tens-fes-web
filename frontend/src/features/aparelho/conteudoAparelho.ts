@@ -4,7 +4,7 @@ import type { Fonte } from '../modulo/tipos'
 
 /**
  * Aparelho de referência: Neurodyn Portable TENS/FES (Ibramed). Nomenclatura do manual, 12ª edição (cap. 9 e 10) e
- * Guia Técnico, seções 09 e 10. Sem foto nem desenho do painel: a posição física das peças só entra com o manual na mão.
+ * Guia Técnico, seções 09 e 10. O visor usa uma representação didática do equipamento.
  */
 
 export type Controle = { numero: number; nome: string; funcao: string }

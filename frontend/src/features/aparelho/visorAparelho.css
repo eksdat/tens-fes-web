@@ -1,0 +1,36 @@
+.tf-visor-aparelho canvas {
+  display: block;
+  width: 100%;
+  height: 21rem;
+  border-radius: var(--tf-raio, 1rem);
+  background: radial-gradient(ellipse at 50% 44%, #294a63, #132438 75%);
+  touch-action: none;
+  cursor: grab;
+}
+
+.tf-visor-aparelho canvas:active {
+  cursor: grabbing;
+}
+
+.tf-visor-aparelho__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-block: .75rem;
+}
+.tf-visor-aparelho__acoes {
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.tf-visor-aparelho {
+  width: min(100%, 42rem);
+}
+
+.tf-visor-aparelho__acoes {
+  margin-inline: 0;
+}
+
+.tf-painel > .tf-painel {
+  width: 100%;
+}
