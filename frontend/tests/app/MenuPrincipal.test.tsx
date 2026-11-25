@@ -125,7 +125,7 @@ test('deveOferecerMeuPerfilDentroDoMenuDaConta', async () => {
   await userEvent.click(screen.getByRole('button', { name: /Ana Souza/ }))
 
   expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toHaveAttribute('href', '/perfil')
-  expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Meu perfil', 'Sair'])
+  expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Meus casos clínicos', 'Meu perfil', 'Sair'])
 })
 
 test('deveOferecerARevisaoDeConteudoSoParaRevisor', async () => {

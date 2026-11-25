@@ -73,6 +73,20 @@ class RestricaoPorPerfilIntegracaoTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void deveNegarCasosParaProfissional() throws Exception {
+        cadastrar(PROFISSIONAL);
+        mvc.perform(get("/api/v1/casos-clinicos").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deveListarCasosParaEstudante() throws Exception {
+        cadastrar(ESTUDANTE);
+        mvc.perform(get("/api/v1/casos-clinicos").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk());
+    }
+
     private void cadastrar(String json) throws Exception {
         mvc.perform(post("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer())
                         .contentType(MediaType.APPLICATION_JSON).content(json))

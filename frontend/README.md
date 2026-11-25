@@ -247,7 +247,7 @@ O guia completo (tokens, componentes, padrões, capturas e protótipo) está em 
 | Simulador e casos fictícios | Acesso | Acesso |
 | Criar materiais | Rascunho e envio | Contribuição para revisão |
 | Pacientes / prontuário | **Sem acesso** | **Só os pacientes sob sua responsabilidade** |
-| Casos para a IA | Envia caso fictício | Conteúdo revisado alimenta a base |
+| Casos clínicos para estudo | Envia e consulta os próprios casos fictícios | Sem acesso aos envios dos estudantes |
 
 Regras que o frontend precisa respeitar:
 
@@ -284,7 +284,7 @@ Regras que o frontend precisa respeitar:
 | `/pacientes/:id/sessoes/nova` | profissional | `SessaoFormPage` | Formulário, revisão antes de salvar, confirmação |
 | `/revisao` | profissional com `revisor` | `RevisaoPage` | Fila de conteúdo em revisão por módulo e aba; aprovar (só com fonte) ou devolver com motivo. O erro da devolução aparece dentro do diálogo; se outra pessoa já decidiu (409), a fila é atualizada. Entra pelo menu da conta ("Revisar conteúdo") |
 
-Qualquer outra rota leva a `/`. Ainda não existem: dicionário em tela própria, biblioteca, casos para a IA, evolução e relatório do paciente.
+Qualquer outra rota leva a `/`. Ainda não existem: dicionário em tela própria, biblioteca, evolução e relatório do paciente.
 
 ---
 
@@ -586,7 +586,11 @@ Pendente:
 - Simulador: modos Misto, VF e VIF (variação automática) e o modo praticar.
 - Lista do aparelho só mostra valores; quem ajusta é o simulador. O estado some ao recarregar a página.
 - Tipos de pacientes, avaliação, sessão, simulador e página técnica escritos à mão em `features/*/api.ts`: rodar `npm run api:types` com o backend no ar e trocar pelos tipos gerados.
-- Biblioteca (onde o material aprovado vai aparecer), dicionário em tela própria, casos para a IA, evolução e relatório do paciente.
+- Biblioteca (onde o material aprovado vai aparecer), dicionário em tela própria, evolução e relatório do paciente.
 - Revisão jurídica/LGPD dos Termos e da Política (texto preliminar).
 - Teste com leitor de tela real (NVDA e TalkBack).
 - `openapi-typescript` roda por `npx` (pede TypeScript 5).
+
+## Casos clínicos para estudo
+
+O item Meus casos clínicos no menu da conta permite que estudantes enviem cenários fictícios e consultem seus próprios envios e anexos. A resposta educativa consulta a visão geral revisada da modalidade e orienta a discussão com o docente quando a base não permite avaliar a proposta. Os casos e anexos ficam fora da base de conhecimento.
