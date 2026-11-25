@@ -586,7 +586,7 @@ Pendente:
 - Simulador: modos Misto, VF e VIF (variação automática) e o modo praticar.
 - Lista do aparelho só mostra valores; quem ajusta é o simulador. O estado some ao recarregar a página.
 - Tipos de pacientes, avaliação, sessão, simulador e página técnica escritos à mão em `features/*/api.ts`: rodar `npm run api:types` com o backend no ar e trocar pelos tipos gerados.
-- Biblioteca (onde o material aprovado vai aparecer), dicionário em tela própria, evolução e relatório do paciente.
+- Biblioteca (onde o material aprovado vai aparecer), dicionário em tela própria, casos para a IA, evolução e relatório do paciente.
 - Revisão jurídica/LGPD dos Termos e da Política (texto preliminar).
 - Teste com leitor de tela real (NVDA e TalkBack).
 - `openapi-typescript` roda por `npx` (pede TypeScript 5).
