@@ -45,11 +45,11 @@ it('imprime somente as seções escolhidas e preserva zero e ausência no gráfi
     const relatorio = document.querySelector<HTMLElement>('.tf-relatorio-impressao')!
     relatorio.style.display = 'block'
     expect(relatorio).not.toHaveTextContent('CASO-01')
-    expect(within(relatorio).getByRole('heading', { name: 'Evolução' })).toBeInTheDocument()
+    expect(within(relatorio).getByRole('heading', { name: 'Evolução da dor' })).toBeInTheDocument()
     expect(within(relatorio).getByRole('cell', { name: '0' })).toBeInTheDocument()
     expect(within(relatorio).getByRole('cell', { name: 'Não avaliada' })).toBeInTheDocument()
-    expect(relatorio.querySelectorAll('meter')).toHaveLength(1)
-    expect(relatorio.querySelector('meter')).toHaveAttribute('value', '0')
+    expect(relatorio.querySelectorAll('[data-valor]')).toHaveLength(1)
+    expect(relatorio.querySelector('[data-valor]')).toHaveAttribute('data-valor', '0')
     await usuario.click(screen.getByRole('button', { name: 'Imprimir relatório' }))
     expect(imprimir).toHaveBeenCalledOnce()
   } finally {

@@ -15,7 +15,7 @@ export function SessoesDoPaciente({ pacienteId, profissional }: { pacienteId: st
   const sessoes = direcao === 'desc' ? data : data && [...data].reverse()
 
   return (
-    <section className="tf-cartao tf-pilha" aria-labelledby="titulo-sessoes">
+    <section className="tf-cartao tf-pilha tf-sessoes" aria-labelledby="titulo-sessoes">
       <div className="tf-pacientes__topo">
         <h2 id="titulo-sessoes" className="tf-cartao__titulo">
           Sessões
@@ -31,7 +31,7 @@ export function SessoesDoPaciente({ pacienteId, profissional }: { pacienteId: st
 
       {sessoes && sessoes.length > 0 && (
         <div className="tf-tabela__rolagem">
-          <table className="tf-tabela">
+          <table className="tf-tabela tf-sessoes__historico">
             <caption className="tf-sr-only">Linha do tempo de sessões</caption>
             <thead>
               <tr>
@@ -51,6 +51,7 @@ export function SessoesDoPaciente({ pacienteId, profissional }: { pacienteId: st
                 <th scope="col">Modalidade</th>
                 <th scope="col">Duração</th>
                 <th scope="col">Objetivo</th>
+                <th scope="col">Planejamento</th>
               </tr>
             </thead>
             <tbody>
@@ -61,6 +62,17 @@ export function SessoesDoPaciente({ pacienteId, profissional }: { pacienteId: st
                   <td>{s.modalidade}</td>
                   <td>{s.duracaoRealMin} min</td>
                   <td>{s.objetivo}</td>
+                  <td>
+                    {s.planejamento ? (
+                      <div className="tf-sessoes__planejamento">
+                        {s.planejamento.larguraPulsoUs && <strong>{s.planejamento.larguraPulsoUs} µs</strong>}
+                        {s.planejamento.referencia && (
+                          <small>{s.planejamento.referencia.titulo} · v{s.planejamento.referencia.versao}</small>
+                        )}
+                        {!s.planejamento.larguraPulsoUs && !s.planejamento.referencia && <span>Relato registrado</span>}
+                      </div>
+                    ) : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

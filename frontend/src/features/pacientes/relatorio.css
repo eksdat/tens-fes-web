@@ -5,30 +5,6 @@
   margin-inline-end: 1rem;
 }
 
-.tf-evolucao-grafico {
-  margin: 0;
-}
-
-.tf-evolucao-par {
-  margin-block: 0.75rem;
-  break-inside: avoid;
-}
-
-.tf-evolucao-barra {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.tf-evolucao-barra > span:first-child {
-  min-inline-size: 4rem;
-}
-
-.tf-evolucao-barra meter {
-  inline-size: min(12rem, 55vw);
-}
-
 .tf-relatorio-impressao {
   display: none;
 }
