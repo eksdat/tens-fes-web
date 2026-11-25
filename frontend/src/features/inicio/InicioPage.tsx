@@ -93,6 +93,12 @@ export function InicioPage() {
               Abrir o simulador
             </Link>
           </li>
+          <li className="tf-cartao tf-modulo-cartao">
+            <h3 className="tf-titulo tf-titulo--cartao">Biblioteca digital</h3>
+            <Link className="tf-link tf-modulo-cartao__acao" to="/biblioteca">
+              Abrir a biblioteca
+            </Link>
+          </li>
         </ul>
       </section>
     </div>
