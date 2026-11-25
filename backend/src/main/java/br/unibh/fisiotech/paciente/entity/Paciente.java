@@ -1,7 +1,13 @@
 package br.unibh.fisiotech.paciente.entity;
 
+import br.unibh.fisiotech.shared.dto.Alteracao;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.JoinColumn;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import org.hibernate.annotations.SQLRestriction;
@@ -54,6 +60,14 @@ public class Paciente {
     @CreatedBy
     @Column(updatable = false)
     private UUID criadoPor;
+
+    @ElementCollection
+    @CollectionTable(name = "paciente_alteracao", joinColumns = @JoinColumn(name = "paciente_id"))
+    private Set<Alteracao> alteracoes = new HashSet<>();
+
+    public void registrarAlteracao(UUID autor) {
+        alteracoes.add(new Alteracao(autor, Instant.now()));
+    }
 
     @LastModifiedDate
     private Instant alteradoEm;

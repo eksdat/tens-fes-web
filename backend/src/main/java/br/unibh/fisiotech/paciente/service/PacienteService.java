@@ -86,6 +86,7 @@ public class PacienteService {
             throw new ConflitoException(IDENTIFICADOR_REPETIDO);
         }
         preencher(paciente, req);
+        paciente.registrarAlteracao(responsavelId);
         return salvar(paciente);
     }
 

@@ -74,6 +74,10 @@ const schema = z.object({
   tolerancia: opcional(500),
   fadiga: opcional(500),
   ajustes: opcional(500),
+  dorAntes: z.string().regex(/^(?:10|[0-9])?$/, 'Use a escala de 0 a 10.'),
+  dorDepois: z.string().regex(/^(?:10|[0-9])?$/, 'Use a escala de 0 a 10.'),
+  dorTarefa: opcional(200),
+  dorMomento: opcional(200),
   medidaAntes: opcional(200),
   medidaDepois: opcional(200),
   medidaContexto: opcional(300),
@@ -81,6 +85,13 @@ const schema = z.object({
   motivoTermino: obrigatorio('Informe o motivo do término.', 300),
   planoReavaliacao: obrigatorio('Informe o plano de reavaliação.', 500),
 })
+
+  .superRefine((v, ctx) => {
+    if (!v.dorAntes && !v.dorDepois) return
+    for (const campo of ['dorTarefa', 'dorMomento'] as const) {
+      if (!v[campo].trim()) ctx.addIssue({ code: 'custom', path: [campo], message: 'Preencha este campo ao registrar dor.' })
+    }
+  })
 
 type Valores = z.infer<typeof schema>
 
@@ -104,6 +115,10 @@ const VAZIO: Valores = {
   tolerancia: '',
   fadiga: '',
   ajustes: '',
+  dorAntes: '',
+  dorDepois: '',
+  dorTarefa: '',
+  dorMomento: '',
   medidaAntes: '',
   medidaDepois: '',
   medidaContexto: '',
@@ -147,6 +162,10 @@ function paraRequest(v: Valores, checklist: Set<string>): SessaoRequest {
     tolerancia: nulo(v.tolerancia),
     fadiga: nulo(v.fadiga),
     ajustes: nulo(v.ajustes),
+    dorAntes: v.dorAntes === '' ? null : Number(v.dorAntes),
+    dorDepois: v.dorDepois === '' ? null : Number(v.dorDepois),
+    dorTarefa: nulo(v.dorTarefa),
+    dorMomento: nulo(v.dorMomento),
     medidaAntes: nulo(v.medidaAntes),
     medidaDepois: nulo(v.medidaDepois),
     medidaContexto: nulo(v.medidaContexto),
@@ -412,6 +431,10 @@ export function SessaoFormPage() {
 
         <Bloco titulo="Resultado">
           <div className="tf-form-grade">
+            <Campo rotulo="Dor antes (0 a 10)" inputMode="numeric" erro={errors.dorAntes?.message} {...register('dorAntes')} />
+            <Campo rotulo="Dor depois (0 a 10)" inputMode="numeric" erro={errors.dorDepois?.message} {...register('dorDepois')} />
+            <Campo rotulo="Tarefa da avaliação da dor" erro={errors.dorTarefa?.message} {...register('dorTarefa')} />
+            <Campo rotulo="Momento da avaliação da dor" erro={errors.dorMomento?.message} {...register('dorMomento')} />
             <Campo rotulo="Medida antes" dica="Exemplo: dor 6/10 na tarefa definida." erro={errors.medidaAntes?.message} {...register('medidaAntes')} />
             <Campo rotulo="Medida depois" erro={errors.medidaDepois?.message} {...register('medidaDepois')} />
           </div>
@@ -477,6 +500,7 @@ function Revisao({ valores: v, checklist, erro, salvando, aoVoltar, aoSalvar }: 
     ],
     ['Eletrodos', `${v.eletrodoTipo}, ${v.eletrodoDimensoes} · ${ROTULO_LADO[v.lado as Lado]} · ${v.marcos}`],
     ['Resposta', `Sensação: ${ou(v.sensacao)} · Contração: ${ou(v.contracao)} · Tolerância: ${ou(v.tolerancia)}`],
+    ['Dor antes e depois', `${ou(v.dorAntes)} / ${ou(v.dorDepois)} · ${ou(v.dorTarefa)} · ${ou(v.dorMomento)}`],
     ['Resultado', `Antes: ${ou(v.medidaAntes)} · Depois: ${ou(v.medidaDepois)}`],
     ['Encerramento', `Pele: ${v.condicaoPele} · Término: ${v.motivoTermino} · Reavaliação: ${v.planoReavaliacao}`],
     ['Checklist', `${checklist.size} ${checklist.size === 1 ? 'item marcado' : 'itens marcados'}`],

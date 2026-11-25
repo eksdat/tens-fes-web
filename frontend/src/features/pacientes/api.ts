@@ -3,6 +3,7 @@ import { api } from '../../shared/api/client'
 
 export type Paciente = {
   id: string
+  responsavelId?: string
   nome: string
   sobrenome: string
   identificador: string
@@ -12,6 +13,7 @@ export type Paciente = {
   criadoPor: string
   alteradoEm: string
   alteradoPor: string
+  alteracoes?: { autor: string; dataHora: string }[]
 }
 
 export type PacienteRequest = Pick<

@@ -30,6 +30,10 @@ export type SessaoRequest = {
   tolerancia: string | null
   fadiga: string | null
   ajustes: string | null
+  dorAntes?: number | null
+  dorDepois?: number | null
+  dorTarefa?: string | null
+  dorMomento?: string | null
   medidaAntes: string | null
   medidaDepois: string | null
   medidaContexto: string | null
