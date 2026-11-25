@@ -1,3 +1,4 @@
+import { CasosClinicosPage } from '../features/casos/CasosClinicosPage'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AuthCallbackPage } from '../features/auth/login/AuthCallbackPage'
 import { CompletarCadastroPage } from '../features/auth/cadastro/CompletarCadastroPage'
@@ -69,6 +70,10 @@ export const router = createBrowserRouter([
               { path: '/criar-conteudo/novo', handle: { titulo: 'Novo material' }, element: <MaterialFormPage /> },
               { path: '/criar-conteudo/:id', handle: { titulo: 'Material' }, element: <MaterialFormPage /> },
               { path: '/perfil', handle: { titulo: 'Meu perfil' }, element: <PerfilPage /> },
+              {
+                element: <ProtectedRoute perfil="ESTUDANTE" />,
+                children: [{ path: '/casos-clinicos', handle: { titulo: 'Meus casos clínicos' }, element: <CasosClinicosPage /> }],
+              },
               {
                 element: <ProtectedRoute perfil="PROFISSIONAL" />,
                 children: [
