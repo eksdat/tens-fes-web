@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Botao } from '../../shared/ui/Botao'
 import type { Controle } from './conteudoAparelho'
 import { useEstadoDoAparelho } from './useEstadoDoAparelho'
@@ -40,8 +40,13 @@ export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
   const [ativo, setAtivo] = useState<number | null>(null)
   const { estado } = useEstadoDoAparelho()
   const botoes = useRef(new Map<number, HTMLButtonElement>())
+  const explicacao = useRef<HTMLElement>(null)
   const escolhido = controles.find((c) => c.numero === ativo)
   const marcados = ativo ? (POSICOES[ativo] ?? []) : []
+
+  useLayoutEffect(() => {
+    if (ativo !== null) explicacao.current?.focus()
+  }, [ativo])
 
   function alternar(numero: number) {
     setAtivo((atual) => (atual === numero ? null : numero))
@@ -61,7 +66,8 @@ export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
   }
 
   return (
-    <div className="tf-aparelho">
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- Escape fecha a explicação a partir do foco dentro do painel.
+    <div className="tf-aparelho" onKeyDown={(evento) => ativo !== null && aoTeclar(evento, ativo)}>
       <div className="tf-painel">
         <div className="tf-painel__moldura">
           <svg className="tf-painel__svg" viewBox={`0 0 ${LARGURA} ${ALTURA}`} aria-hidden="true" focusable="false">
@@ -138,7 +144,7 @@ export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
       </div>
 
       <div className="tf-pilha">
-        <p className="tf-sub" aria-live="polite">
+        <p className="tf-sub">
           {escolhido
             ? `Controle ${escolhido.numero}: ${escolhido.nome}. ${escolhido.funcao}`
             : 'Escolha um controle na lista, ou toque no desenho, para ver a função e onde fica.'}
@@ -148,41 +154,49 @@ export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
             const d = descreverControle(c.numero, estado)
             const aberto = ativo === c.numero
             return (
-            <li key={c.numero}>
-              <button
-                type="button"
-                className="tf-controle"
-                aria-expanded={aberto}
-                aria-controls={`controle-${c.numero}-explicacao`}
-                ref={(el) => {
-                  if (el) botoes.current.set(c.numero, el)
-                  else botoes.current.delete(c.numero)
-                }}
-                onClick={() => alternar(c.numero)}
-                onKeyDown={(e) => aoTeclar(e, c.numero)}
-              >
-                <span className="tf-controle__numero" aria-hidden="true">
-                  {c.numero}
-                </span>
-                <span>
-                  <span className="tf-controle__nome">{c.nome}</span>
-                  <span className="tf-controle__funcao">{c.funcao}</span>
-                </span>
-              </button>
-              <p className="tf-controle__leitura">Unidade: {d.unidade}</p>
-              <p className="tf-controle__leitura">Valor atual: {d.valor}</p>
-              <div id={`controle-${c.numero}-explicacao`} className="tf-controle__explicacao" hidden={!aberto}>
-                {aberto && (
-                  <>
-                    <p className="tf-controle__leitura">Estado: {d.estado}</p>
-                    <p className="tf-controle__leitura">Referência: {REFERENCIA}</p>
-                    <Botao variante="secundario" onClick={() => fechar(c.numero)} onKeyDown={(e) => aoTeclar(e, c.numero)}>
-                      Fechar explicação
-                    </Botao>
-                  </>
-                )}
-              </div>
-            </li>
+              <li key={c.numero}>
+                <button
+                  type="button"
+                  className="tf-controle"
+                  aria-expanded={aberto}
+                  aria-describedby={`controle-${c.numero}-unidade controle-${c.numero}-valor`}
+                  aria-controls={`controle-${c.numero}-explicacao`}
+                  ref={(el) => {
+                    if (el) botoes.current.set(c.numero, el)
+                    else botoes.current.delete(c.numero)
+                  }}
+                  onClick={() => alternar(c.numero)}
+                >
+                  <span className="tf-controle__numero" aria-hidden="true">
+                    {c.numero}
+                  </span>
+                  <span>
+                    <span className="tf-controle__nome">{c.nome}</span>
+                    <span id={`controle-${c.numero}-funcao`} className="tf-controle__funcao">{c.funcao}</span>
+                  </span>
+                </button>
+                <p id={`controle-${c.numero}-unidade`} className="tf-controle__leitura">Unidade: {d.unidade}</p>
+                <p id={`controle-${c.numero}-valor`} className="tf-controle__leitura">Valor atual: {d.valor}</p>
+                <section
+                  id={`controle-${c.numero}-explicacao`}
+                  className="tf-controle__explicacao"
+                  aria-label={`Explicação de ${c.nome}`}
+                  aria-describedby={`controle-${c.numero}-funcao controle-${c.numero}-unidade controle-${c.numero}-valor`}
+                  tabIndex={-1}
+                  ref={aberto ? explicacao : undefined}
+                  hidden={!aberto}
+                >
+                  {aberto && (
+                    <>
+                      <p className="tf-controle__leitura">Estado: {d.estado}</p>
+                      <p className="tf-controle__leitura">Referência: {REFERENCIA}</p>
+                      <Botao variante="secundario" onClick={() => fechar(c.numero)}>
+                        Fechar explicação
+                      </Botao>
+                    </>
+                  )}
+                </section>
+              </li>
             )
           })}
         </ol>

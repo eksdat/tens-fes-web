@@ -56,6 +56,7 @@ public class AvaliacaoService {
         var avaliacao = buscarDoResponsavel(pacienteId, avaliacaoId, responsavelId);
         conferirData(pacientes.buscarDoResponsavel(pacienteId, responsavelId), req);
         preencher(avaliacao, req);
+        avaliacao.registrarAlteracao(responsavelId);
         return AvaliacaoResponse.de(repository.saveAndFlush(avaliacao));
     }
 

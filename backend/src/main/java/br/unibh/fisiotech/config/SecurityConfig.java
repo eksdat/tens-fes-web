@@ -53,6 +53,7 @@ public class SecurityConfig {
                                 AuthorityAuthorizationManager.hasRole("PROFISSIONAL"), SESSAO_COM_MFA))
                         .requestMatchers("/api/v1/revisao/**").access(AuthorizationManagers.allOf(
                                 AuthorityAuthorizationManager.hasRole("REVISOR"), SESSAO_COM_MFA))
+                        .requestMatchers("/api/v1/casos-clinicos/**").hasRole("ESTUDANTE")
                         .anyRequest().hasAnyRole("ESTUDANTE", "PROFISSIONAL"))
                 .build();
     }

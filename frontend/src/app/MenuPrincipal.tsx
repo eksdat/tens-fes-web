@@ -59,6 +59,11 @@ export function MenuPrincipal({ abas = ABAS }: { abas?: Aba[] }) {
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content className="tf-menu__opcoes" align="end" sideOffset={8}>
+              {usuario.perfil === 'ESTUDANTE' && (
+                <DropdownMenu.Item className="tf-menu__opcao" asChild>
+                  <Link to="/casos-clinicos">Meus casos clínicos</Link>
+                </DropdownMenu.Item>
+              )}
               {usuario.revisor && (
                 <DropdownMenu.Item className="tf-menu__opcao" asChild>
                   <Link to="/revisao">Revisar conteúdo</Link>

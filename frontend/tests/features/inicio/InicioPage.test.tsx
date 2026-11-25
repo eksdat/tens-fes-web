@@ -66,11 +66,12 @@ test('naoDeveMostrarAVerificacaoEmDuasEtapasNoInicio', () => {
   expect(screen.queryByRole('link', { name: 'Verificação em duas etapas' })).not.toBeInTheDocument()
 })
 
-test('deveLevarAoSimuladorPelasFerramentas', () => {
+test('deveLevarAoSimuladorEABibliotecaPelasFerramentas', () => {
   renderizar()
 
   const ferramentas = screen.getByRole('region', { name: 'Ferramentas' })
   expect(within(ferramentas).getByRole('link', { name: 'Abrir o simulador' })).toHaveAttribute('href', '/simulador')
+  expect(within(ferramentas).getByRole('link', { name: 'Abrir a biblioteca' })).toHaveAttribute('href', '/biblioteca')
 })
 
 test('deveSerAcessivelSemViolacoes', async () => {

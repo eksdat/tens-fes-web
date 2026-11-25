@@ -184,7 +184,20 @@ class AvaliacaoIntegracaoTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dorEscala").value(4))
                 .andExpect(jsonPath("$.achados", hasSize(1)))
-                .andExpect(jsonPath("$.alteradoPor").value(profissionalA));
+                .andExpect(jsonPath("$.alteradoPor").value(profissionalA))
+                .andExpect(jsonPath("$.alteracoes[0].autor").value(profissionalA))
+                .andExpect(jsonPath("$.alteracoes[0].dataHora").isNotEmpty());
+
+        mvc.perform(put("/api/v1/pacientes/" + pacienteDeA + "/avaliacoes/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA)
+                        .contentType(MediaType.APPLICATION_JSON).content(COMPLETA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alteracoes[1].autor").value(profissionalA));
+
+        mvc.perform(get("/api/v1/pacientes/" + pacienteDeA + "/avaliacoes/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alteracoes", hasSize(2)));
     }
 
     private String cadastrarProfissional() throws Exception {

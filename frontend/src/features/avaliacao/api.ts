@@ -41,6 +41,7 @@ export type Avaliacao = AvaliacaoRequest & {
   criadoPor: string
   alteradoEm: string
   alteradoPor: string
+  alteracoes?: { autor: string; dataHora: string }[]
 }
 
 /** Itens do guia, seção 17, na ordem da tela. */

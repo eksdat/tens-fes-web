@@ -39,6 +39,14 @@ export class SupabaseFalso {
 
   /** Confirma o e-mail e devolve o endereço do link que o Supabase mandaria (volta para /auth/callback). */
   linkDeConfirmacao(email: string): string {
+    return this.linkDeEmail(email, 'signup')
+  }
+
+  linkDeRecuperacao(email: string): string {
+    return this.linkDeEmail(email, 'recovery')
+  }
+
+  private linkDeEmail(email: string, tipo: 'signup' | 'recovery'): string {
     const conta = this.contas.find((c) => c.email === email)
     if (!conta) throw new Error(`Nenhum cadastro recebido para ${email}`)
     this.confirmadas.add(email)
@@ -49,9 +57,9 @@ export class SupabaseFalso {
       expires_in: String(DURACAO_SESSAO),
       expires_at: String(sessao.expires_at),
       token_type: 'bearer',
-      type: 'signup',
+      type: tipo,
     })
-    return `/auth/callback#${hash}`
+    return `${tipo === 'signup' ? '/auth/callback' : '/nova-senha'}#${hash}`
   }
 
   async ligar(page: Page) {
@@ -71,6 +79,13 @@ export class SupabaseFalso {
     if (rota === 'POST /token' && url.searchParams.get('grant_type') === 'refresh_token') return this.renovar(route, corpo)
     if (rota === 'POST /signup') return this.criarConta(route, corpo)
     if (rota === 'POST /logout') return responder(route, 204)
+    if (rota === 'POST /recover') return responder(route, 200, {})
+    if (rota === 'PUT /user') {
+      const conta = this.contaDoToken(pedido.headers().authorization)
+      if (!conta) return this.erro(route, 401, 'bad_jwt', 'Token inválido')
+      conta.senha = String(corpo.password)
+      return responder(route, 200, this.usuario(conta))
+    }
     if (rota === 'GET /user') {
       const conta = this.contaDoToken(pedido.headers().authorization)
       return conta ? responder(route, 200, this.usuario(conta)) : this.erro(route, 401, 'bad_jwt', 'Token inválido')

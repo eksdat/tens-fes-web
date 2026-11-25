@@ -2,11 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { BotaoLink } from '../../shared/ui/Botao'
+import { HistoricoAlteracoes } from '../pacientes/HistoricoAlteracoes'
 import { formatarData } from '../pacientes/formatar'
 import { chaveAvaliacoes, listarAvaliacoes } from './api'
 
 /** Avaliações do paciente, da mais recente para a mais antiga; clicar em "Data" inverte. */
-export function AvaliacoesDoPaciente({ pacienteId }: { pacienteId: string }) {
+export function AvaliacoesDoPaciente({ pacienteId, profissional }: { pacienteId: string; profissional?: { id: string; nome: string } }) {
   const [direcao, setDirecao] = useState<'asc' | 'desc'>('desc')
   const { data, isPending, isError } = useQuery({
     queryKey: [...chaveAvaliacoes(pacienteId), direcao],
@@ -50,6 +51,7 @@ export function AvaliacoesDoPaciente({ pacienteId }: { pacienteId: string }) {
                 </th>
                 <th scope="col">Dor (0 a 10)</th>
                 <th scope="col">Objetivo</th>
+                <th scope="col">Alterações</th>
               </tr>
             </thead>
             <tbody>
@@ -62,6 +64,7 @@ export function AvaliacoesDoPaciente({ pacienteId }: { pacienteId: string }) {
                   </td>
                   <td>{a.dorEscala ?? 'Não avaliada'}</td>
                   <td>{a.objetivo ?? '—'}</td>
+                  <td><HistoricoAlteracoes alteracoes={a.alteracoes} profissional={profissional} /></td>
                 </tr>
               ))}
             </tbody>

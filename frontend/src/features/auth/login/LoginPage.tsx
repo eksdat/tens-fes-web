@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { z } from 'zod'
+import { houveExpiracaoDaSessao } from '../../../shared/api/client'
 import { supabase, urlDeRetornoAuth } from '../../../shared/api/supabase'
 import { definirManterConectado } from '../../../shared/auth/armazenamento'
 import { useAuth } from '../../../shared/auth/useAuth'
@@ -91,6 +92,9 @@ export function LoginPage() {
         <p className="tf-sub">Acesse com o e-mail e a senha da sua conta.</p>
       </div>
 
+      {!aviso && houveExpiracaoDaSessao() && (
+        <Alerta intencao="atencao" titulo="Sua sessão expirou. Entre novamente." />
+      )}
       {aviso?.tipo === 'erro' && <Alerta intencao="perigo" titulo="Não foi possível entrar">{aviso.texto}</Alerta>}
       {aviso?.tipo === 'naoConfirmado' && (
         <Alerta

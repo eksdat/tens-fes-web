@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { useEffect, useState, type ReactNode } from 'react'
+import { limparAvisoDeSessao } from '../api/client'
 import { supabase } from '../api/supabase'
 import { AuthContext } from './contexto'
 
@@ -14,6 +15,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = supabase.auth.onAuthStateChange((evento, nova) => {
       setSessao(nova)
       setCarregando(false)
+      if (nova) limparAvisoDeSessao()
       if (evento === 'SIGNED_OUT') queryClient.clear()
     })
     return () => data.subscription.unsubscribe()

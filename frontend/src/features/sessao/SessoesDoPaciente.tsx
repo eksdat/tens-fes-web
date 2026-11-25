@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { BotaoLink } from '../../shared/ui/Botao'
+import { dataSessao } from './dataSessao'
+import { Evolucao } from './Evolucao'
 import { chaveSessoes, listarSessoes } from './api'
 
 /** Histórico de sessões; a API devolve da mais recente para a mais antiga e clicar em "Data" inverte aqui. */
-export function SessoesDoPaciente({ pacienteId }: { pacienteId: string }) {
+export function SessoesDoPaciente({ pacienteId, profissional }: { pacienteId: string; profissional?: { id: string; nome: string } }) {
   const [direcao, setDirecao] = useState<'asc' | 'desc'>('desc')
   const { data, isPending, isError } = useQuery({
     queryKey: chaveSessoes(pacienteId),
@@ -30,6 +32,7 @@ export function SessoesDoPaciente({ pacienteId }: { pacienteId: string }) {
       {sessoes && sessoes.length > 0 && (
         <div className="tf-tabela__rolagem">
           <table className="tf-tabela">
+            <caption className="tf-sr-only">Linha do tempo de sessões</caption>
             <thead>
               <tr>
                 <th scope="col" aria-sort={direcao === 'asc' ? 'ascending' : 'descending'}>
@@ -44,6 +47,7 @@ export function SessoesDoPaciente({ pacienteId }: { pacienteId: string }) {
                     </span>
                   </button>
                 </th>
+                <th scope="col">Autor</th>
                 <th scope="col">Modalidade</th>
                 <th scope="col">Duração</th>
                 <th scope="col">Objetivo</th>
@@ -52,7 +56,8 @@ export function SessoesDoPaciente({ pacienteId }: { pacienteId: string }) {
             <tbody>
               {sessoes.map((s) => (
                 <tr key={s.id}>
-                  <td>{new Date(s.dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                  <td>{dataSessao(s.dataHora)}</td>
+                  <td>{profissional?.id === s.profissionalId ? profissional?.nome : s.profissionalId}</td>
                   <td>{s.modalidade}</td>
                   <td>{s.duracaoRealMin} min</td>
                   <td>{s.objetivo}</td>
@@ -62,6 +67,7 @@ export function SessoesDoPaciente({ pacienteId }: { pacienteId: string }) {
           </table>
         </div>
       )}
+      {data && <Evolucao sessoes={data} />}
     </section>
   )
 }

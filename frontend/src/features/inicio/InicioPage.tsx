@@ -27,6 +27,7 @@ const MODULOS = [
 
 export function InicioPage() {
   const usuario = useUsuarioAtual().data
+  const profissional = usuario?.perfil === 'PROFISSIONAL'
   const primeiroNome = usuario?.nome.split(' ')[0]
 
   return (
@@ -35,13 +36,28 @@ export function InicioPage() {
         <FolhasDecorativas className="tf-hero__arte" />
         <div className="tf-hero__texto">
           {primeiroNome && <p className="tf-hero__kicker">Olá, {primeiroNome}</p>}
-          <h1 className="tf-titulo">Aprenda TENS e FES</h1>
-          <p className="tf-hero__sub">Comece pelo objetivo e depois veja os ajustes.</p>
+          <h1 className="tf-titulo">{profissional ? 'TENS e FES na prática clínica' : 'Aprenda TENS e FES'}</h1>
+          <p className="tf-hero__sub">
+            {profissional
+              ? 'Acompanhe avaliações, sessões e a evolução de seus pacientes.'
+              : 'Comece pelo objetivo e depois veja os ajustes.'}
+          </p>
           <BotaoLink to={TENS.base} variante="primario">
             Começar pelo TENS
           </BotaoLink>
         </div>
       </header>
+
+      {profissional && (
+        <section className="tf-pilha" aria-labelledby="titulo-pratica">
+          <h2 id="titulo-pratica" className="tf-titulo tf-titulo--secao">Prática clínica</h2>
+          <div className="tf-cartao tf-modulo-cartao">
+            <h3 className="tf-titulo tf-titulo--cartao">Pacientes</h3>
+            <p className="tf-sub">Consulte prontuários e registre avaliações e sessões.</p>
+            <Link className="tf-link tf-modulo-cartao__acao" to="/pacientes">Abrir pacientes</Link>
+          </div>
+        </section>
+      )}
 
       <section className="tf-pilha" aria-labelledby="titulo-modulos">
         <h2 id="titulo-modulos" className="tf-titulo tf-titulo--secao">
@@ -75,6 +91,12 @@ export function InicioPage() {
             <p className="tf-sub">Combine frequência, largura de pulso e tempo e veja a forma de onda resultante.</p>
             <Link className="tf-link tf-modulo-cartao__acao" to="/simulador">
               Abrir o simulador
+            </Link>
+          </li>
+          <li className="tf-cartao tf-modulo-cartao">
+            <h3 className="tf-titulo tf-titulo--cartao">Biblioteca digital</h3>
+            <Link className="tf-link tf-modulo-cartao__acao" to="/biblioteca">
+              Abrir a biblioteca
             </Link>
           </li>
         </ul>

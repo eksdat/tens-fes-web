@@ -1,3 +1,4 @@
+import { CasosClinicosPage } from '../features/casos/CasosClinicosPage'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AuthCallbackPage } from '../features/auth/login/AuthCallbackPage'
 import { CompletarCadastroPage } from '../features/auth/cadastro/CompletarCadastroPage'
@@ -18,6 +19,7 @@ import { PacienteFormPage } from '../features/pacientes/PacienteFormPage'
 import { PacientesPage } from '../features/pacientes/PacientesPage'
 import { AvaliacaoFormPage } from '../features/avaliacao/AvaliacaoFormPage'
 import { SessaoFormPage } from '../features/sessao/SessaoFormPage'
+import { BibliotecaPage } from '../features/biblioteca/BibliotecaPage'
 import { SimuladorPage } from '../features/simulador/SimuladorPage'
 import { MateriaisPage } from '../features/material/MateriaisPage'
 import { MaterialFormPage } from '../features/material/MaterialFormPage'
@@ -62,11 +64,16 @@ export const router = createBrowserRouter([
               { path: '/', handle: { titulo: 'Início' }, element: <InicioPage /> },
               rotasDoModulo(TENS),
               rotasDoModulo(FES),
+              { path: '/biblioteca', handle: { titulo: 'Biblioteca digital' }, element: <BibliotecaPage /> },
               { path: '/simulador', handle: { titulo: 'Simulador' }, element: <SimuladorPage /> },
               { path: '/criar-conteudo', handle: { titulo: 'Criar conteúdo' }, element: <MateriaisPage /> },
               { path: '/criar-conteudo/novo', handle: { titulo: 'Novo material' }, element: <MaterialFormPage /> },
               { path: '/criar-conteudo/:id', handle: { titulo: 'Material' }, element: <MaterialFormPage /> },
               { path: '/perfil', handle: { titulo: 'Meu perfil' }, element: <PerfilPage /> },
+              {
+                element: <ProtectedRoute perfil="ESTUDANTE" />,
+                children: [{ path: '/casos-clinicos', handle: { titulo: 'Meus casos clínicos' }, element: <CasosClinicosPage /> }],
+              },
               {
                 element: <ProtectedRoute perfil="PROFISSIONAL" />,
                 children: [
