@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useContext, useEffect, useState, type ChangeEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router'
 import { z } from 'zod'
@@ -12,6 +12,10 @@ import { TelaCarregando } from '../../shared/ui/TelaCarregando'
 import { useToast } from '../../shared/ui/useToast'
 import { AvaliacoesDoPaciente } from '../avaliacao/AvaliacoesDoPaciente'
 import { SessoesDoPaciente } from '../sessao/SessoesDoPaciente'
+import { AuthContext } from '../../shared/auth/contexto'
+import { CHAVE_USUARIO_ATUAL, type Usuario } from '../usuario/useUsuarioAtual'
+import { RelatorioPaciente } from './RelatorioPaciente'
+import { HistoricoAlteracoes } from './HistoricoAlteracoes'
 import { AvisoDadosFicticios } from './AvisoDadosFicticios'
 import {
   atualizarPaciente,
@@ -62,6 +66,11 @@ export function PacienteFormPage() {
   const editando = Boolean(id)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const sessao = useContext(AuthContext)?.sessao
+  const profissional = queryClient.getQueryData<Usuario>(CHAVE_USUARIO_ATUAL)
+  const responsavel = profissional?.perfil === 'PROFISSIONAL' && profissional.id === sessao?.user.id
+    ? profissional
+    : undefined
   const { mostrar } = useToast()
   const [erroGeral, setErroGeral] = useState<string | null>(null)
   const [confirmarExclusao, setConfirmarExclusao] = useState(false)
@@ -253,8 +262,10 @@ export function PacienteFormPage() {
         </div>
       </form>
 
-      {id && <AvaliacoesDoPaciente pacienteId={id} />}
-      {id && <SessoesDoPaciente pacienteId={id} />}
+      {paciente.data && <HistoricoAlteracoes alteracoes={paciente.data.alteracoes} profissional={responsavel} />}
+      {id && <AvaliacoesDoPaciente pacienteId={id} profissional={responsavel} />}
+      {id && <SessoesDoPaciente pacienteId={id} profissional={responsavel} />}
+      {responsavel && paciente.data?.responsavelId === responsavel.id && <RelatorioPaciente key={paciente.data.id} paciente={paciente.data} profissional={responsavel} />}
     </section>
   )
 }

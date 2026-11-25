@@ -77,6 +77,22 @@ public class Sessao {
     private String fadiga;
     private String ajustes;
     private String medidaAntes;
+
+    private Integer dorAntes;
+    private Integer dorDepois;
+
+    @Column(length = 200)
+    private String dorTarefa;
+
+    @Column(length = 200)
+    private String dorMomento;
+
+    public void definirDor(Integer antes, Integer depois, String tarefa, String momento) {
+        dorAntes = antes;
+        dorDepois = depois;
+        dorTarefa = tarefa;
+        dorMomento = momento;
+    }
     private String medidaDepois;
     private String medidaContexto;
     private String condicaoPele;

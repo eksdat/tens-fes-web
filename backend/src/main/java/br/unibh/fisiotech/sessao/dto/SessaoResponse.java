@@ -30,6 +30,10 @@ public record SessaoResponse(
         String tolerancia,
         String fadiga,
         String ajustes,
+        Integer dorAntes,
+        Integer dorDepois,
+        String dorTarefa,
+        String dorMomento,
         String medidaAntes,
         String medidaDepois,
         String medidaContexto,
@@ -44,7 +48,7 @@ public record SessaoResponse(
                 s.getModalidade(), s.getAparelho(), s.getModo(), s.getDuracaoRealMin(),
                 s.getCanais().stream().map(CanalDto::de).toList(), s.getEletrodoTipo(), s.getEletrodoDimensoes(),
                 s.getLado(), s.getMarcos(), s.getMontagemId(), s.getSensacao(), s.getContracao(), s.getTolerancia(),
-                s.getFadiga(), s.getAjustes(), s.getMedidaAntes(), s.getMedidaDepois(), s.getMedidaContexto(),
+                s.getFadiga(), s.getAjustes(), s.getDorAntes(), s.getDorDepois(), s.getDorTarefa(), s.getDorMomento(), s.getMedidaAntes(), s.getMedidaDepois(), s.getMedidaContexto(),
                 s.getCondicaoPele(), s.getMotivoTermino(), s.getPlanoReavaliacao(), List.copyOf(s.getChecklist()),
                 s.getCriadoEm());
     }

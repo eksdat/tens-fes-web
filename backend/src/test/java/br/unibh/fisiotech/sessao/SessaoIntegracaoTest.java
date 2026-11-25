@@ -76,6 +76,26 @@ class SessaoIntegracaoTest {
     }
 
     @Test
+    void devePersistirDorZeroEDistinguirMedidaAusente() throws Exception {
+        var corpo = SESSAO.replace("\"medidaAntes\"",
+                "\"dorAntes\":0,\"dorTarefa\":\"Escada\",\"dorMomento\":\"Imediato\",\"medidaAntes\"");
+        var id = idDe(criar(profissionalA, pacienteDeA, corpo));
+        mvc.perform(get("/api/v1/pacientes/" + pacienteDeA + "/sessoes/" + id)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dorAntes").value(0))
+                .andExpect(jsonPath("$.dorDepois").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.dorTarefa").value("Escada"))
+                .andExpect(jsonPath("$.profissionalId").value(profissionalA));
+    }
+
+    @Test
+    void deveRecusarDorSemProtocolo() throws Exception {
+        criar(profissionalA, pacienteDeA, SESSAO.replace("\"medidaAntes\"", "\"dorAntes\":6,\"medidaAntes\""))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void deveRegistrarSessaoComParametrosPorCanalEUnidades() throws Exception {
         criar(profissionalA, pacienteDeA, SESSAO)
                 .andExpect(status().isCreated())
