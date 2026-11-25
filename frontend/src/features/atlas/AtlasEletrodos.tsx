@@ -1,9 +1,10 @@
 import { Link, useSearchParams } from 'react-router'
 import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { OndaFes, OndaTens } from '../../shared/ui/Icones'
-import { CorpoEsquematico } from './CorpoEsquematico'
+import { AproximacaoDoCorpo, CorpoFotografico } from './CorpoFotografico'
+import { posicaoNoCorpo } from './posicoesFotograficas'
 import { DesenhoRegiao } from './DesenhoRegiao'
-import { CREDITO_DA_ILUSTRACAO, FIGURAS, MONTAGENS, NOTAS_DO_ATLAS, type Lado, type Modalidade, type Montagem } from './montagens'
+import { CREDITO_DA_ILUSTRACAO, MONTAGENS, NOTAS_DO_ATLAS, type Lado, type Modalidade, type Montagem } from './montagens'
 
 type Vista = 'todas' | 'anterior' | 'posterior'
 
@@ -96,18 +97,17 @@ export function AtlasEletrodos({ modalidade, base, compacto = false }: Props) {
           <div key={figura} className="tf-corpo">
             <p className="tf-corpo__rotulo">{figura === 'frente' ? 'Frente' : 'Costas'}</p>
             <div className="tf-corpo__moldura">
-              <CorpoEsquematico figura={figura} />
+              <CorpoFotografico figura={figura} />
               {regioes
                 .filter((r) => r.ponto.figura === figura)
                 .map((r) => {
-                  const f = FIGURAS[figura]
-                  const posicao = { left: `${((r.ponto.x - f.x) / f.w) * 100}%`, top: `${((r.ponto.y - f.y) / f.h) * 100}%` }
+                  const posicao = posicaoNoCorpo(r)
                   const marcado = escolhida?.id === r.id
                   // A lista de regiões é o controle acessível; o ponto no corpo é conveniência para o mouse e o toque.
                   return compacto ? (
                     <Link
                       key={r.id}
-                      className="tf-ponto"
+                      className={`tf-ponto tf-ponto--foto tf-ponto--${r.modalidade.toLowerCase()}`}
                       style={posicao}
                       to={`${base}?regiao=${r.id}`}
                       data-regiao={r.id}
@@ -118,7 +118,7 @@ export function AtlasEletrodos({ modalidade, base, compacto = false }: Props) {
                     <button
                       key={r.id}
                       type="button"
-                      className={`tf-ponto${marcado ? ' tf-ponto--marcado' : ''}`}
+                      className={`tf-ponto tf-ponto--foto tf-ponto--${r.modalidade.toLowerCase()}${marcado ? ' tf-ponto--marcado' : ''}`}
                       style={posicao}
                       data-regiao={r.id}
                       aria-hidden="true"
@@ -177,11 +177,7 @@ function DetalheDaRegiao({ montagem }: { montagem: Montagem }) {
       <p className="tf-sub">Vista: {montagem.vista}</p>
 
       <div className="tf-regiao__visuais">
-        <div className="tf-onde">
-          <p className="tf-corpo__rotulo">Onde fica</p>
-          <CorpoEsquematico figura={montagem.ponto.figura} destaque={montagem.ponto} />
-          <p className="tf-corpo__rotulo">{montagem.ponto.figura === 'frente' ? 'Frente' : 'Costas'}</p>
-        </div>
+        <AproximacaoDoCorpo key={montagem.id} montagem={montagem} />
         <figure className="tf-regiao__figura">
           <DesenhoRegiao montagem={montagem} />
           <figcaption className="tf-sub">{montagem.descricao}</figcaption>
