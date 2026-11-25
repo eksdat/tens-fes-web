@@ -66,6 +66,24 @@ class UsuarioIntegracaoTest {
     }
 
     @Test
+    void deveGravarProfissionalEDevolverNoMe() throws Exception {
+        mvc.perform(post("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"aceiteTermos":true,"nome":"Bia Souza","perfil":"PROFISSIONAL",
+                                 "categoria":"FISIOTERAPEUTA","registro":"123456-F","uf":"MG"}
+                                """))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.perfil").value("PROFISSIONAL"))
+                .andExpect(jsonPath("$.categoria").value("FISIOTERAPEUTA"))
+                .andExpect(jsonPath("$.registro").value("123456-F"))
+                .andExpect(jsonPath("$.uf").value("MG"));
+    }
+
+    @Test
     void deveGravarEstudanteEDevolverNoMe() throws Exception {
         mvc.perform(post("/api/v1/usuarios/me").header(HttpHeaders.AUTHORIZATION, bearer())
                         .contentType(MediaType.APPLICATION_JSON).content(ESTUDANTE))

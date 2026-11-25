@@ -20,6 +20,8 @@ Plataforma web educacional e clínica de eletroestimulação (TENS, NMES, FES).
 | Avaliação inicial e registro de sessão com checklist antes, durante e depois | profissional | Pronto |
 | Casos do simulador, fluxo editorial, assistente de IA | — | Não iniciado |
 
+A tela inicial oferece atalhos de estudo aos dois perfis e acesso a pacientes para profissionais. Quando a API retorna HTTP 401 para o token da sessão atual, a sessão é encerrada e o login exibe um aviso. Na recuperação, a validação da nova senha rejeita trechos do nome e do e-mail disponíveis na sessão.
+
 Só dados fictícios até as políticas LGPD de [SEGURANCA.md](SEGURANCA.md) estarem aprovadas.
 
 Produção: frontend no Firebase Hosting, API no Render (Docker) e banco no Supabase. Guia completo em [DEPLOY.md](DEPLOY.md).

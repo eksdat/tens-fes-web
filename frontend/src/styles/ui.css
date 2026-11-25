@@ -1842,18 +1842,16 @@ fieldset.tf-captcha {
     transform 150ms ease;
 }
 
-/* Troca de página: o conteúdo novo entra com um fade curto (LayoutLogado remonta o wrapper a cada rota). */
+/* Troca de página: o conteúdo novo entra com um deslocamento curto (LayoutLogado remonta o wrapper a cada rota). */
 .tf-pagina-entrada {
   animation: tf-pagina-in 220ms ease both;
 }
 
 @keyframes tf-pagina-in {
   from {
-    opacity: 0;
     transform: translateY(6px);
   }
   to {
-    opacity: 1;
     transform: none;
   }
 }

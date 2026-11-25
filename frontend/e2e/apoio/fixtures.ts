@@ -49,7 +49,8 @@ export const test = base.extend<Apoio>({
         await page.getByLabel('Dígito 1 de 6').fill(CODIGO_AUTENTICADOR)
         await page.getByRole('button', { name: 'Verificar' }).click()
       }
-      await expect(page.getByRole('heading', { name: 'Aprenda TENS e FES' })).toBeVisible()
+      const titulo = conta.perfil === 'PROFISSIONAL' ? 'TENS e FES na prática clínica' : 'Aprenda TENS e FES'
+      await expect(page.getByRole('heading', { name: titulo })).toBeVisible()
     })
   },
 })
