@@ -36,7 +36,7 @@ export function InicioPage() {
         <FolhasDecorativas className="tf-hero__arte" />
         <div className="tf-hero__texto">
           {primeiroNome && <p className="tf-hero__kicker">Olá, {primeiroNome}</p>}
-          <h1 className="tf-titulo">{profissional ? 'TENS e FES na prática clínica' : 'Aprenda TENS e FES'}</h1>
+          <h1 className="tf-titulo" data-onboarding-titulo tabIndex={-1}>{profissional ? 'TENS e FES na prática clínica' : 'Aprenda TENS e FES'}</h1>
           <p className="tf-hero__sub">
             {profissional
               ? 'Acompanhe avaliações, sessões e a evolução de seus pacientes.'
@@ -79,6 +79,14 @@ export function InicioPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="tf-pilha" aria-labelledby="titulo-criar-conteudo">
+        <h2 id="titulo-criar-conteudo" className="tf-titulo tf-titulo--secao">Crie seu conteúdo</h2>
+        <div className="tf-cartao tf-pilha">
+          <p className="tf-sub">Monte um material de estudo e organize o que você quer compartilhar.</p>
+          <BotaoLink to="/criar-conteudo/novo" variante="primario">Criar material</BotaoLink>
+        </div>
       </section>
 
       <section className="tf-pilha" aria-labelledby="titulo-ferramentas">

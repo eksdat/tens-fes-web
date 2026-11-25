@@ -202,7 +202,7 @@ function FormularioDoMaterial({ material }: { material?: Material }) {
   return (
     <section className="tf-pagina">
       <div className="tf-pilha">
-        <h1 className="tf-titulo">{material ? 'Editar material' : 'Novo material'}</h1>
+        <h1 className="tf-titulo" data-onboarding-titulo tabIndex={-1}>{material ? 'Editar material' : 'Novo material'}</h1>
         <p className="tf-sub">Só você vê o rascunho. Depois de enviado, ele vai para a revisão docente.</p>
       </div>
 
@@ -221,7 +221,7 @@ function FormularioDoMaterial({ material }: { material?: Material }) {
       )}
 
       <form className="tf-cartao tf-pilha" noValidate onSubmit={(e) => void handleSubmit(salvar)(e)}>
-        <Campo rotulo="Título" maxLength={200} autoComplete="off" erro={errors.titulo?.message} {...register('titulo')} />
+        <Campo id="onboarding-campos-material" rotulo="Título" maxLength={200} autoComplete="off" erro={errors.titulo?.message} {...register('titulo')} />
         <div className="tf-form-grade">
           <CampoSelecao rotulo="Modalidade" opcoes={MODALIDADES} erro={errors.modalidade?.message} {...register('modalidade')} />
           <CampoSelecao
@@ -248,7 +248,7 @@ function FormularioDoMaterial({ material }: { material?: Material }) {
           {...register('referencias')}
         />
         <div className="tf-acoes">
-          <Botao type="submit" carregando={isSubmitting}>
+          <Botao id="onboarding-salvar-rascunho" type="submit" carregando={isSubmitting}>
             Salvar rascunho
           </Botao>
           <BotaoLink to="/criar-conteudo">Voltar para seus materiais</BotaoLink>
