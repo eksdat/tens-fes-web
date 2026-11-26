@@ -115,6 +115,7 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_API_FALLBACK_URL: ${{ vars.VITE_API_FALLBACK_URL }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
