@@ -77,13 +77,13 @@ test('naoDeveMostrarAVerificacaoEmDuasEtapasNoInicio', () => {
 })
 
 describe('estudante', () => {
-  test('deveMostrarSimuladorAtlasDicionarioEBibliotecaNasFerramentas', () => {
+  test('deveMostrarSimuladorAtlasParametrosDeTensEBibliotecaNasFerramentas', () => {
     renderizar('ESTUDANTE')
 
     expect(linksDasFerramentas()).toEqual([
       ['Abrir o simulador', '/simulador'],
       ['Abrir o atlas de eletrodos', '/tens/eletrodos'],
-      ['Abrir o dicionário de parâmetros', '/tens/parametros'],
+      ['Abrir parâmetros de TENS', '/tens/parametros'],
       ['Abrir a biblioteca', '/biblioteca'],
     ])
   })
