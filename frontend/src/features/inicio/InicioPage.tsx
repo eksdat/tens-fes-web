@@ -42,10 +42,10 @@ const ATLAS: Ferramenta = {
 }
 
 const DICIONARIO: Ferramenta = {
-  titulo: 'Dicionário de parâmetros',
+  titulo: 'Parâmetros de TENS',
   resumo: 'O que cada ajuste do aparelho significa, com unidade e faixa educativa.',
   para: `${TENS.base}/parametros`,
-  acao: 'Abrir o dicionário de parâmetros',
+  acao: 'Abrir parâmetros de TENS',
 }
 
 const BIBLIOTECA: Ferramenta = { titulo: 'Biblioteca digital', para: '/biblioteca', acao: 'Abrir a biblioteca' }
