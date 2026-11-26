@@ -4,12 +4,17 @@ import { axe } from 'vitest-axe'
 import { InicioPage } from '@/features/inicio/InicioPage'
 import { renderComRotas } from '../../renderComRotas'
 
-vi.mock('@/features/usuario/useUsuarioAtual', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/features/usuario/useUsuarioAtual')>()),
-  useUsuarioAtual: () => ({ data: { nome: 'Ana Souza Lima', perfil: 'ESTUDANTE' } }),
+const { estado } = vi.hoisted(() => ({
+  estado: { usuario: { nome: 'Ana Souza Lima', perfil: 'ESTUDANTE' as 'ESTUDANTE' | 'PROFISSIONAL' } },
 }))
 
-function renderizar() {
+vi.mock('@/features/usuario/useUsuarioAtual', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/usuario/useUsuarioAtual')>()),
+  useUsuarioAtual: () => ({ data: estado.usuario }),
+}))
+
+function renderizar(perfil: 'ESTUDANTE' | 'PROFISSIONAL' = 'ESTUDANTE') {
+  estado.usuario = { nome: 'Ana Souza Lima', perfil }
   return renderComRotas(
     <Route
       path="*"
@@ -21,6 +26,11 @@ function renderizar() {
     />,
     '/',
   )
+}
+
+function linksDasFerramentas() {
+  const ferramentas = within(screen.getByRole('region', { name: 'Ferramentas' }))
+  return ferramentas.getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])
 }
 
 test('deveTerUmSoTituloDePrimeiroNivel', () => {
@@ -47,8 +57,8 @@ test('deveListarOsDoisModulosComNumeroETitulo', () => {
   expect(modulos.getByRole('heading', { name: 'Movimento e função' })).toBeInTheDocument()
 })
 
-test('deveLevarCadaCartaoParaOSeuModulo', () => {
-  renderizar()
+test.each(['ESTUDANTE', 'PROFISSIONAL'] as const)('deveLevarCadaCartaoParaOSeuModulo (%s)', (perfil) => {
+  renderizar(perfil)
 
   expect(screen.getByRole('link', { name: 'Estudar TENS' })).toHaveAttribute('href', '/tens')
   expect(screen.getByRole('link', { name: 'Estudar FES' })).toHaveAttribute('href', '/fes')
@@ -66,16 +76,53 @@ test('naoDeveMostrarAVerificacaoEmDuasEtapasNoInicio', () => {
   expect(screen.queryByRole('link', { name: 'Verificação em duas etapas' })).not.toBeInTheDocument()
 })
 
-test('deveLevarAoSimuladorEABibliotecaPelasFerramentas', () => {
-  renderizar()
+describe('estudante', () => {
+  test('deveMostrarSimuladorAtlasDicionarioEBibliotecaNasFerramentas', () => {
+    renderizar('ESTUDANTE')
 
-  const ferramentas = screen.getByRole('region', { name: 'Ferramentas' })
-  expect(within(ferramentas).getByRole('link', { name: 'Abrir o simulador' })).toHaveAttribute('href', '/simulador')
-  expect(within(ferramentas).getByRole('link', { name: 'Abrir a biblioteca' })).toHaveAttribute('href', '/biblioteca')
+    expect(linksDasFerramentas()).toEqual([
+      ['Abrir o simulador', '/simulador'],
+      ['Abrir o atlas de eletrodos', '/tens/eletrodos'],
+      ['Abrir o dicionário de parâmetros', '/tens/parametros'],
+      ['Abrir a biblioteca', '/biblioteca'],
+    ])
+  })
+
+  test('naoDeveOferecerAAreaDePacientes', () => {
+    renderizar('ESTUDANTE')
+
+    expect(screen.queryByRole('heading', { name: 'Prática clínica' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /pacientes/i })).not.toBeInTheDocument()
+  })
 })
 
-test('deveSerAcessivelSemViolacoes', async () => {
-  renderizar()
+describe('profissional', () => {
+  test('deveMostrarOTituloDaPraticaClinica', () => {
+    renderizar('PROFISSIONAL')
+
+    expect(screen.getByRole('heading', { level: 1, name: 'TENS e FES na prática clínica' })).toBeInTheDocument()
+  })
+
+  test('deveLevarAosPacientesPelaPraticaClinica', () => {
+    renderizar('PROFISSIONAL')
+
+    const pratica = within(screen.getByRole('region', { name: 'Prática clínica' }))
+    expect(pratica.getByRole('link', { name: 'Abrir pacientes' })).toHaveAttribute('href', '/pacientes')
+  })
+
+  test('deveMostrarSimuladorAtlasEBibliotecaNasFerramentas', () => {
+    renderizar('PROFISSIONAL')
+
+    expect(linksDasFerramentas()).toEqual([
+      ['Abrir o simulador', '/simulador'],
+      ['Abrir o atlas de eletrodos', '/tens/eletrodos'],
+      ['Abrir a biblioteca', '/biblioteca'],
+    ])
+  })
+})
+
+test.each(['ESTUDANTE', 'PROFISSIONAL'] as const)('deveSerAcessivelSemViolacoes (%s)', async (perfil) => {
+  renderizar(perfil)
 
   expect(await axe(document.body)).toHaveNoViolations()
 })
