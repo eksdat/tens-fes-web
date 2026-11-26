@@ -24,6 +24,7 @@ import { SimuladorPage } from '../features/simulador/SimuladorPage'
 import { MateriaisPage } from '../features/material/MateriaisPage'
 import { MaterialFormPage } from '../features/material/MaterialFormPage'
 import { RevisaoPage } from '../features/revisao/RevisaoPage'
+import { ErroPaginaDeAcesso } from './ErroPaginaDeAcesso'
 import { LayoutLogado } from './LayoutLogado'
 import { RaizApp } from './RaizApp'
 
@@ -35,13 +36,19 @@ export const router = createBrowserRouter([
       {
         path: '/cadastro',
         handle: { titulo: 'Criar conta' },
-        lazy: async () => ({ Component: (await import('../features/auth/cadastro/CadastroPage')).CadastroPage }),
+        lazy: async () => ({
+          Component: await import('../features/auth/cadastro/CadastroPage')
+            .then(({ CadastroPage }) => CadastroPage, () => ErroPaginaDeAcesso),
+        }),
       },
       { path: '/esqueci-senha', handle: { titulo: 'Recuperar senha' }, element: <EsqueciSenhaPage /> },
       {
         path: '/nova-senha',
         handle: { titulo: 'Nova senha' },
-        lazy: async () => ({ Component: (await import('../features/auth/senha/NovaSenhaPage')).NovaSenhaPage }),
+        lazy: async () => ({
+          Component: await import('../features/auth/senha/NovaSenhaPage')
+            .then(({ NovaSenhaPage }) => NovaSenhaPage, () => ErroPaginaDeAcesso),
+        }),
       },
       { path: '/auth/callback', handle: { titulo: 'Entrando' }, element: <AuthCallbackPage /> },
       { path: '/completar-cadastro', handle: { titulo: 'Completar cadastro' }, element: <CompletarCadastroPage /> },

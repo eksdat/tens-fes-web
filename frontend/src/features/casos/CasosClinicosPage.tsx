@@ -3,7 +3,13 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../shared/api/client'
+import { Alerta } from '../../shared/ui/Alerta'
+import { Botao } from '../../shared/ui/Botao'
+import { Campo } from '../../shared/ui/Campo'
+import { CampoSelecao } from '../../shared/ui/CampoSelecao'
+import { CampoTextoLongo } from '../../shared/ui/CampoTextoLongo'
 import { CorpoMarkdown } from '../modulo/CorpoMarkdown'
+import './casos-clinicos.css'
 
 const campos = [
   ['titulo', 'Título'],
@@ -31,6 +37,7 @@ type Detalhe = {
 }
 
 const rota = '/casos-clinicos'
+const modalidades = ['TENS', 'NMES', 'FES'].map((valor) => ({ valor, rotulo: valor }))
 
 export function CasosClinicosPage() {
   const cliente = useQueryClient()
@@ -98,71 +105,66 @@ export function CasosClinicosPage() {
   }
 
   return (
-    <>
-      <h1>Meus casos clínicos</h1>
-      <form onSubmit={enviar} aria-labelledby="novo-caso">
+    <section className="tf-pagina" aria-labelledby="titulo-casos">
+      <h1 id="titulo-casos" className="tf-titulo">Meus casos clínicos</h1>
+      <form className="tf-cartao tf-pilha" onSubmit={enviar} aria-labelledby="novo-caso">
         <h2 id="novo-caso">Enviar caso clínico</h2>
-        <p>Use caso fictício. Não inclua identificação de pacientes.</p>
-        <p>Descreva o objetivo de estudo e registre pele, sensibilidade, capacidade de relatar desconforto, resposta motora, riscos e restrições.</p>
-        <fieldset disabled={envio.isPending}>
-          <legend>Dados do caso</legend>
-          {campos.map(([chave, rotulo]) => (
-            <p key={chave}>
-              <label htmlFor={`caso-${chave}`}>{rotulo}</label><br />
-              {chave === 'modalidade' ? (
-                <select id="caso-modalidade" name="modalidade" required defaultValue="">
-                  <option value="" disabled>Selecione</option>
-                  <option>TENS</option>
-                  <option>NMES</option>
-                  <option>FES</option>
-                </select>
-              ) : chave === 'titulo' ? (
-                <input id="caso-titulo" name="titulo" required maxLength={120} />
-              ) : (
-                <textarea id={`caso-${chave}`} name={chave} required maxLength={2000} rows={3} />
-              )}
-            </p>
-          ))}
-          <p>
-            <label htmlFor="caso-anexos">Anexos opcionais</label><br />
-            <input id="caso-anexos" name="anexos" type="file" multiple
-              accept="application/pdf,image/png,image/jpeg" aria-describedby="caso-limite" />
-          </p>
-          <p id="caso-limite">PDF, PNG ou JPEG. Até cinco arquivos, somando até 10 MB. Use apenas material permitido, sem identificação pessoal ou prontuário real.</p>
-          <button type="submit">{envio.isPending ? 'Enviando…' : 'Enviar caso'}</button>
+        <Alerta intencao="atencao" titulo="Use caso fictício. Não inclua identificação de pacientes." />
+        <p className="tf-sub">Descreva o objetivo de estudo e registre pele, sensibilidade, capacidade de relatar desconforto, resposta motora, riscos e restrições.</p>
+        <fieldset className="tf-pilha tf-caso-campos" disabled={envio.isPending} aria-label="Dados do caso">
+          <div className="tf-form-grade">
+            {campos.map(([chave, rotulo]) => {
+              const campo = { id: `caso-${chave}`, name: chave, rotulo, required: true }
+              if (chave === 'titulo') return <Campo key={chave} {...campo} maxLength={120} />
+              if (chave === 'modalidade') {
+                return <CampoSelecao key={chave} {...campo} opcoes={modalidades} defaultValue="" />
+              }
+              return <CampoTextoLongo key={chave} {...campo} maxLength={2000} />
+            })}
+          </div>
+          <Campo id="caso-anexos" name="anexos" rotulo="Anexos opcionais" type="file" multiple
+            accept="application/pdf,image/png,image/jpeg"
+            dica="PDF, PNG ou JPEG. Até cinco arquivos, somando até 10 MB. Use apenas material permitido, sem identificação pessoal ou prontuário real." />
+          <div className="tf-acoes">
+            <Botao type="submit" carregando={envio.isPending}>{envio.isPending ? 'Enviando…' : 'Enviar caso'}</Botao>
+          </div>
         </fieldset>
       </form>
-      {erro && <p role="alert">{erro}</p>}
-      <h2>Casos enviados</h2>
-      {lista.isPending && <output>Carregando casos…</output>}
-      {lista.isError && <p role="alert">Não foi possível carregar os casos.</p>}
-      {lista.data?.length === 0 && <p>Você ainda não enviou casos.</p>}
-      <ul>
-        {lista.data?.map((caso) => (
-          <li key={caso.id}>
-            <button type="button" aria-pressed={id === caso.id} onClick={() => selecionar(caso.id)}>
-              {caso.titulo} · {new Date(caso.criadoEm).toLocaleDateString('pt-BR')}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {erro && <Alerta intencao="perigo" titulo={erro} />}
+      <section className="tf-cartao tf-pilha">
+        <h2>Casos enviados</h2>
+        {lista.isPending && <output>Carregando casos…</output>}
+        {lista.isError && <Alerta intencao="perigo" titulo="Não foi possível carregar os casos." />}
+        {lista.data?.length === 0 && <p className="tf-sub">Você ainda não enviou casos.</p>}
+        {lista.data && lista.data.length > 0 && (
+          <ul className="tf-lista-simples">
+            {lista.data.map((caso) => (
+              <li key={caso.id}>
+                <Botao variante={id === caso.id ? 'primario' : 'secundario'} aria-pressed={id === caso.id} onClick={() => selecionar(caso.id)}>
+                  {caso.titulo} · {new Date(caso.criadoEm).toLocaleDateString('pt-BR')}
+                </Botao>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       {id && detalhe.isPending && <output>Carregando caso…</output>}
-      {detalhe.isError && <p role="alert">Não foi possível carregar o caso.</p>}
+      {detalhe.isError && <Alerta intencao="perigo" titulo="Não foi possível carregar o caso." />}
       {detalhe.data && (
-        <section aria-label="Detalhes do caso">
+        <section className="tf-cartao tf-pilha" aria-label="Detalhes do caso">
           <h2>{detalhe.data.caso.titulo}</h2>
-          <dl>
+          <dl className="tf-form-grade tf-caso-detalhes">
             {campos.slice(1).map(([chave, rotulo]) => (
               <div key={chave}><dt>{rotulo}</dt><dd>{detalhe.data.caso[chave]}</dd></div>
             ))}
           </dl>
           {detalhe.data.anexos.map((anexo) => (
-            <button type="button" key={anexo.id} onClick={() => void baixar(anexo)}>{anexo.nome}</button>
+            <Botao variante="secundario" key={anexo.id} onClick={() => void baixar(anexo)}>{anexo.nome}</Botao>
           ))}
           <RespostaEducativa detalhe={detalhe.data} />
         </section>
       )}
-    </>
+    </section>
   )
 }
 
