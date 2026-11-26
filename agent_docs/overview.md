@@ -5,3 +5,4 @@
 - [Decisões](decisoes.md)
 - [Tutorial de criação de conteúdo](modulos/onboarding.md)
 - [Aparelho e atlas de eletrodos](modulos/aparelho-atlas.md)
+- [Atalhos do Início por perfil](modulos/inicio.md)
