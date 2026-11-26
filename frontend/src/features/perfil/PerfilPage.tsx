@@ -18,7 +18,7 @@ import {
 } from '../usuario/atualizarPerfil'
 import { CHAVE_USUARIO_ATUAL, useUsuarioAtual } from '../usuario/useUsuarioAtual'
 import { Alerta } from '../../shared/ui/Alerta'
-import { Botao } from '../../shared/ui/Botao'
+import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
 import { CampoSelecao } from '../../shared/ui/CampoSelecao'
 import { TelaCarregando } from '../../shared/ui/TelaCarregando'
@@ -173,6 +173,22 @@ export function PerfilPage() {
             </div>
           )}
         </dl>
+      </section>
+
+      <section className="tf-cartao tf-pilha" aria-labelledby="secao-seguranca">
+        <h2 id="secao-seguranca" className="tf-cartao__titulo">
+          Segurança da conta
+        </h2>
+        <p className="tf-sub">
+          {ehProfissional
+            ? 'Para profissionais, a verificação em duas etapas é obrigatória. Aqui você troca o aparelho do autenticador.'
+            : 'Além da senha, o acesso pode pedir um código do aplicativo autenticador do seu celular.'}
+        </p>
+        <div>
+          <BotaoLink to="/mfa/ativar" variante="secundario">
+            Verificação em duas etapas
+          </BotaoLink>
+        </div>
       </section>
 
       {ehEstudante && (

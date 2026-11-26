@@ -275,3 +275,18 @@ describe('painel interativo do aparelho', () => {
     expect(screen.getByText(/controles 9 a 14 ficam em outras faces/)).toBeInTheDocument()
   })
 })
+
+test('deveFocarAExplicacaoEVoltarAoControleEmTodosOsItens', async () => {
+  renderizar(TENS, '/tens/aparelho')
+  const usuario = userEvent.setup()
+  const itens = within(screen.getByRole('list', { name: 'Controles do aparelho' })).getAllByRole('listitem')
+  for (const item of itens) {
+    expect(item).toHaveTextContent(/Unidade: .+Valor atual: .+/)
+    const controle = within(item).getByRole('button')
+    await usuario.click(controle)
+    expect(within(item).getByRole('region', { name: /Explicação/ })).toHaveFocus()
+    await usuario.keyboard('{Escape}')
+    expect(controle).toHaveFocus()
+    expect(controle).toHaveAttribute('aria-expanded', 'false')
+  }
+})

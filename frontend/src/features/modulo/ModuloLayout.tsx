@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet } from 'react-router'
 import { ABAS_MODULO } from './abasModulo'
 import type { Modulo } from './tipos'
 
@@ -11,6 +11,9 @@ export function ModuloLayout({ modulo }: { modulo: Modulo }) {
         </p>
         <h1 className="tf-titulo">{modulo.titulo}</h1>
         <p className="tf-sub">{modulo.introducao}</p>
+        <Link className="tf-link" to={modulo.sigla === 'FES' ? '/biblioteca?modalidade=NMES%2FFES' : '/biblioteca?modalidade=TENS'}>
+          Biblioteca
+        </Link>
       </header>
 
       <nav aria-label={`Seções de ${modulo.sigla}`}>

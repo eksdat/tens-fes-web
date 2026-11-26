@@ -12,9 +12,16 @@ export type Canal = {
   par: string
 }
 
+export type PlanejamentoSessao = {
+  relato: string
+  referencia?: { id: string; versao: string; titulo: string; url: string }
+  larguraPulsoUs?: number
+}
+
 export type SessaoRequest = {
   dataHora: string
   objetivo: string
+  planejamento?: PlanejamentoSessao
   modalidade: Modalidade
   aparelho: string
   modo: string | null
@@ -30,6 +37,10 @@ export type SessaoRequest = {
   tolerancia: string | null
   fadiga: string | null
   ajustes: string | null
+  dorAntes?: number | null
+  dorDepois?: number | null
+  dorTarefa?: string | null
+  dorMomento?: string | null
   medidaAntes: string | null
   medidaDepois: string | null
   medidaContexto: string | null

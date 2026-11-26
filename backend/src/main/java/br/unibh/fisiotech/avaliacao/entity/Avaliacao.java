@@ -1,11 +1,14 @@
 package br.unibh.fisiotech.avaliacao.entity;
 
+import br.unibh.fisiotech.shared.dto.Alteracao;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.hibernate.annotations.UuidGenerator;
@@ -79,6 +82,14 @@ public class Avaliacao {
     @CreatedBy
     @Column(updatable = false)
     private UUID criadoPor;
+
+    @ElementCollection
+    @CollectionTable(name = "avaliacao_alteracao", joinColumns = @JoinColumn(name = "avaliacao_id"))
+    private Set<Alteracao> alteracoes = new HashSet<>();
+
+    public void registrarAlteracao(UUID autor) {
+        alteracoes.add(new Alteracao(autor, Instant.now()));
+    }
 
     @LastModifiedDate
     private Instant alteradoEm;

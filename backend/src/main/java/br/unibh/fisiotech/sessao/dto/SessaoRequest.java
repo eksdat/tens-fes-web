@@ -42,12 +42,17 @@ public record SessaoRequest(
         @Size(max = 500) String tolerancia,
         @Size(max = 500) String fadiga,
         @Size(max = 500) String ajustes,
+        @jakarta.validation.constraints.Min(0) @jakarta.validation.constraints.Max(10) Integer dorAntes,
+        @jakarta.validation.constraints.Min(0) @jakarta.validation.constraints.Max(10) Integer dorDepois,
+        @Size(max = 200) String dorTarefa,
+        @Size(max = 200) String dorMomento,
         @Size(max = 200) String medidaAntes,
         @Size(max = 200) String medidaDepois,
         @Size(max = 300) String medidaContexto,
         @NotBlank(message = "Informe a condição da pele.") @Size(max = 300) String condicaoPele,
         @NotBlank(message = "Informe o motivo do término.") @Size(max = 300) String motivoTermino,
         @NotBlank(message = "Informe o plano de reavaliação.") @Size(max = 500) String planoReavaliacao,
+        @Valid PlanejamentoDto planejamento,
         /** Código fixo do item ("antes.objetivo-definido"); o texto da pergunta vive no frontend. */
         @Size(max = 40) Set<@Pattern(regexp = "^(antes|durante|depois)\\.[a-z0-9-]{1,60}$", message = "Item de checklist inválido.") String> checklist) {
 

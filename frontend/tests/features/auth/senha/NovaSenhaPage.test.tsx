@@ -156,3 +156,13 @@ test('deveSerAcessivel', async () => {
 
   expect(await axe(container)).toHaveNoViolations()
 })
+
+test('deve recusar senha com nome do cadastro mesmo quando o e-mail é diferente', async () => {
+  estado.sessao = { user: { email: 'conta@exemplo.com', user_metadata: { cadastro: { nome: 'Joana Silva' } } } }
+  renderizar()
+  await preencher('Joana-Trem-Oceano#58')
+  await userEvent.click(screen.getByRole('button', { name: 'Salvar nova senha' }))
+
+  expect(await screen.findByText(/Essa senha é fácil de adivinhar/)).toBeInTheDocument()
+  expect(auth.updateUser).not.toHaveBeenCalled()
+})

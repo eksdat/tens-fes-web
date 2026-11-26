@@ -188,7 +188,7 @@ frontend/
 │   │   ├── LayoutLogado.tsx     # menu + <main>; envolve o EstadoDoAparelhoProvider
 │   │   ├── MenuPrincipal.tsx, abas.ts, BuscaRapida.tsx, atalhos.ts
 │   │   ├── RaizApp.tsx          # "Pular para o conteúdo", document.title e anúncio da página
-│   │   └── EmConstrucao.tsx     # só "Criar conteúdo" ainda usa
+│   │   └── EmConstrucao.tsx     # tela "em construção" (nenhuma rota usa hoje)
 │   ├── shared/
 │   │   ├── api/                 # supabase.ts (só auth), client.ts (axios + JWT), schema.d.ts (gerado)
 │   │   ├── auth/                # AuthProvider, useAuth, "Manter conectado"
@@ -208,7 +208,9 @@ frontend/
 │       ├── simulador/           # SimuladorPage, GraficoPulso, OsciloscopioAoVivo, calculos.ts, tracado.ts, useFaixas
 │       ├── pacientes/           # PacientesPage, PacienteFormPage, api.ts, formatar.ts, AvisoDadosFicticios
 │       ├── avaliacao/           # AvaliacaoFormPage, AvaliacoesDoPaciente, api.ts
-│       └── sessao/              # SessaoFormPage, SessoesDoPaciente, AvisoTriagem, api.ts
+│       ├── sessao/              # SessaoFormPage, SessoesDoPaciente, AvisoTriagem, api.ts
+│       ├── material/            # MateriaisPage, MaterialFormPage, AnexosDoMaterial, abrirAnexo.ts, api.ts
+│       └── revisao/             # RevisaoPage (fila do revisor), DevolverConteudo, api.ts
 ├── tests/                       # espelha src/ (alias @/); setup.ts, renderComRotas.tsx
 └── e2e/                         # testes ponta a ponta; apoio/ tem o Supabase e a API falsos e os dados fictícios
 ```
@@ -233,7 +235,7 @@ O guia completo (tokens, componentes, padrões, capturas e protótipo) está em 
 8. **401** da API: encerra a sessão, e a rota protegida leva ao login. **403**: perfil sem permissão (mensagem, sem deslogar). **404** em paciente: "não encontrado", nunca "sem permissão".
 9. Se a API não responde (por exemplo, o servidor do plano grátis ainda subindo, cerca de 3 min), a rota protegida mostra "Não foi possível carregar seus dados" com "Tentar de novo".
 
-`ProtectedRoute` decide só a navegação, nesta ordem: sem sessão vai para `/login`; sem cadastro completo, para `/completar-cadastro`; perfil errado, para `/`; **termos com versão nova** (`termosPendentes` da API), para `/termos/aceitar`; autenticador cadastrado e sessão `aal1`, para `/mfa/verificar`; PROFISSIONAL sem autenticador, para `/mfa/ativar`. As telas de MFA e de aceite usam `semMfa` para não entrar em laço.
+`ProtectedRoute` decide só a navegação, nesta ordem: sem sessão vai para `/login`; sem cadastro completo, para `/completar-cadastro`; perfil errado ou rota `soRevisor` sem `revisor`, para `/`; **termos com versão nova** (`termosPendentes` da API), para `/termos/aceitar`; autenticador cadastrado e sessão `aal1`, para `/mfa/verificar`; PROFISSIONAL sem autenticador, para `/mfa/ativar`. As telas de MFA e de aceite usam `semMfa` para não entrar em laço.
 
 ---
 
@@ -245,7 +247,7 @@ O guia completo (tokens, componentes, padrões, capturas e protótipo) está em 
 | Simulador e casos fictícios | Acesso | Acesso |
 | Criar materiais | Rascunho e envio | Contribuição para revisão |
 | Pacientes / prontuário | **Sem acesso** | **Só os pacientes sob sua responsabilidade** |
-| Casos para a IA | Envia caso fictício | Conteúdo revisado alimenta a base |
+| Casos clínicos para estudo | Envia e consulta os próprios casos fictícios | Sem acesso aos envios dos estudantes |
 
 Regras que o frontend precisa respeitar:
 
@@ -274,13 +276,15 @@ Regras que o frontend precisa respeitar:
 | `/tens`, `/fes` e as abas `aparelho`, `eletrodos`, `parametros`, `seguranca`, `casos` | ambos | `ModuloLayout` + `Pagina*` | Visão geral vem da API (página padrão); atlas em Eletrodos; checklist em Segurança; lista de controles em Aparelho |
 | `/simulador` | ambos | `SimuladorPage` | Modo explorar; `?modalidade=TENS|FES&modo=` abre direto num modo |
 | `/perfil` | ambos | `PerfilPage` | Troca de estudante para profissional |
-| `/criar-conteudo` | ambos | `EmConstrucao` | Card próprio, ainda não feito |
+| `/criar-conteudo` | ambos | `MateriaisPage` | Materiais de quem está logado, com o estado (rascunho, devolvido com o motivo, em revisão, aprovado) |
+| `/criar-conteudo/novo`, `/criar-conteudo/:id` | ambos (só o autor) | `MaterialFormPage` | Título, modalidade, tema, texto (Markdown, sem HTML) e referências; avisos do guia; anexos depois do primeiro salvamento; enviar para revisão com confirmação. Enviado, fica só para ler |
 | `/pacientes` | profissional | `PacientesPage` | Busca, ordenação por coluna, paginação; aviso de dados fictícios |
 | `/pacientes/novo`, `/pacientes/:id` | profissional | `PacienteFormPage` | Cadastro e edição; no detalhe, listas de avaliações e sessões e exclusão confirmada |
 | `/pacientes/:id/avaliacoes/nova`, `/pacientes/:id/avaliacoes/:avaliacaoId` | profissional | `AvaliacaoFormPage` | Avaliação inicial e reavaliação |
 | `/pacientes/:id/sessoes/nova` | profissional | `SessaoFormPage` | Formulário, revisão antes de salvar, confirmação |
+| `/revisao` | profissional com `revisor` | `RevisaoPage` | Fila de conteúdo em revisão por módulo e aba; aprovar (só com fonte) ou devolver com motivo. O erro da devolução aparece dentro do diálogo; se outra pessoa já decidiu (409), a fila é atualizada. Entra pelo menu da conta ("Revisar conteúdo") |
 
-Qualquer outra rota leva a `/`. Ainda não existem: dicionário em tela própria, biblioteca, revisão de conteúdo, casos para a IA, evolução e relatório do paciente.
+Qualquer outra rota leva a `/`. Ainda não existem: dicionário em tela própria, biblioteca, evolução e relatório do paciente.
 
 ---
 
@@ -479,7 +483,7 @@ backend, Supabase nem `.env`:
 - `e2e/apoio/supabaseFalso.ts` responde o Supabase Auth (login, cadastro, link do e-mail, código do autenticador) e
   `e2e/apoio/apiFalsa.ts` responde a API com as mesmas regras de acesso do backend (`/pacientes/**` só para
   PROFISSIONAL). Tudo em memória: cada teste começa do zero.
-- Contas são as personas do grupo (Sininho, Peter Pan e Capitão Gancho) e os pacientes são fictícios
+- Contas são as personas do grupo (Sininho, Peter Pan, Capitão Gancho e Wendy, a revisora) e os pacientes são fictícios
   (`e2e/apoio/dados.ts`).
 - O teste falha se a tela fizer uma chamada que os falsos não conhecem ou se der erro de JavaScript.
 - Cada teste roda duas vezes: computador e celular com 360 px de largura (definição de pronto).
@@ -490,6 +494,8 @@ backend, Supabase nem `.env`:
 | `cadastro.spec.ts` | Criar conta, link de confirmação, completar cadastro, e-mail não confirmado, aceite dos termos |
 | `estudo.spec.ts` | Conteúdo pendente e aprovado, abas de TENS e FES, atlas, parâmetros → simulador, limite do aparelho |
 | `profissional.spec.ts` | Código do autenticador, paciente → avaliação → sessão com checklist, identificador repetido, busca |
+| `revisao.spec.ts` | Wendy aprova os cinco blocos e a Visão geral do TENS abre; texto sem fonte não tem "Aprovar" e é devolvido com motivo; sem acesso para quem não é revisor |
+| `material.spec.ts` | Sininho cria, anexa um PDF (texto renomeado é recusado) e envia para revisão; Wendy abre o anexo e devolve com motivo; rascunho de outra pessoa não aparece |
 | `acessibilidade.spec.ts` | Uso só com teclado, "Pular para o conteúdo" e axe (WCAG 2.2 AA) nas telas principais |
 
 No CI, o job "Testes ponta a ponta" do `frontend.yml` roda em todo PR. Se falhar, o relatório fica nos artefatos da
@@ -567,8 +573,12 @@ Pronto (ver `agent_docs/modulos/` para o detalhe de cada um):
 
 - Autenticação completa: senha, Google, MFA (obrigatório para PROFISSIONAL), "Manter conectado", novo aceite dos termos.
 - Módulos TENS e FES com 6 abas: Visão geral pela API (página padrão, Markdown seguro), lista de controles do aparelho, atlas com pranchas, parâmetros, checklist de segurança e casos.
+- Biblioteca digital em `/biblioteca`. Início abre o catálogo completo e os módulos aplicam o filtro de modalidade. Os cartões dos Anexos B e C oferecem links às fontes e indicam as condições de acesso.
+- Controles do aparelho conforme as seções 09 e 10 do guia. A lista e o desenho abrem a mesma explicação. Escape ou Fechar devolvem o foco ao item da lista.
 - Simulador (modo explorar): osciloscópio ao vivo com câmera lenta, modos contínuos, Burst e FES síncrono/recíproco, mensagens do guia.
 - Pacientes, avaliação inicial e registro de sessão, com validação no formulário e no backend.
+- Revisão de conteúdo para quem tem `revisor` (docente ou integrantes do grupo): aprovar (só com fonte) ou devolver com motivo; a página técnica abre quando os cinco blocos estão aprovados.
+- Criar conteúdo: material de estudo em rascunho, anexos (PDF, PNG ou JPEG até 10 MB, abertos por link de 5 minutos) e envio para revisão.
 - Acessibilidade: botão flutuante, anúncios, `vitest-axe` nos testes de tela.
 - Testes ponta a ponta (Playwright) dos fluxos principais, no computador e no celular, rodando em todo PR.
 
@@ -578,7 +588,11 @@ Pendente:
 - Simulador: modos Misto, VF e VIF (variação automática) e o modo praticar.
 - Lista do aparelho só mostra valores; quem ajusta é o simulador. O estado some ao recarregar a página.
 - Tipos de pacientes, avaliação, sessão, simulador e página técnica escritos à mão em `features/*/api.ts`: rodar `npm run api:types` com o backend no ar e trocar pelos tipos gerados.
-- Criar conteúdo, revisão, biblioteca, dicionário em tela própria, casos para a IA, evolução e relatório do paciente.
+- Integração de materiais aprovados à biblioteca, dicionário em tela própria, casos para a IA, evolução e relatório do paciente.
 - Revisão jurídica/LGPD dos Termos e da Política (texto preliminar).
 - Teste com leitor de tela real (NVDA e TalkBack).
 - `openapi-typescript` roda por `npx` (pede TypeScript 5).
+
+## Casos clínicos para estudo
+
+O item Meus casos clínicos no menu da conta permite que estudantes enviem cenários fictícios e consultem seus próprios envios e anexos. A resposta educativa consulta a visão geral revisada da modalidade e orienta a discussão com o docente quando a base não permite avaliar a proposta. Os casos e anexos ficam fora da base de conhecimento.

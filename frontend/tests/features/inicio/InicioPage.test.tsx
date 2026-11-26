@@ -28,9 +28,9 @@ function renderizar(perfil: 'ESTUDANTE' | 'PROFISSIONAL' = 'ESTUDANTE') {
   )
 }
 
-function linksDosAtalhos() {
-  const atalhos = within(screen.getByRole('region', { name: 'Atalhos' }))
-  return atalhos.getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])
+function linksDasFerramentas() {
+  const ferramentas = within(screen.getByRole('region', { name: 'Ferramentas' }))
+  return ferramentas.getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])
 }
 
 test('deveTerUmSoTituloDePrimeiroNivel', () => {
@@ -64,50 +64,59 @@ test.each(['ESTUDANTE', 'PROFISSIONAL'] as const)('deveLevarCadaCartaoParaOSeuMo
   expect(screen.getByRole('link', { name: 'Estudar FES' })).toHaveAttribute('href', '/fes')
 })
 
-test('deveManterOAtalhoDaVerificacaoEmDuasEtapas', () => {
+test('deveOferecerUmaAcaoPrincipalNoDestaque', () => {
   renderizar()
 
-  expect(screen.getByRole('link', { name: 'Verificação em duas etapas' })).toHaveAttribute('href', '/mfa/ativar')
+  expect(screen.getByRole('link', { name: 'Começar pelo TENS' })).toHaveAttribute('href', '/tens')
+})
+
+test('naoDeveMostrarAVerificacaoEmDuasEtapasNoInicio', () => {
+  renderizar()
+
+  expect(screen.queryByRole('link', { name: 'Verificação em duas etapas' })).not.toBeInTheDocument()
 })
 
 describe('estudante', () => {
-  test('deveComecarPeloTensNoDestaque', () => {
+  test('deveMostrarSimuladorAtlasDicionarioEBibliotecaNasFerramentas', () => {
     renderizar('ESTUDANTE')
 
-    expect(screen.getByRole('link', { name: 'Começar pelo TENS' })).toHaveAttribute('href', '/tens')
-  })
-
-  test('deveMostrarSimuladorAtlasEDicionarioNosAtalhos', () => {
-    renderizar('ESTUDANTE')
-
-    expect(linksDosAtalhos()).toEqual([
+    expect(linksDasFerramentas()).toEqual([
       ['Abrir o simulador', '/simulador'],
       ['Abrir o atlas de eletrodos', '/tens/eletrodos'],
       ['Abrir o dicionário de parâmetros', '/tens/parametros'],
+      ['Abrir a biblioteca', '/biblioteca'],
     ])
   })
 
   test('naoDeveOferecerAAreaDePacientes', () => {
     renderizar('ESTUDANTE')
 
+    expect(screen.queryByRole('heading', { name: 'Prática clínica' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /pacientes/i })).not.toBeInTheDocument()
   })
 })
 
 describe('profissional', () => {
-  test('deveLevarAosPacientesNoDestaque', () => {
+  test('deveMostrarOTituloDaPraticaClinica', () => {
     renderizar('PROFISSIONAL')
 
-    expect(screen.getByRole('link', { name: 'Ver meus pacientes' })).toHaveAttribute('href', '/pacientes')
-    expect(screen.queryByRole('link', { name: 'Começar pelo TENS' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'TENS e FES na prática clínica' })).toBeInTheDocument()
   })
 
-  test('deveMostrarPacientesEAtlasNosAtalhos', () => {
+  test('deveLevarAosPacientesPelaPraticaClinica', () => {
     renderizar('PROFISSIONAL')
 
-    expect(linksDosAtalhos()).toEqual([
-      ['Abrir a lista de pacientes', '/pacientes'],
+    const pratica = within(screen.getByRole('region', { name: 'Prática clínica' }))
+    expect(pratica.getByRole('link', { name: 'Abrir pacientes' })).toHaveAttribute('href', '/pacientes')
+  })
+
+  test('deveMostrarSimuladorAtlasEBibliotecaNasFerramentas', () => {
+    renderizar('PROFISSIONAL')
+
+    expect(linksDasFerramentas()).toEqual([
+      ['Abrir o simulador', '/simulador'],
       ['Abrir o atlas de eletrodos', '/tens/eletrodos'],
+      ['Abrir a biblioteca', '/biblioteca'],
     ])
   })
 })

@@ -1,0 +1,43 @@
+.tf-relatorio-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-inline-end: 1rem;
+}
+
+.tf-relatorio-impressao {
+  display: none;
+}
+
+@media print {
+  body:has(> .tf-relatorio-impressao) > :not(.tf-relatorio-impressao) {
+    display: none !important;
+  }
+
+  .tf-relatorio-impressao {
+    display: block;
+    color: black;
+    background: white;
+    overflow-wrap: anywhere;
+  }
+
+  .tf-relatorio-impressao h2,
+  .tf-relatorio-impressao h3 {
+    break-after: avoid;
+  }
+
+  .tf-relatorio-impressao .tf-tabela {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .tf-relatorio-impressao :is(th, td) {
+    color: black;
+    background: white;
+    padding: 0.3rem;
+  }
+
+  .tf-relatorio-impressao .tf-tabela__rolagem {
+    overflow: visible;
+  }
+}

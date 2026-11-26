@@ -13,6 +13,7 @@ export type Atalho = {
 
 /** Ação só entra aqui quando existe de verdade; módulos novos acrescentam as suas. */
 const ACOES: Atalho[] = [
+  { rotulo: 'Meus casos clínicos', grupo: 'Ações', para: '/casos-clinicos', perfil: 'ESTUDANTE' },
   { rotulo: 'Meu perfil', grupo: 'Ações', para: '/perfil', palavras: 'conta dados' },
   { rotulo: 'Sair', grupo: 'Ações', palavras: 'logout encerrar sessão' },
 ]

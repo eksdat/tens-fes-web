@@ -47,7 +47,9 @@ export function NovaSenhaPage() {
   const nivel = useNivelMfa()
   const [resultado, setResultado] = useState<Resultado>(null)
   const email = sessao?.user?.email ?? ''
-  const dados = useMemo(() => dadosPessoais('', email), [email])
+  const metadata = sessao?.user?.user_metadata
+  const nome = metadata?.cadastro?.nome ?? metadata?.full_name
+  const dados = useMemo(() => dadosPessoais(typeof nome === 'string' ? nome : '', email), [nome, email])
   const schema = useMemo(() => criarSchema(dados), [dados])
   const {
     register,

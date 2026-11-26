@@ -76,6 +76,26 @@ class SessaoIntegracaoTest {
     }
 
     @Test
+    void devePersistirDorZeroEDistinguirMedidaAusente() throws Exception {
+        var corpo = SESSAO.replace("\"medidaAntes\"",
+                "\"dorAntes\":0,\"dorTarefa\":\"Escada\",\"dorMomento\":\"Imediato\",\"medidaAntes\"");
+        var id = idDe(criar(profissionalA, pacienteDeA, corpo));
+        mvc.perform(get("/api/v1/pacientes/" + pacienteDeA + "/sessoes/" + id)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dorAntes").value(0))
+                .andExpect(jsonPath("$.dorDepois").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.dorTarefa").value("Escada"))
+                .andExpect(jsonPath("$.profissionalId").value(profissionalA));
+    }
+
+    @Test
+    void deveRecusarDorSemProtocolo() throws Exception {
+        criar(profissionalA, pacienteDeA, SESSAO.replace("\"medidaAntes\"", "\"dorAntes\":6,\"medidaAntes\""))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void deveRegistrarSessaoComParametrosPorCanalEUnidades() throws Exception {
         criar(profissionalA, pacienteDeA, SESSAO)
                 .andExpect(status().isCreated())
@@ -86,6 +106,29 @@ class SessaoIntegracaoTest {
                 .andExpect(jsonPath("$.duracaoRealMin").value(20))
                 .andExpect(jsonPath("$.montagemId").value("joelho"))
                 .andExpect(jsonPath("$.checklist", hasSize(2)));
+    }
+
+    @Test
+    void devePersistirEDevolverPlanejamentoComReferenciaESemAplicarLarguraAosCanais() throws Exception {
+        var corpo = SESSAO.replace("\"medidaAntes\"", "\"planejamento\":{\"relato\":\"Plano baseado no protocolo\",\"referencia\":{\"id\":\"p-1\",\"versao\":\"2.1\",\"titulo\":\"TENS joelho\",\"url\":\"https://exemplo.test/p-1\"},\"larguraPulsoUs\":250},\"medidaAntes\"");
+        var id = idDe(criar(profissionalA, pacienteDeA, corpo));
+
+        mvc.perform(get("/api/v1/pacientes/" + pacienteDeA + "/sessoes/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.planejamento.relato").value("Plano baseado no protocolo"))
+                .andExpect(jsonPath("$.planejamento.referencia.versao").value("2.1"))
+                .andExpect(jsonPath("$.planejamento.larguraPulsoUs").value(250))
+                .andExpect(jsonPath("$.canais[0].larguraPulsoUs").value(100));
+    }
+
+    @Test
+    void deveManterPlanejamentoNuloEmSessaoSemDados() throws Exception {
+        var id = idDe(criar(profissionalA, pacienteDeA, SESSAO));
+        mvc.perform(get("/api/v1/pacientes/" + pacienteDeA + "/sessoes/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.planejamento").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test

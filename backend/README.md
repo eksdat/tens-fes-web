@@ -154,6 +154,7 @@ Todas ficam em `.env` (local) ou no painel do Render (produção). O arquivo `.e
 | `DB_USERNAME` | sim | `postgres.<project-ref>` | Usuário do pooler |
 | `DB_PASSWORD` | sim | — | Senha do banco |
 | `CORS_ALLOWED_ORIGINS` | não | `http://localhost:5173` | Origens do frontend, separadas por vírgula |
+| `SUPABASE_SECRET_KEY` | não | `sb_secret_...` | Chave secreta do Supabase, só para os anexos (Storage). Sem ela, a API sobe e anexo responde 503 |
 | `SWAGGER_ENABLED` | não | `true` | Liga o Swagger (`/swagger-ui.html`, `/v3/api-docs`). **Só em desenvolvimento**: sem a variável, a documentação não existe (padrão de produção) |
 
 O mapeamento está em `src/main/resources/application.yml`.
@@ -201,6 +202,8 @@ Como pegar a conexão:
 | `V10__sessao` | `sessao`, `sessao_canal`, `sessao_checklist` |
 | `V11__paciente_sem_telefone` | Remove o telefone do paciente (minimização) |
 | `V12__sessao_checklist_codigo` | Itens do checklist da sessão passam a código fixo |
+| `V13__revisao_conteudo` | Autor, revisor e motivo da devolução no `conteudo`; o autor não revisa o próprio texto (`CHECK`) |
+| `V14__material_anexo` | `anexo` (dados do arquivo, tipo e tamanho com `CHECK`) e o bucket privado `materiais` do Supabase Storage |
 
 Tabelas, colunas e índices: `agent_docs/database.md` no vault do projeto.
 
@@ -263,6 +266,15 @@ Regras de desenho:
 | `GET /conteudos?modalidade=` | com perfil | Conteúdos `APROVADO` |
 | `GET /conteudos/pagina?modalidade=&secao=` | com perfil | Página técnica padrão: blocos na ordem, `liberada` |
 | `GET /conteudos/{id}` | com perfil | Um conteúdo aprovado |
+| `GET /revisao/conteudos` | REVISOR + aal2 | Fila de revisão: conteúdos `EM_REVISAO` na ordem do site |
+| `POST /revisao/conteudos/{id}/aprovar` | REVISOR + aal2 | `APROVADO`, com revisor e data de revisão (fuso de Brasília). Sem fonte (`referencias` vazia), 400. Já decidido por outra pessoa, 409 |
+| `POST /revisao/conteudos/{id}/devolver` | REVISOR + aal2 | Volta para `RASCUNHO` com `motivo` (obrigatório, até 500) |
+| `GET`, `POST` em `/materiais` | com perfil | Materiais de quem está logado (todos os estados) e criação em `RASCUNHO` |
+| `GET`, `PUT`, `DELETE` em `/materiais/{id}` | autor | Ler; alterar e excluir só em `RASCUNHO` (409 depois de enviado); de outra pessoa, 404 |
+| `POST /materiais/{id}/enviar` | autor | `RASCUNHO` → `EM_REVISAO`: entra na fila do revisor. Sem fonte, 400 |
+| `POST /materiais/{id}/anexos` (multipart, `arquivo`), `DELETE /materiais/{id}/anexos/{anexoId}` | autor | PDF, PNG ou JPEG (pelos bytes), até 10 MB e 5 por material; só em `RASCUNHO` |
+| `GET /materiais/{id}/anexos/{anexoId}/link` | autor | Link assinado do Storage, 5 min |
+| `GET /revisao/conteudos/{id}/anexos/{anexoId}/link` | REVISOR + aal2 | Link do anexo de material enviado; de rascunho, 404 |
 | `GET /parametros?busca=` | com perfil | Dicionário de parâmetros |
 | `GET /parametros/faixas?modalidade=` | com perfil | Faixas educativas e do aparelho por modo |
 | `GET /pacientes?busca=&ordenar=&direcao=&pagina=&tamanho=` | PROFISSIONAL + aal2 | Pacientes do responsável, paginados |
@@ -279,6 +291,7 @@ Regras de cada módulo (campos, validações, erros comuns): `agent_docs/modulos
 - Todo o resto exige autenticação.
 - `@EnableMethodSecurity` ativa `@PreAuthorize` nos controllers.
 - `/api/v1/pacientes/**` exige `PROFISSIONAL` **e** sessão `aal2` (MFA) no token (`SESSAO_COM_MFA`); sem MFA, 403.
+- `/api/v1/revisao/**` exige `REVISOR` **e** sessão `aal2`.
 - `AuditoriaConfig` preenche `criado_por` e `alterado_por` com o `sub` do token.
 - CORS liberado só para `/api/**` e para as origens de `CORS_ALLOWED_ORIGINS`.
 - O JWT é validado pelo resource server do Spring (chaves públicas do Supabase); o perfil vem do banco (`PerfilJwtConverter`).
@@ -296,14 +309,16 @@ backend/
     ├── main/
     │   ├── java/br/unibh/fisiotech/
     │   │   ├── FisiotechApiApplication.java
-    │   │   ├── config/        # SecurityConfig (JWT, CORS, aal2), AuditoriaConfig, ResumoInicializacao
+    │   │   ├── config/        # SecurityConfig (JWT, CORS, aal2), AuditoriaConfig, ArmazenamentoConfig, ResumoInicializacao
     │   │   ├── shared/
+    │   │   │   ├── armazenamento/ # ArmazenamentoArquivos: SupabaseStorage (bucket privado) ou ArmazenamentoDesligado
     │   │   │   ├── dto/       # PaginaResponse
-    │   │   │   └── exception/ # GlobalExceptionHandler, RecursoNaoEncontrado, Conflito, DadoInvalido
+    │   │   │   └── exception/ # GlobalExceptionHandler, RecursoNaoEncontrado, Conflito, DadoInvalido, ArmazenamentoIndisponivel
     │   │   ├── usuario/       # cadastro, perfil e aceite dos termos (identidade no Supabase Auth)
     │   │   │   ├── controller/  service/  repository/  entity/  dto/  enums/
     │   │   │   └── security/  # PerfilJwtConverter (JWT -> papéis, perfil vem do banco)
     │   │   ├── conteudo/      # Conteudo e página técnica padrão (Modalidade, Secao, Bloco, EstadoEditorial)
+    │   │   ├── material/      # Material de estudo (um Conteudo com autor) e Anexo (TipoAnexo pelos bytes)
     │   │   ├── parametro/     # ParametroDicionario e FaixaParametro (faixas por modo)
     │   │   ├── paciente/      # Paciente: busca, ordenação, paginação, exclusão lógica
     │   │   ├── avaliacao/     # Avaliacao, triagem e achados (EstadoAchado, ItemTriagem, Lado)
@@ -338,7 +353,7 @@ Regras obrigatórias no backend:
 2. Todo acesso a paciente, avaliação ou sessão confere `paciente.responsavelId == sub do token`. Se falhar, responde **404**, não 403. Assim não revela que o registro existe. O ponto único dessa verificação é `PacienteService.buscarDoResponsavel` (`findByIdAndResponsavelId`).
 3. Paciente não é usuário: sem login, sem conta.
 4. Registro profissional digitado (CREFITO etc.) **não** gera selo de "verificado".
-5. Só usuário com `revisor = true` (PROFISSIONAL) aprova material, e nunca o próprio. `revisor` não muda por endpoint: liga-se no banco para pessoas conhecidas (docente).
+5. Só usuário com `revisor = true` (PROFISSIONAL) aprova ou devolve conteúdo, e nunca o próprio (`RevisaoConteudoService`, 403). `revisor` não muda por endpoint: liga-se no banco para pessoas conhecidas do projeto (docente ou integrantes do grupo enquanto a revisão docente não acontece). Não basta ser PROFISSIONAL: o perfil é declarado no cadastro e qualquer conta troca para ele. Conteúdo sem fonte não é aprovado (400), e a decisão trava a linha (`buscarParaDecidir`, `select ... for update`): aprovar e devolver ao mesmo tempo dá 200 para um e 409 para o outro.
 6. `Anexo`: só PDF e imagem, até 10 MB.
 7. Senha, e-mail, redefinição de senha e MFA ficam no Supabase Auth. Nossa tabela `usuario` não guarda e-mail nem senha. Perfil nunca no `user_metadata`. Regras de campo e validações em [SEGURANCA.md](../SEGURANCA.md) e no "Cadastro" abaixo.
 8. Até as políticas LGPD estarem definidas: **somente dados fictícios**.
@@ -469,6 +484,17 @@ classDiagram
         +String referencias
         +EstadoEditorial estado
         +LocalDate dataRevisao
+        +UUID autorId
+        +UUID revisorId
+        +String motivoDevolucao
+    }
+    class Anexo {
+        +UUID id
+        +Long conteudoId
+        +String nome
+        +TipoAnexo tipo
+        +Integer tamanhoBytes
+        +String caminho
     }
     class ParametroDicionario {
         +Long id
@@ -490,6 +516,7 @@ classDiagram
     }
 
     Usuario --> Perfil
+    Conteudo "1" *-- "0..5" Anexo
     Usuario "1 responsavel" -- "*" Paciente
     Paciente "1" *-- "*" Avaliacao
     Paciente "1" *-- "*" Sessao
@@ -508,13 +535,13 @@ Notas que o diagrama não mostra:
 - `Canal` tem a unidade no nome do campo (`frequenciaHz`, `larguraPulsoUs`, `amplitudeInicialMa`).
 - `ParametroDicionario` (texto do dicionário) ≠ `Canal` (valor usado numa sessão real) ≠ `FaixaParametro` (faixa educativa ou do aparelho por modo).
 
-Planejado, sem código ainda: `Aparelho` e `Controle`, `PranchaAtlas`, `CasoPratica` e `TentativaPratica` (simulador com casos), `CasoClinico` e `RespostaIA` (assistente), `Material`, `Anexo` e `Referencia` (fluxo editorial). Regras já decididas para eles:
+Planejado, sem código ainda: `Aparelho` e `Controle`, `PranchaAtlas`, `CasoPratica` e `TentativaPratica` (simulador com casos), `CasoClinico` e `RespostaIA` (assistente) e `Referencia`. Regras já decididas para eles:
 
 - `RespostaIA` cita só `Conteudo` `APROVADO`. `CasoClinico` e anexos **nunca** entram na base da IA automaticamente.
 - `CasoPratica` = os casos fictícios do simulador. `CasoClinico` = caso que o estudante envia para a IA.
-- `Material` é criado por usuário. Aprovado, vira `Conteudo` publicado.
+- Material de estudo é um `Conteudo` com `autorId` e sem `bloco`, criado na tela "Criar conteúdo" (`/api/v1/materiais`). Aprovado, já é conteúdo publicado; os anexos ficam em `Anexo` e no bucket.
 
-Fluxo editorial de `Material`/`Conteudo` (hoje o `Conteudo` só muda de estado direto no banco):
+Fluxo editorial de `Conteudo` (textos do guia e materiais). Enviar (`/api/v1/materiais/{id}/enviar`), aprovar e devolver (`/api/v1/revisao/conteudos`) passam pela API; arquivar ainda não tem endpoint:
 
 ```mermaid
 stateDiagram-v2
@@ -681,9 +708,12 @@ Estado: 135 testes, todos verdes (`.\mvnw.cmd test`, 2026-10-16). Uma classe de 
 | `SessaoIntegracaoTest` | Blocos obrigatórios, canal repetido, limite físico dos parâmetros, checklist só por código, ordem da lista, 404 entre profissionais |
 | `UsuarioIntegracaoTest` | Cadastro, 409, `CHECK` do banco, troca para profissional, aceite e versão dos termos, 403 sem cadastro ou inativo |
 | `ConteudoIntegracaoTest`, `ParametroDicionarioIntegracaoTest`, `FaixaParametroIntegracaoTest` | Seeds, só `APROVADO`, página técnica, faixas por modo |
+| `MaterialIntegracaoTest` | Rascunho só do autor (404 para os outros), HTML recusado, envio para a fila do revisor (exige fonte), devolução volta para rascunho com motivo, 409 depois de enviado, anexo pelo tipo dos bytes, limite de 10 MB e de 5 anexos, 503 com o Storage fora, link só para o autor, exclusão apaga os arquivos |
+| `RevisaoConteudoIntegracaoTest` | Fila só `EM_REVISAO`, aprovação grava revisor e data, devolução com motivo, página liberada com os 5 blocos aprovados, 403 para o autor, 409 para aprovação repetida, 400 sem fonte, 403 sem `REVISOR` ou sem `aal2`, anexos do material na fila e link só fora do rascunho |
+| `RevisaoConcorrenteIntegracaoTest` | Aprovar e devolver o mesmo texto ao mesmo tempo, com transações de verdade: um recebe 200, o outro 409, e fica gravada a decisão de quem recebeu 200 |
 | `RestricaoPorPerfilTest`, `RestricaoPorPerfilIntegracaoTest` | 401, 403 por perfil e sem MFA |
 | `SwaggerIntegracaoTest` | Swagger desligado por padrão |
-| Unitários (`*ServiceTest`, `*ControllerTest`, `PerfilJwtConverterTest`, `CadastroRequestTest`, `GlobalExceptionHandlerTest`) | Regras sem banco e formato dos erros |
+| Unitários (`*ServiceTest`, `*ControllerTest`, `PerfilJwtConverterTest`, `CadastroRequestTest`, `GlobalExceptionHandlerTest`, `TipoAnexoTest`, `SupabaseStorageTest`) | Regras sem banco, formato dos erros, tipo do arquivo pelos bytes e as chamadas ao Storage (servidor falso) |
 
 Regras:
 
@@ -773,6 +803,7 @@ Pronto:
 - Conteúdo técnico, página técnica padrão, dicionário de parâmetros e faixas por modo.
 - Pacientes (busca full-text sem acento, ordenação, paginação, exclusão lógica com remoção em 90 dias), avaliação inicial e registro de sessão com checklist.
 - Auditoria por campos (`criado_por`, `alterado_por`).
+- Material de estudo: rascunho só do autor, anexos no bucket privado do Supabase Storage (tipo pelos bytes, até 10 MB, link de 5 min) e envio para a fila do revisor.
 - Migrations V1 a V12 (seção 5). Em produção (Supabase) estão aplicadas até a versão do último deploy; V6 a V12 entram no próximo deploy do backend ([DEPLOY.md](../DEPLOY.md)).
 - Erros em `ProblemDetail` com `erros` por campo.
 - Log de inicialização enxuto, senha fora do log, Swagger desligado por padrão.
@@ -782,8 +813,9 @@ Pronto:
 Pendente:
 
 - Backend de aparelho, atlas e casos do simulador (hoje dados estáticos no frontend).
-- Fluxo editorial pela API (material, anexo, aprovação por revisor ≠ autor). Hoje o `Conteudo` muda de estado direto no banco e o seed está todo `EM_REVISAO`.
-- Testes de segurança que faltam: assinatura inválida ou token expirado, autor aprovando o próprio material, upload ([SEGURANCA.md](../SEGURANCA.md), seção 8).
+- Arquivar conteúdo. Falta ligar `revisor = true` no banco para quem vai revisar (docente ou integrantes do grupo) e aprovar o seed, que está todo `EM_REVISAO`.
+- Mostrar o material aprovado para os estudantes (biblioteca).
+- Testes de segurança que faltam: assinatura inválida ou token expirado ([SEGURANCA.md](../SEGURANCA.md), seção 8).
 - Limite de requisições na API.
 - Domínio próprio e deploy automático do frontend (DEPLOY.md, seção 5).
 - Spring AI e pgvector (entram com o assistente).

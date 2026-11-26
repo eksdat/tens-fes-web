@@ -15,6 +15,7 @@ import br.unibh.fisiotech.sessao.dto.CanalDto;
 import br.unibh.fisiotech.sessao.dto.SessaoRequest;
 import br.unibh.fisiotech.sessao.dto.SessaoResponse;
 import br.unibh.fisiotech.sessao.entity.Sessao;
+import br.unibh.fisiotech.sessao.entity.Planejamento;
 import br.unibh.fisiotech.sessao.repository.SessaoRepository;
 import br.unibh.fisiotech.shared.exception.DadoInvalidoException;
 import br.unibh.fisiotech.shared.exception.RecursoNaoEncontradoException;
@@ -53,9 +54,16 @@ public class SessaoService {
                 limpar(req.montagemId()));
         s.definirResposta(limpar(req.sensacao()), limpar(req.contracao()), limpar(req.tolerancia()),
                 limpar(req.fadiga()), limpar(req.ajustes()));
+        var tarefa = limpar(req.dorTarefa());
+        var momento = limpar(req.dorMomento());
+        if ((req.dorAntes() != null || req.dorDepois() != null) && (tarefa == null || momento == null)) {
+            throw new DadoInvalidoException("dorTarefa", "Informe a tarefa e o momento da avaliação da dor.");
+        }
+        s.definirDor(req.dorAntes(), req.dorDepois(), tarefa, momento);
         s.definirResultado(limpar(req.medidaAntes()), limpar(req.medidaDepois()), limpar(req.medidaContexto()));
         s.definirEncerramento(req.condicaoPele().trim(), req.motivoTermino().trim(), req.planoReavaliacao().trim(),
                 req.checklist() == null ? new LinkedHashSet<>() : new LinkedHashSet<>(req.checklist()));
+        s.definirPlanejamento(req.planejamento() == null ? null : paraEntidade(req.planejamento()));
         return SessaoResponse.de(repository.saveAndFlush(s));
     }
 
@@ -64,5 +72,11 @@ public class SessaoService {
 
     private static String limpar(String texto) {
         return texto == null || texto.isBlank() ? null : texto.trim();
+    }
+
+    private static Planejamento paraEntidade(br.unibh.fisiotech.sessao.dto.PlanejamentoDto dto) {
+        var referencia = dto.referencia() == null ? null : new Planejamento.Referencia(dto.referencia().id().trim(),
+                dto.referencia().versao().trim(), dto.referencia().titulo().trim(), dto.referencia().url().trim());
+        return new Planejamento(dto.relato().trim(), referencia, dto.larguraPulsoUs());
     }
 }

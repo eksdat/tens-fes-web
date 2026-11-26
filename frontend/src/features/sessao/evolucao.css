@@ -1,0 +1,85 @@
+.tf-evolucao {
+  min-inline-size: 0;
+}
+
+.tf-evolucao-grafico {
+  margin: 0;
+  break-inside: avoid;
+  padding: var(--space-4);
+  background: var(--surface-100);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.tf-evolucao-legenda,
+.tf-evolucao-legenda span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tf-evolucao-legenda {
+  gap: var(--space-4);
+  margin-block: var(--space-2) var(--space-3);
+}
+
+.tf-evolucao-antes { --serie: var(--info); }
+.tf-evolucao-depois { --serie: var(--brand); }
+
+.tf-evolucao-legenda i {
+  inline-size: 1.25rem;
+  border-top: 3px solid var(--serie);
+}
+
+.tf-evolucao-legenda .tf-evolucao-antes { border-top-style: dashed; }
+
+.tf-evolucao-plot,
+.tf-evolucao-datas {
+  position: relative;
+  margin-inline-start: 2rem;
+}
+
+.tf-evolucao-plot svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 176px;
+}
+
+.tf-evolucao-plot line { vector-effect: non-scaling-stroke; }
+.tf-evolucao-guia { stroke: var(--line); }
+.tf-evolucao-plot g line { stroke: var(--serie); stroke-width: 2.5; }
+.tf-evolucao-plot .tf-evolucao-antes line { stroke-dasharray: 5 4; }
+.tf-evolucao-plot :is(rect, circle) { fill: var(--serie); }
+
+.tf-evolucao-eixo,
+.tf-evolucao-datas span {
+  position: absolute;
+  color: var(--ink-muted);
+  font: var(--fs-sm) var(--font-mono);
+  white-space: nowrap;
+}
+
+.tf-evolucao-eixo {
+  right: calc(100% + var(--space-2));
+  transform: translateY(-50%);
+}
+
+.tf-evolucao-datas { block-size: 1.25rem; }
+.tf-evolucao-datas span { transform: translateX(-50%); }
+
+.tf-evolucao .tf-tabela thead th {
+  background: var(--brand-tint);
+  padding: var(--space-3);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tf-evolucao .tf-tabela tbody th {
+  padding: var(--space-3);
+  white-space: nowrap;
+}
+
+.tf-evolucao .tf-tabela td:nth-child(2),
+.tf-evolucao .tf-tabela td:nth-child(3) {
+  text-align: center;
+}
