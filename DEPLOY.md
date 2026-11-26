@@ -100,6 +100,8 @@ Intervalo de 14 min, não 15: o Render dorme aos 15 min. Das 22h às 7h a API do
 
 **Cache:** o HTML (qualquer rota, inclusive `/` e `/login`) sai com `no-cache`; `/assets/**` sai `immutable` por 1 ano (o nome do arquivo tem hash). Sem isso, depois de um deploy o navegador pode manter um `index.html` antigo apontando para arquivos que não existem mais, e o usuário vê tela branca.
 
+Uma aba aberta durante o deploy pode pedir o arquivo antigo de cadastro ou nova senha. Se o módulo falhar, a rota exibe **Recarregar página** para buscar o build atual. Se houver dúvida, confira se o endereço do arquivo JavaScript está devolvendo HTML por causa do rewrite do Hosting.
+
 ### Publicar (quem já tem acesso ao projeto)
 
 1. Ter acesso: no console do Firebase › *Configurações do projeto* › *Usuários e permissões*, papel **Editor** para a conta de quem publica.
@@ -189,19 +191,3 @@ Deploy com migration nova: faça também a conferência do banco (seção 1, "Mi
 | Deploy automático do frontend | Workflow pronto (`frontend.yml`); falta o admin criar o secret e as variables no GitHub |
 | Região do banco | Antes de dado real: Supabase em `sa-east-1` (SEGURANCA.md, seção 9) |
 | Tempo de subida (3 min) | Pode cair com cache de classes da JVM (AppCDS), em card próprio |
-
-## Backend na Cloudflare Containers
-
-A Cloudflare hospeda uma segunda instância da API. O [Worker](cloudflare/worker.js) encaminha as requisições para um container na porta 8080. O [Wrangler](wrangler.jsonc) usa o mesmo [Dockerfile](backend/Dockerfile) do Render, com uma instância basic que adormece após cinco minutos sem atividade. O plano Workers Paid é obrigatório.
-
-1. No Workers Builds, conecte o repositório e selecione como branch de produção do Worker a branch que contém esta configuração. Use projeto **fisiotech-api**, diretório raiz **/**, build vazio e deploy **npx wrangler deploy**. Desative preview builds. O deploy de preview padrão não publica a imagem do container.
-2. Em **Settings → Variables and Secrets** do Worker, configure **DB_URL**, **DB_USERNAME**, **DB_PASSWORD**, **SUPABASE_URL** e **CORS_ALLOWED_ORIGINS**. Cadastre as credenciais como segredos de execução. Se a API servir anexos, cadastre também **SUPABASE_SECRET_KEY** como segredo.
-3. Se compartilhar o Supabase com o Render, publique versões compatíveis. O Flyway aplica migrations quando a API inicia.
-4. Teste **GET /actuator/health** na URL workers.dev. Inclua as origens do Firebase Hosting (`https://fisiotech-3b4ad.web.app` e `https://fisiotech-3b4ad.firebaseapp.com`) em **CORS_ALLOWED_ORIGINS** e teste uma rota autenticada pelo navegador.
-5. Depois de validar a API na Cloudflare, configure as duas variáveis em **GitHub → Settings → Secrets and variables → Actions → Variables**. Use `https://fisiotech-api.joaovictooroc.workers.dev` em `VITE_API_URL` e `https://fisiotech-8a3v.onrender.com` em `VITE_API_FALLBACK_URL`. A [CSP do Firebase](frontend/firebase.json) permite as duas origens. Publique o frontend pela `main` com o fluxo da seção 3.
-
-O [cliente HTTP](frontend/src/shared/api/client.ts) verifica `/actuator/health` da API principal antes da primeira chamada. Em caso de erro de rede, timeout ou HTTP 502, 503 ou 504, usa o Render por 30 segundos antes de verificar a principal novamente. Uma leitura `GET` que falhar na principal é repetida uma vez no Render. Uma gravação já enviada preserva o erro original, pois pode ter sido concluída antes da falha. Sem `VITE_API_FALLBACK_URL`, o cliente usa apenas a URL principal.
-
-Mantenha o job do Render descrito na seção 2 enquanto ele servir como reserva. Para a Cloudflare, teste primeiro com uma requisição manual. Pings periódicos acordam o container e aumentam seu tempo faturável.
-
-[Deploy de Containers no Workers Builds](https://developers.cloudflare.com/containers/guides/deploy/) · [Preços de Containers](https://developers.cloudflare.com/containers/platform/pricing/)

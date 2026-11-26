@@ -1,0 +1,16 @@
+.tf-caso-campos {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tf-caso-detalhes dt {
+  font-weight: 700;
+}
+
+.tf-caso-detalhes dd {
+  margin: var(--space-1) 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
