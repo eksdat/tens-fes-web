@@ -19,6 +19,18 @@ async function preencherCadastro(page: Page) {
   await page.getByRole('button', { name: 'Criar conta' }).click()
 }
 
+test('devePermitirRecarregarOCadastroQuandoOArquivoDaPaginaFalhar', async ({ page }) => {
+  await page.route('**/assets/CadastroPage-*.js', (rota) => rota.fulfill({
+    contentType: 'text/html',
+    body: '<!doctype html><title>Fisiotech</title>',
+  }), { times: 1 })
+
+  await page.goto('/cadastro')
+  await expect(page.getByRole('heading', { name: 'Não foi possível abrir esta página' })).toBeVisible()
+  await page.getByRole('button', { name: 'Recarregar página' }).click()
+  await expect(page.getByRole('heading', { name: 'Criar conta' })).toBeVisible()
+})
+
 test('deveCriarContaConfirmarOEmailEEntrar', async ({ page, supabase }) => {
   await preencherCadastro(page)
 

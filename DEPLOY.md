@@ -100,6 +100,8 @@ Intervalo de 14 min, não 15: o Render dorme aos 15 min. Das 22h às 7h a API do
 
 **Cache:** o HTML (qualquer rota, inclusive `/` e `/login`) sai com `no-cache`; `/assets/**` sai `immutable` por 1 ano (o nome do arquivo tem hash). Sem isso, depois de um deploy o navegador pode manter um `index.html` antigo apontando para arquivos que não existem mais, e o usuário vê tela branca.
 
+Uma aba aberta durante o deploy pode pedir o arquivo antigo de cadastro ou nova senha. Se o módulo falhar, a rota exibe **Recarregar página** para buscar o build atual. Se houver dúvida, confira se o endereço do arquivo JavaScript está devolvendo HTML por causa do rewrite do Hosting.
+
 ### Publicar (quem já tem acesso ao projeto)
 
 1. Ter acesso: no console do Firebase › *Configurações do projeto* › *Usuários e permissões*, papel **Editor** para a conta de quem publica.
