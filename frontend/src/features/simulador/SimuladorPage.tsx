@@ -7,6 +7,7 @@ import { CampoSelecao } from '../../shared/ui/CampoSelecao'
 import { IconeAtencao } from '../../shared/ui/Icones'
 import { useEstadoDoAparelho } from '../aparelho/useEstadoDoAparelho'
 import { mensagemDeAjuste } from '../aparelho/valores'
+import { FICHAS_CASOS } from '../casos/conteudoCasos'
 import type { FaixaApi, Modalidade } from './api'
 import {
   cargaFaseMicroC,
@@ -105,6 +106,7 @@ export function SimuladorPage() {
   const opcoes = modosDoSimulador(modalidade, faixas)
   const nomes = opcoes.map((m) => m.nome)
   const pedido = lerModoPedido(params.get('modo'))
+  const ficha = FICHAS_CASOS.find((f) => f.id === params.get('protocolo') && f.versao === params.get('versao'))
   const modo = nomes.includes(pedido) ? pedido : nomes.includes(MODO_PADRAO[modalidade]) ? MODO_PADRAO[modalidade] : (nomes[0] ?? '')
   const atual = opcoes.find((m) => m.nome === modo)
   const forma: Forma = atual?.forma ?? 'continuo'
@@ -123,10 +125,15 @@ export function SimuladorPage() {
   useEffect(() => {
     if (abriuNoModo.current || !atual) return
     abriuNoModo.current = true
-    if (atual.nome === MODO_PADRAO[modalidade]) return
+    const preset = ficha?.simulador
+    const faixaLargura = faixasDo(faixas, atual.faixasDe, 'Largura de pulso').aparelho
+    const larguraDaFicha = preset?.modalidade === modalidade && preset.modo === atual.nome
+      && preset.largura !== undefined && faixaLargura
+      && limitarAoAparelho(preset.largura, faixaLargura) === preset.largura ? String(preset.largura) : undefined
+    if (atual.nome === MODO_PADRAO[modalidade] && larguraDaFicha === undefined) return
     const v = valoresDoModo(atual)
     setTextos((atuais) => {
-      const novos = { ...atuais, frequencia: v.frequencia ?? atuais.frequencia, largura: v.largura ?? atuais.largura }
+      const novos = { ...atuais, frequencia: v.frequencia ?? atuais.frequencia, largura: larguraDaFicha ?? v.largura ?? atuais.largura }
       confirmados.current = novos
       return novos
     })

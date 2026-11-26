@@ -109,6 +109,29 @@ class SessaoIntegracaoTest {
     }
 
     @Test
+    void devePersistirEDevolverPlanejamentoComReferenciaESemAplicarLarguraAosCanais() throws Exception {
+        var corpo = SESSAO.replace("\"medidaAntes\"", "\"planejamento\":{\"relato\":\"Plano baseado no protocolo\",\"referencia\":{\"id\":\"p-1\",\"versao\":\"2.1\",\"titulo\":\"TENS joelho\",\"url\":\"https://exemplo.test/p-1\"},\"larguraPulsoUs\":250},\"medidaAntes\"");
+        var id = idDe(criar(profissionalA, pacienteDeA, corpo));
+
+        mvc.perform(get("/api/v1/pacientes/" + pacienteDeA + "/sessoes/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.planejamento.relato").value("Plano baseado no protocolo"))
+                .andExpect(jsonPath("$.planejamento.referencia.versao").value("2.1"))
+                .andExpect(jsonPath("$.planejamento.larguraPulsoUs").value(250))
+                .andExpect(jsonPath("$.canais[0].larguraPulsoUs").value(100));
+    }
+
+    @Test
+    void deveManterPlanejamentoNuloEmSessaoSemDados() throws Exception {
+        var id = idDe(criar(profissionalA, pacienteDeA, SESSAO));
+        mvc.perform(get("/api/v1/pacientes/" + pacienteDeA + "/sessoes/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + profissionalA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.planejamento").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
     void deveResponder404AOutroProfissionalAoRegistrarOuVerSessoes() throws Exception {
         var id = idDe(criar(profissionalA, pacienteDeA, SESSAO));
 
