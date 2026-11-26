@@ -52,6 +52,7 @@ public record SessaoRequest(
         @NotBlank(message = "Informe a condição da pele.") @Size(max = 300) String condicaoPele,
         @NotBlank(message = "Informe o motivo do término.") @Size(max = 300) String motivoTermino,
         @NotBlank(message = "Informe o plano de reavaliação.") @Size(max = 500) String planoReavaliacao,
+        @Valid PlanejamentoDto planejamento,
         /** Código fixo do item ("antes.objetivo-definido"); o texto da pergunta vive no frontend. */
         @Size(max = 40) Set<@Pattern(regexp = "^(antes|durante|depois)\\.[a-z0-9-]{1,60}$", message = "Item de checklist inválido.") String> checklist) {
 

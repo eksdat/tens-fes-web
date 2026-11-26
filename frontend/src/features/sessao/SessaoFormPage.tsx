@@ -18,6 +18,8 @@ import { AvisoTriagem } from './AvisoTriagem'
 import { ChecklistSeguranca } from '../seguranca/ChecklistSeguranca'
 import { SEGURANCA } from '../seguranca/conteudoSeguranca'
 import { useUsuarioAtual } from '../usuario/useUsuarioAtual'
+import { FICHAS_CASOS, type FichaCaso } from '../casos/conteudoCasos'
+import { interpretarRelato } from '../casos/interpretarRelato'
 import { chaveSessoes, listarSessoes, registrarSessao, type Sessao, type SessaoRequest } from './api'
 
 const AVISO_REAPROVEITAR = 'Parâmetros anteriores não substituem a avaliação desta sessão.'
@@ -84,9 +86,18 @@ const schema = z.object({
   condicaoPele: obrigatorio('Informe a condição da pele.', 300),
   motivoTermino: obrigatorio('Informe o motivo do término.', 300),
   planoReavaliacao: obrigatorio('Informe o plano de reavaliação.', 500),
+  planejamentoRelato: opcional(1000),
+  planejamentoLargura: valorNaFaixa(z.string().trim(), { min: 1, max: 1000, casas: 0 }),
+  planejamentoReferenciaId: opcional(120),
+  planejamentoReferenciaVersao: opcional(40),
+  planejamentoReferenciaTitulo: opcional(300),
+  planejamentoReferenciaUrl: opcional(1000),
 })
 
   .superRefine((v, ctx) => {
+    if ((v.planejamentoLargura || v.planejamentoReferenciaId) && !v.planejamentoRelato.trim()) {
+      ctx.addIssue({ code: 'custom', path: ['planejamentoRelato'], message: 'Informe o relato para salvar o planejamento.' })
+    }
     if (!v.dorAntes && !v.dorDepois) return
     for (const campo of ['dorTarefa', 'dorMomento'] as const) {
       if (!v[campo].trim()) ctx.addIssue({ code: 'custom', path: [campo], message: 'Preencha este campo ao registrar dor.' })
@@ -125,6 +136,12 @@ const VAZIO: Valores = {
   condicaoPele: '',
   motivoTermino: '',
   planoReavaliacao: '',
+  planejamentoRelato: '',
+  planejamentoLargura: '',
+  planejamentoReferenciaId: '',
+  planejamentoReferenciaVersao: '',
+  planejamentoReferenciaTitulo: '',
+  planejamentoReferenciaUrl: '',
 }
 
 const LADO_DA_PRANCHA: Record<LadoDaPrancha, Lado> = {
@@ -137,9 +154,16 @@ const LADO_DA_PRANCHA: Record<LadoDaPrancha, Lado> = {
 const nulo = (v: string) => (v.trim() ? v.trim() : null)
 
 function paraRequest(v: Valores, checklist: Set<string>): SessaoRequest {
+  const planejamentoRelato = v.planejamentoRelato.trim()
+  const planejamentoLargura = v.planejamentoLargura.trim()
   return {
     dataHora: new Date(v.dataHora).toISOString(),
     objetivo: v.objetivo.trim(),
+    ...(planejamentoRelato || planejamentoLargura || v.planejamentoReferenciaId ? { planejamento: {
+      relato: planejamentoRelato,
+      ...(planejamentoLargura ? { larguraPulsoUs: num(planejamentoLargura) } : {}),
+      ...(v.planejamentoReferenciaId ? { referencia: { id: v.planejamentoReferenciaId, versao: v.planejamentoReferenciaVersao, titulo: v.planejamentoReferenciaTitulo, url: v.planejamentoReferenciaUrl } } : {}),
+    } } : {}),
     modalidade: v.modalidade,
     aparelho: v.aparelho.trim(),
     modo: nulo(v.modo),
@@ -213,6 +237,9 @@ export function SessaoFormPage() {
   const [erroGeral, setErroGeral] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [checklist, setChecklist] = useState<Set<string>>(new Set())
+  const [interpretacao, setInterpretacao] = useState<ReturnType<typeof interpretarRelato>>()
+  const [referenciaConfirmada, setReferenciaConfirmada] = useState<FichaCaso>()
+  const [criteriosConfirmados, setCriteriosConfirmados] = useState(false)
 
   const anteriores = useQuery({ queryKey: chaveSessoes(pacienteId), queryFn: () => listarSessoes(pacienteId) })
   const ultima = anteriores.data?.[0]
@@ -229,6 +256,25 @@ export function SessaoFormPage() {
   const canais = useFieldArray({ control, name: 'canais' })
   const modalidade = useWatch({ control, name: 'modalidade' })
   const montagemId = useWatch({ control, name: 'montagemId' })
+  const planejamentoRelato = useWatch({ control, name: 'planejamentoRelato' })
+
+  function limparReferencia() {
+    setInterpretacao(undefined)
+    setReferenciaConfirmada(undefined)
+    setCriteriosConfirmados(false)
+    setValue('planejamentoReferenciaId', '')
+    setValue('planejamentoReferenciaVersao', '')
+    setValue('planejamentoReferenciaTitulo', '')
+    setValue('planejamentoReferenciaUrl', '')
+  }
+
+  function selecionarReferencia(ficha: FichaCaso) {
+    setReferenciaConfirmada(ficha)
+    setValue('planejamentoReferenciaId', ficha.id)
+    setValue('planejamentoReferenciaVersao', ficha.versao)
+    setValue('planejamentoReferenciaTitulo', ficha.titulo)
+    setValue('planejamentoReferenciaUrl', ficha.fonte.url)
+  }
 
   function aoEscolherPrancha(id: string) {
     setValue('montagemId', id)
@@ -328,12 +374,39 @@ export function SessaoFormPage() {
                 onChange: (e: ChangeEvent<HTMLSelectElement>) => {
                   // A prancha de outra modalidade some da lista; sem limpar, ela continuaria indo no salvamento.
                   const nova = e.target.value as Valores['modalidade']
+                  limparReferencia()
                   if (!pranchasDa(nova).some((m) => m.id === getValues('montagemId'))) setValue('montagemId', '')
                 },
               })}
             />
           </div>
           <CampoTextoLongo rotulo="Objetivo desta sessão" erro={errors.objetivo?.message} {...register('objetivo')} />
+          <div className="tf-pilha" aria-label="Planejar aplicação">
+            <h3 className="tf-subtitulo">Planejar aplicação <span className="tf-sub">(opcional)</span></h3>
+            <p className="tf-sub">Use o relato e as fichas existentes para orientar o planejamento. Nada aqui substitui os valores aplicados abaixo.</p>
+            <CampoTextoLongo rotulo="Relato do caso (opcional)" maxLength={1000} erro={errors.planejamentoRelato?.message}
+              {...register('planejamentoRelato', { onChange: limparReferencia })} />
+            <div className="tf-acoes">
+              <Botao variante="secundario" type="button" disabled={!planejamentoRelato?.trim()} onClick={() => {
+                limparReferencia()
+                setInterpretacao(interpretarRelato(planejamentoRelato ?? '', FICHAS_CASOS.filter((f) => f.modalidade === modalidade)))
+              }}>Interpretar relato</Botao>
+            </div>
+            {interpretacao && <output className="tf-pilha">
+              <p className="tf-sub">{interpretacao.confirmacao}</p>
+              {interpretacao.ficha && <>
+                <p className="tf-sub"><strong>Ficha:</strong> {interpretacao.ficha.titulo} · v{interpretacao.ficha.versao}</p>
+                <ul className="tf-lista-simples">{interpretacao.ficha.parametrosReportados.map((parametro) => <li key={parametro}>{parametro}</li>)}</ul>
+                <p className="tf-sub">{interpretacao.ficha.limites.join(' ')}</p>
+                <a className="tf-link" href={interpretacao.ficha.fonte.url}>Consultar estudo</a>
+                <p className="tf-sub"><strong>Critérios pendentes:</strong> {interpretacao.faltantes.length ? interpretacao.faltantes.join('; ') : 'nenhum'}</p>
+                <label><input type="checkbox" checked={criteriosConfirmados} onChange={(e) => setCriteriosConfirmados(e.target.checked)} /> Confirmei os critérios essenciais antes de usar esta referência</label>
+                <Botao type="button" variante="ghost" disabled={!criteriosConfirmados || interpretacao.faltantes.length > 0} onClick={() => selecionarReferencia(interpretacao.ficha!)}>Usar referência da ficha</Botao>
+                {referenciaConfirmada && <p className="tf-sub"><strong>Referência planejada:</strong> {referenciaConfirmada.fonte.codigo} · {referenciaConfirmada.fonte.referencia}</p>}
+              </>}
+            </output>}
+            <CampoNumero rotulo="Largura planejada, em microssegundos (opcional)" erro={errors.planejamentoLargura?.message} {...register('planejamentoLargura')} />
+          </div>
         </Bloco>
 
         <Bloco titulo="Aplicação">
@@ -487,6 +560,7 @@ function Revisao({ valores: v, checklist, erro, salvando, aoVoltar, aoSalvar }: 
     ['Data e hora', new Date(v.dataHora).toLocaleString('pt-BR')],
     ['Objetivo', v.objetivo],
     ['Modalidade e aparelho', `${v.modalidade} · ${v.aparelho}${v.modo ? ` · ${v.modo}` : ''}`],
+    ['Planejado', `${v.planejamentoLargura ? `Largura ${v.planejamentoLargura} µs` : 'Largura não informada'}${v.planejamentoRelato ? ` · Relato: ${v.planejamentoRelato}` : ''}`],
     ['Duração real', `${v.duracaoRealMin} min`],
     [
       'Parâmetros',

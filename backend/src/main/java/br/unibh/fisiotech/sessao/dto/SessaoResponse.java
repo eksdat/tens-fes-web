@@ -40,6 +40,7 @@ public record SessaoResponse(
         String condicaoPele,
         String motivoTermino,
         String planoReavaliacao,
+        PlanejamentoDto planejamento,
         List<String> checklist,
         Instant criadoEm) {
 
@@ -49,7 +50,12 @@ public record SessaoResponse(
                 s.getCanais().stream().map(CanalDto::de).toList(), s.getEletrodoTipo(), s.getEletrodoDimensoes(),
                 s.getLado(), s.getMarcos(), s.getMontagemId(), s.getSensacao(), s.getContracao(), s.getTolerancia(),
                 s.getFadiga(), s.getAjustes(), s.getDorAntes(), s.getDorDepois(), s.getDorTarefa(), s.getDorMomento(), s.getMedidaAntes(), s.getMedidaDepois(), s.getMedidaContexto(),
-                s.getCondicaoPele(), s.getMotivoTermino(), s.getPlanoReavaliacao(), List.copyOf(s.getChecklist()),
+                s.getCondicaoPele(), s.getMotivoTermino(), s.getPlanoReavaliacao(),
+                s.getPlanejamento() == null ? null : new PlanejamentoDto(s.getPlanejamento().relato(),
+                        s.getPlanejamento().referencia() == null ? null : new PlanejamentoDto.ReferenciaDto(
+                                s.getPlanejamento().referencia().id(), s.getPlanejamento().referencia().versao(),
+                                s.getPlanejamento().referencia().titulo(), s.getPlanejamento().referencia().url()),
+                        s.getPlanejamento().larguraPulsoUs()), List.copyOf(s.getChecklist()),
                 s.getCriadoEm());
     }
 }

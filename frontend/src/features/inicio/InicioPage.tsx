@@ -4,7 +4,7 @@ import { FolhasDecorativas } from '../../shared/ui/FolhasDecorativas'
 import { OndaFes, OndaTens } from '../../shared/ui/Icones'
 import { FES } from '../fes/conteudoFes'
 import { TENS } from '../tens/conteudoTens'
-import { useUsuarioAtual } from '../usuario/useUsuarioAtual'
+import { useUsuarioAtual, type Usuario } from '../usuario/useUsuarioAtual'
 
 const MODULOS = [
   {
@@ -25,10 +25,42 @@ const MODULOS = [
   },
 ]
 
+type Ferramenta = { titulo: string; resumo?: string; para: string; acao: string }
+
+const SIMULADOR: Ferramenta = {
+  titulo: 'Simulador',
+  resumo: 'Combine frequência, largura de pulso e tempo e veja a forma de onda resultante.',
+  para: '/simulador',
+  acao: 'Abrir o simulador',
+}
+
+const ATLAS: Ferramenta = {
+  titulo: 'Atlas de eletrodos',
+  resumo: 'Pranchas com exemplos de posicionamento dos eletrodos por região do corpo.',
+  para: `${TENS.base}/eletrodos`,
+  acao: 'Abrir o atlas de eletrodos',
+}
+
+const DICIONARIO: Ferramenta = {
+  titulo: 'Dicionário de parâmetros',
+  resumo: 'O que cada ajuste do aparelho significa, com unidade e faixa educativa.',
+  para: `${TENS.base}/parametros`,
+  acao: 'Abrir o dicionário de parâmetros',
+}
+
+const BIBLIOTECA: Ferramenta = { titulo: 'Biblioteca digital', para: '/biblioteca', acao: 'Abrir a biblioteca' }
+
+/** Atalhos por perfil (card "Criar tela Início por perfil"). Pacientes fica em "Prática clínica". */
+const FERRAMENTAS: Record<Usuario['perfil'], Ferramenta[]> = {
+  ESTUDANTE: [SIMULADOR, ATLAS, DICIONARIO, BIBLIOTECA],
+  PROFISSIONAL: [SIMULADOR, ATLAS, BIBLIOTECA],
+}
+
 export function InicioPage() {
   const usuario = useUsuarioAtual().data
   const profissional = usuario?.perfil === 'PROFISSIONAL'
   const primeiroNome = usuario?.nome.split(' ')[0]
+  const ferramentas = FERRAMENTAS[usuario?.perfil ?? 'ESTUDANTE']
 
   return (
     <div className="tf-pagina tf-inicio">
@@ -36,7 +68,7 @@ export function InicioPage() {
         <FolhasDecorativas className="tf-hero__arte" />
         <div className="tf-hero__texto">
           {primeiroNome && <p className="tf-hero__kicker">Olá, {primeiroNome}</p>}
-          <h1 className="tf-titulo">{profissional ? 'TENS e FES na prática clínica' : 'Aprenda TENS e FES'}</h1>
+          <h1 className="tf-titulo" data-onboarding-titulo tabIndex={-1}>{profissional ? 'TENS e FES na prática clínica' : 'Aprenda TENS e FES'}</h1>
           <p className="tf-hero__sub">
             {profissional
               ? 'Acompanhe avaliações, sessões e a evolução de seus pacientes.'
@@ -81,24 +113,28 @@ export function InicioPage() {
         </ul>
       </section>
 
+      <section className="tf-pilha" aria-labelledby="titulo-criar-conteudo">
+        <h2 id="titulo-criar-conteudo" className="tf-titulo tf-titulo--secao">Crie seu conteúdo</h2>
+        <div className="tf-cartao tf-pilha">
+          <p className="tf-sub">Monte um material de estudo e organize o que você quer compartilhar.</p>
+          <BotaoLink to="/criar-conteudo/novo" variante="primario">Criar material</BotaoLink>
+        </div>
+      </section>
+
       <section className="tf-pilha" aria-labelledby="titulo-ferramentas">
         <h2 id="titulo-ferramentas" className="tf-titulo tf-titulo--secao">
           Ferramentas
         </h2>
         <ul className="tf-lista-cartoes">
-          <li className="tf-cartao tf-modulo-cartao">
-            <h3 className="tf-titulo tf-titulo--cartao">Simulador</h3>
-            <p className="tf-sub">Combine frequência, largura de pulso e tempo e veja a forma de onda resultante.</p>
-            <Link className="tf-link tf-modulo-cartao__acao" to="/simulador">
-              Abrir o simulador
-            </Link>
-          </li>
-          <li className="tf-cartao tf-modulo-cartao">
-            <h3 className="tf-titulo tf-titulo--cartao">Biblioteca digital</h3>
-            <Link className="tf-link tf-modulo-cartao__acao" to="/biblioteca">
-              Abrir a biblioteca
-            </Link>
-          </li>
+          {ferramentas.map((ferramenta) => (
+            <li key={ferramenta.para} className="tf-cartao tf-modulo-cartao">
+              <h3 className="tf-titulo tf-titulo--cartao">{ferramenta.titulo}</h3>
+              {ferramenta.resumo && <p className="tf-sub">{ferramenta.resumo}</p>}
+              <Link className="tf-link tf-modulo-cartao__acao" to={ferramenta.para}>
+                {ferramenta.acao}
+              </Link>
+            </li>
+          ))}
         </ul>
       </section>
     </div>

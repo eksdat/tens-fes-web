@@ -3,6 +3,7 @@ import { Botao } from '../../shared/ui/Botao'
 import type { Controle } from './conteudoAparelho'
 import { useEstadoDoAparelho } from './useEstadoDoAparelho'
 import { descreverControle } from './valores'
+import { VisorAparelho } from './VisorAparelho'
 
 const REFERENCIA = 'Manual do Neurodyn (M1), capítulos 9 e 10.'
 
@@ -39,16 +40,18 @@ const POSICOES: Record<number, { x: number; y: number }[]> = {
 export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
   const [ativo, setAtivo] = useState<number | null>(null)
   const { estado } = useEstadoDoAparelho()
+  const selecionadoNoVisor = useRef(false)
   const botoes = useRef(new Map<number, HTMLButtonElement>())
   const explicacao = useRef<HTMLElement>(null)
   const escolhido = controles.find((c) => c.numero === ativo)
   const marcados = ativo ? (POSICOES[ativo] ?? []) : []
 
   useLayoutEffect(() => {
-    if (ativo !== null) explicacao.current?.focus()
+    if (ativo !== null && !selecionadoNoVisor.current) explicacao.current?.focus()
   }, [ativo])
 
-  function alternar(numero: number) {
+  function alternar(numero: number, peloVisor = false) {
+    selecionadoNoVisor.current = peloVisor
     setAtivo((atual) => (atual === numero ? null : numero))
   }
 
@@ -68,86 +71,92 @@ export function PainelDoAparelho({ controles }: { controles: Controle[] }) {
   return (
     // oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- Escape fecha a explicação a partir do foco dentro do painel.
     <div className="tf-aparelho" onKeyDown={(evento) => ativo !== null && aoTeclar(evento, ativo)}>
-      <div className="tf-painel">
-        <div className="tf-painel__moldura">
-          <svg className="tf-painel__svg" viewBox={`0 0 ${LARGURA} ${ALTURA}`} aria-hidden="true" focusable="false">
-            <rect className="tf-painel__corpo" x="20" y="8" width="180" height="324" rx="24" />
-            <rect className="tf-painel__moldura-tela" x="34" y="26" width="152" height="96" rx="8" />
-            <rect className="tf-painel__tela" x="44" y="36" width="132" height="76" rx="3" />
-            <text className="tf-painel__texto-tela" x="50" y="50">
-              HOME
-            </text>
-            <text className="tf-painel__texto-tela" x="110" y="72" textAnchor="middle">
-              PROTOCOLOS
-            </text>
-            <text className="tf-painel__texto-tela tf-painel__texto-tela--forte" x="110" y="90" textAnchor="middle">
-              TERAPIA
-            </text>
-            <text className="tf-painel__texto-tela" x="110" y="106" textAnchor="middle">
-              MENU
-            </text>
+      <VisorAparelho
+        ativo={ativo}
+        selecionar={(numero) => alternar(numero, true)}
+        fallback={
+          <div className="tf-painel">
+          <div className="tf-painel__moldura">
+            <svg className="tf-painel__svg" viewBox={`0 0 ${LARGURA} ${ALTURA}`} aria-hidden="true" focusable="false">
+              <rect className="tf-painel__corpo" x="20" y="8" width="180" height="324" rx="24" />
+              <rect className="tf-painel__moldura-tela" x="34" y="26" width="152" height="96" rx="8" />
+              <rect className="tf-painel__tela" x="44" y="36" width="132" height="76" rx="3" />
+              <text className="tf-painel__texto-tela" x="50" y="50">
+                HOME
+              </text>
+              <text className="tf-painel__texto-tela" x="110" y="72" textAnchor="middle">
+                PROTOCOLOS
+              </text>
+              <text className="tf-painel__texto-tela tf-painel__texto-tela--forte" x="110" y="90" textAnchor="middle">
+                TERAPIA
+              </text>
+              <text className="tf-painel__texto-tela" x="110" y="106" textAnchor="middle">
+                MENU
+              </text>
 
-            <circle className="tf-painel__led" cx="110" cy="150" r="4" />
+              <circle className="tf-painel__led" cx="110" cy="150" r="4" />
 
-            <Canal x={52} rotulo="Canal 1" />
-            <Canal x={168} rotulo="Canal 2" />
+              <Canal x={52} rotulo="Canal 1" />
+              <Canal x={168} rotulo="Canal 2" />
 
-            <rect className="tf-painel__ranhura" x="34" y="235" width="14" height="6" rx="2" />
+              <rect className="tf-painel__ranhura" x="34" y="235" width="14" height="6" rx="2" />
 
-            <path className="tf-painel__tecla" d="M110 188 L138 214 L82 214 Z" />
-            <text className="tf-painel__texto-tecla" x="110" y="208" textAnchor="middle">
-              SET +
-            </text>
-            <path className="tf-painel__tecla" d="M110 276 L138 250 L82 250 Z" />
-            <text className="tf-painel__texto-tecla" x="110" y="268" textAnchor="middle">
-              SET −
-            </text>
-            <path className="tf-painel__tecla tf-painel__tecla--escura" d="M70 214 L96 226 L96 238 L70 250 Z" />
-            <text className="tf-painel__texto-tecla tf-painel__texto-tecla--clara" x="82" y="235" textAnchor="middle">
-              BACK
-            </text>
-            <path className="tf-painel__tecla tf-painel__tecla--escura" d="M150 214 L124 226 L124 238 L150 250 Z" />
-            <text className="tf-painel__texto-tecla tf-painel__texto-tecla--clara" x="138" y="235" textAnchor="middle">
-              NEXT
-            </text>
-            <circle className="tf-painel__tecla" cx="110" cy="232" r="17" />
-            <text className="tf-painel__texto-tecla" x="110" y="230" textAnchor="middle">
-              START
-            </text>
-            <text className="tf-painel__texto-tecla" x="110" y="239" textAnchor="middle">
-              STOP
-            </text>
+              <path className="tf-painel__tecla" d="M110 188 L138 214 L82 214 Z" />
+              <text className="tf-painel__texto-tecla" x="110" y="208" textAnchor="middle">
+                SET +
+              </text>
+              <path className="tf-painel__tecla" d="M110 276 L138 250 L82 250 Z" />
+              <text className="tf-painel__texto-tecla" x="110" y="268" textAnchor="middle">
+                SET −
+              </text>
+              <path className="tf-painel__tecla tf-painel__tecla--escura" d="M70 214 L96 226 L96 238 L70 250 Z" />
+              <text className="tf-painel__texto-tecla tf-painel__texto-tecla--clara" x="82" y="235" textAnchor="middle">
+                BACK
+              </text>
+              <path className="tf-painel__tecla tf-painel__tecla--escura" d="M150 214 L124 226 L124 238 L150 250 Z" />
+              <text className="tf-painel__texto-tecla tf-painel__texto-tecla--clara" x="138" y="235" textAnchor="middle">
+                NEXT
+              </text>
+              <circle className="tf-painel__tecla" cx="110" cy="232" r="17" />
+              <text className="tf-painel__texto-tecla" x="110" y="230" textAnchor="middle">
+                START
+              </text>
+              <text className="tf-painel__texto-tecla" x="110" y="239" textAnchor="middle">
+                STOP
+              </text>
 
-            <circle className="tf-painel__liga" cx="168" cy="292" r="16" />
-            <path className="tf-painel__icone-liga" d="M162.5 286.5a8 8 0 1 0 11 0M168 282v8" />
+              <circle className="tf-painel__liga" cx="168" cy="292" r="16" />
+              <path className="tf-painel__icone-liga" d="M162.5 286.5a8 8 0 1 0 11 0M168 282v8" />
 
-            {marcados.map((p) => (
-              <circle key={`${p.x}-${p.y}`} className="tf-painel__realce" cx={p.x} cy={p.y} r="22" />
-            ))}
-          </svg>
-          {Object.entries(POSICOES).flatMap(([numero, pontos]) =>
-            pontos.map((p) => (
-              <button
-                key={`${numero}-${p.x}-${p.y}`}
-                type="button"
-                className="tf-painel__ponto"
-                style={{ left: `${(p.x / LARGURA) * 100}%`, top: `${(p.y / ALTURA) * 100}%` }}
-                aria-hidden="true"
-                tabIndex={-1}
-                data-controle={numero}
-                onClick={() => alternar(Number(numero))}
-              />
-            )),
-          )}
+              {marcados.map((p) => (
+                <circle key={`${p.x}-${p.y}`} className="tf-painel__realce" cx={p.x} cy={p.y} r="22" />
+              ))}
+            </svg>
+            {Object.entries(POSICOES).flatMap(([numero, pontos]) =>
+              pontos.map((p) => (
+                <button
+                  key={`${numero}-${p.x}-${p.y}`}
+                  type="button"
+                  className="tf-painel__ponto"
+                  style={{ left: `${(p.x / LARGURA) * 100}%`, top: `${(p.y / ALTURA) * 100}%` }}
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  data-controle={numero}
+                  onClick={() => alternar(Number(numero))}
+                />
+              )),
+            )}
+          </div>
+          <p className="tf-sub tf-painel__nota">Painel frontal. Os controles 9 a 14 ficam em outras faces do aparelho.</p>
         </div>
-        <p className="tf-sub tf-painel__nota">Painel frontal. Os controles 9 a 14 ficam em outras faces do aparelho.</p>
-      </div>
+        }
+      />
 
       <div className="tf-pilha">
         <p className="tf-sub">
           {escolhido
             ? `Controle ${escolhido.numero}: ${escolhido.nome}. ${escolhido.funcao}`
-            : 'Escolha um controle na lista, ou toque no desenho, para ver a função e onde fica.'}
+            : 'Escolha um controle na lista, ou toque no painel, para ver a função e onde fica.'}
         </p>
         <ol className="tf-controles" aria-label="Controles do aparelho">
           {controles.map((c) => {

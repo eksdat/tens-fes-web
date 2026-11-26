@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -99,6 +101,10 @@ public class Sessao {
     private String motivoTermino;
     private String planoReavaliacao;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Planejamento planejamento;
+
     @ElementCollection
     @CollectionTable(name = "sessao_checklist", joinColumns = @JoinColumn(name = "sessao_id"))
     @Column(name = "item")
@@ -165,5 +171,9 @@ public class Sessao {
         this.planoReavaliacao = planoReavaliacao;
         this.checklist.clear();
         this.checklist.addAll(checklist);
+    }
+
+    public void definirPlanejamento(Planejamento planejamento) {
+        this.planejamento = planejamento;
     }
 }

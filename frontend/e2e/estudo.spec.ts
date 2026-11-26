@@ -91,3 +91,71 @@ test('deveTravarOValorNoLimiteDoAparelho', async ({ page }) => {
   await expect(largura).toHaveValue('150')
   await expect(page.getByText(/Valor ajustado para 150 µs, o limite do aparelho/)).toBeVisible()
 })
+
+test('deveInterpretarCasoComConfirmacaoEFalhaSeguraNoFES', async ({ page, api }) => {
+  api.aprovarPagina('TENS', 'CASOS')
+  await page.goto('/tens/casos')
+  const relato = page.getByRole('textbox', { name: 'Relato' })
+  await relato.fill('Pessoa com fibromialgia relata dor ao caminhar.')
+  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await expect(page.getByText('Fonte:')).toBeVisible()
+  await expect(page.getByRole('link', { name: /Huang|Dailey|fibromialgia/i })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
+  await page.getByRole('checkbox', { name: /Confirmei os achados/ }).check()
+  await page.getByRole('link', { name: 'Abrir parâmetros representáveis' }).click()
+  await expect(page).toHaveURL(/\/simulador\?modalidade=TENS&modo=Normal&protocolo=fast-fibromialgia/)
+  await expect(page.getByRole('combobox', { name: 'Modo' })).toHaveValue('Normal')
+  await expect(page.getByRole('textbox', { name: 'Largura de pulso' })).toHaveValue('200')
+
+  await page.goto('/fes/casos')
+  await relato.fill('Pessoa teve AVC, mas a fase e a dorsiflexão são incertas.')
+  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await expect(page.getByText(/Confirme\/complemente/)).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
+})
+
+test('deve invalidar a confirmação quando o usuário muda o relato', async ({ page }) => {
+  await page.goto('/tens/casos')
+  const relato = page.getByRole('textbox', { name: 'Relato' })
+  await relato.fill('Tenho diagnóstico de fibromialgia. Minha dor piora quando ando.')
+  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('checkbox', { name: /Confirmei os achados/ }).check()
+  await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toBeVisible()
+
+  await relato.fill('Não tenho fibromialgia. Sinto dor ao caminhar.')
+  await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await expect(page.getByText('Não identifiquei uma ficha com segurança.')).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: /Confirmei os achados/ })).toHaveCount(0)
+})
+
+test('deve distinguir histórico familiar de diagnóstico do caso', async ({ page }) => {
+  await page.goto('/tens/casos')
+  await page.getByRole('textbox', { name: 'Relato' }).fill('Minha mãe tem fibromialgia. Eu sinto dor ao caminhar.')
+  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await expect(page.getByText('Não identifiquei uma ficha com segurança.')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
+})
+
+test('deve aceitar a tarefa antes da descrição da dor', async ({ page }) => {
+  await page.goto('/tens/casos')
+  await page.getByRole('textbox', { name: 'Relato' }).fill('Tenho fibromialgia. Ao subir escadas, sinto dor.')
+  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('checkbox', { name: /Confirmei os achados/ }).check()
+  await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toBeVisible()
+})
+
+test('deve tratar texto quebrado e negação em outro idioma', async ({ page }) => {
+  await page.goto('/tens/casos')
+  const relato = page.getByRole('textbox', { name: 'Relato' })
+  const interpretar = page.getByRole('button', { name: 'Interpretar relato' })
+  await relato.fill('No tengo fibromialgia.\nSinto dor ao caminhar.')
+  await interpretar.click()
+  await expect(page.getByText('Não identifiquei uma ficha com segurança.')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
+
+  await relato.fill('Fibromialgia confirmada.\nDor ao subir\n   escadas.')
+  await interpretar.click()
+  await page.getByRole('checkbox', { name: /Confirmei os achados/ }).check()
+  await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toBeVisible()
+})

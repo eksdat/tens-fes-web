@@ -1,9 +1,10 @@
 import { expect, test as base } from '@playwright/test'
 import { ApiFalsa } from './apiFalsa'
-import { CODIGO_AUTENTICADOR, type Conta } from './dados'
+import { CODIGO_AUTENTICADOR, GANCHO, PETER_PAN, SININHO, WENDY, type Conta } from './dados'
 import { SupabaseFalso } from './supabaseFalso'
 
 type Apoio = {
+  primeiroAcesso: boolean
   supabase: SupabaseFalso
   api: ApiFalsa
   /** Entra pela tela de login, como a pessoa faria. Conta com autenticador também digita o código. */
@@ -15,6 +16,7 @@ type Apoio = {
  * conferindo que nenhuma chamada ficou sem resposta e que a tela não teve erro de JavaScript.
  */
 export const test = base.extend<Apoio>({
+  primeiroAcesso: [false, { option: true }],
   supabase: [
     async ({ page }, use) => {
       const supabase = new SupabaseFalso()
@@ -26,7 +28,12 @@ export const test = base.extend<Apoio>({
   ],
 
   api: [
-    async ({ page, supabase }, use) => {
+    async ({ page, supabase, primeiroAcesso }, use) => {
+      if (!primeiroAcesso) {
+        await page.addInitScript((ids) => {
+          for (const id of ids) localStorage.setItem(`fisiotech:tutorial-conteudo:${id}`, 'visto')
+        }, [SININHO.id, GANCHO.id, PETER_PAN.id, WENDY.id])
+      }
       const api = new ApiFalsa(supabase)
       await api.ligar(page)
       const errosNaTela: string[] = []

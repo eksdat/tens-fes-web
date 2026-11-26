@@ -1,0 +1,65 @@
+.tf-corpo__foto {
+  background: #152738;
+  border-radius: .75rem;
+}
+
+.tf-foto-regiao {
+  display: grid;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.tf-foto-regiao__visor {
+  display: block;
+  width: 100%;
+  aspect-ratio: 460 / 315;
+  overflow: hidden;
+  border-radius: .75rem;
+  background: #152738;
+  touch-action: none;
+  cursor: grab;
+}
+
+.tf-foto-regiao__visor:active {
+  cursor: grabbing;
+}
+
+.tf-foto-regiao__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.tf-foto-regiao {
+  flex: 1 1 19rem;
+  max-width: 36rem;
+}
+
+.tf-foto-regiao__acoes {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.tf-ponto--foto.tf-ponto {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tf-ponto--foto::after {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  margin: auto;
+  border: 2px solid #17293b;
+  border-radius: 50%;
+  background: #f2a36d;
+  content: '';
+}
+
+.tf-ponto--fes::after {
+  background: #78d6d9;
+}
+
+.tf-ponto--foto:is(:hover, .tf-ponto--marcado)::after {
+  outline: 2px solid #f4fcff;
+}

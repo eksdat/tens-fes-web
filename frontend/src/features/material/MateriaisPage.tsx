@@ -20,7 +20,7 @@ export function MateriaisPage() {
             Monte materiais de estudo e envie para a revisão docente. Até a aprovação, só você vê o que escreveu.
           </p>
         </div>
-        <BotaoLink variante="primario" to="/criar-conteudo/novo">
+        <BotaoLink id="onboarding-novo-material" variante="primario" to="/criar-conteudo/novo">
           Novo material
         </BotaoLink>
       </div>

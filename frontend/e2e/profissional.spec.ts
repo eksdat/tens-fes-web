@@ -70,10 +70,16 @@ test('deveCadastrarPacienteAvaliarERegistrarSessao', async ({ page, entrarComo, 
   await expect(page.getByText('Este paciente ainda não tem avaliação inicial.')).toHaveCount(0)
   await page.getByLabel('Data e hora').fill('2026-10-02T14:30')
   await page.getByLabel('Objetivo desta sessão').fill('Analgesia antes do treino de escada.')
+  await page.getByLabel('Relato do caso (opcional)').fill('Fibromialgia confirmada, dor ao caminhar durante a tarefa de movimento definida.')
+  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await expect(page.getByText('Critérios pendentes: nenhum')).toBeVisible()
+  await page.getByLabel(/Confirmei os critérios essenciais/).check()
+  await page.getByRole('button', { name: 'Usar referência da ficha' }).click()
+  await page.getByLabel('Largura planejada, em microssegundos (opcional)').fill('200')
   await page.getByLabel('Modo', { exact: true }).fill('Convencional')
   await page.getByLabel('Duração real, em minutos').fill('20')
   await page.getByLabel('Frequência do canal 1, em hertz').fill('80')
-  await page.getByLabel('Largura de pulso do canal 1, em microssegundos').fill('100')
+  await page.getByLabel('Largura de pulso do canal 1, em microssegundos').fill('150')
   await page.getByLabel('Amplitude final do canal 1, em miliampères').fill('18')
   await page.getByLabel('Par de eletrodos do canal 1').fill('1A-1B')
   await page.getByLabel('Prancha do atlas (opcional)').selectOption({ label: 'Joelho' })
@@ -86,7 +92,8 @@ test('deveCadastrarPacienteAvaliarERegistrarSessao', async ({ page, entrarComo, 
   await page.getByRole('button', { name: 'Revisar sessão' }).click()
 
   await expect(page.getByRole('heading', { name: 'Revise antes de salvar' })).toBeVisible()
-  await expect(page.getByText('Canal 1: 80 Hz · 100 µs · 18 mA (final) · par 1A-1B')).toBeVisible()
+  await expect(page.getByText('Largura 200 µs · Relato: Fibromialgia confirmada, dor ao caminhar durante a tarefa de movimento definida.')).toBeVisible()
+  await expect(page.getByText('Canal 1: 80 Hz · 150 µs · 18 mA (final) · par 1A-1B')).toBeVisible()
   await expect(page.getByText('3 itens marcados')).toBeVisible()
   await page.getByRole('button', { name: 'Salvar sessão' }).click()
 
@@ -100,7 +107,8 @@ test('deveCadastrarPacienteAvaliarERegistrarSessao', async ({ page, entrarComo, 
     modalidade: 'TENS',
     duracaoRealMin: 20,
     montagemId: 'joelho',
-    canais: [{ canal: 1, frequenciaHz: 80, larguraPulsoUs: 100, amplitudeInicialMa: null, amplitudeFinalMa: 18, par: '1A-1B' }],
+    planejamento: { larguraPulsoUs: 200, referencia: { id: 'fast-fibromialgia', versao: '1.0.0' } },
+    canais: [{ canal: 1, frequenciaHz: 80, larguraPulsoUs: 150, amplitudeInicialMa: null, amplitudeFinalMa: 18, par: '1A-1B' }],
     checklist: ['antes.objetivo-definido', 'antes.pele-examinada', 'antes.intensidade-zero'],
   })
 })
