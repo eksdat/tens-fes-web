@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { Alerta } from '../../shared/ui/Alerta'
 import { Botao } from '../../shared/ui/Botao'
 import { Campo } from '../../shared/ui/Campo'
@@ -17,6 +17,7 @@ import {
   limitarAoAparelho,
   mensagensDeSituacao,
   periodoMs,
+  repousoDoCanal,
   tempoOn,
   type FaixasDoCampo,
   type Mensagem,
@@ -25,20 +26,11 @@ import {
 import { GraficoPulso } from './GraficoPulso'
 import { BURST, valorInicialDoModo, type Forma } from './tracado'
 import { useFaixas } from './useFaixas'
+import { CAMPOS_SIMULADOR, type CampoSimulador, type ConfiguracaoIa } from './configuracaoIa'
+import { SimularComIa } from './SimularComIa'
 
-type CampoId = 'frequencia' | 'largura' | 'intensidade1' | 'intensidade2' | 'subida' | 'plato' | 'descida' | 'repouso'
+type CampoId = CampoSimulador['id']
 type Textos = Record<CampoId, string>
-
-const CAMPOS: { id: CampoId; rotulo: string; parametro: string; soFes?: boolean }[] = [
-  { id: 'frequencia', rotulo: 'Frequência', parametro: 'Frequência' },
-  { id: 'largura', rotulo: 'Largura de pulso', parametro: 'Largura de pulso' },
-  { id: 'intensidade1', rotulo: 'Intensidade do canal 1', parametro: 'Intensidade' },
-  { id: 'intensidade2', rotulo: 'Intensidade do canal 2', parametro: 'Intensidade' },
-  { id: 'subida', rotulo: 'Rampa de subida', parametro: 'Rampa de subida', soFes: true },
-  { id: 'plato', rotulo: 'Platô', parametro: 'Platô', soFes: true },
-  { id: 'descida', rotulo: 'Rampa de descida', parametro: 'Rampa de descida', soFes: true },
-  { id: 'repouso', rotulo: 'Repouso', parametro: 'Repouso (tempo OFF)', soFes: true },
-]
 
 /** Valores de partida: exemplo do TENS (guia, seção 07) e Exercício A do FES (seção 08). Intensidade sempre em zero. */
 const INICIAL: Record<Modalidade, Textos> = {
@@ -47,6 +39,7 @@ const INICIAL: Record<Modalidade, Textos> = {
 }
 
 const MODO_PADRAO: Record<Modalidade, string> = { TENS: 'Convencional', FES: 'FES síncrono' }
+const AMPLITUDE_DE_EXEMPLO = 5
 
 /** Nome na tela, de qual modo vêm as faixas e como os pulsos se distribuem no tempo. */
 type ModoDoSimulador = { nome: string; faixasDe: string; forma: Forma }
@@ -92,12 +85,41 @@ function faixasDo(faixas: FaixaApi[], modo: string, parametro: string): FaixasDo
   return { educativa: de('EDUCATIVA'), aparelho: de('APARELHO'), unidade: doCampo[0]?.unidade ?? '', extenso: doCampo[0]?.unidadeExtenso ?? '' }
 }
 
-export function SimuladorPage() {
+function textosDaConfiguracao(
+  configuracao: ConfiguracaoIa,
+  modalidade: Modalidade,
+  modo: ModoDoSimulador,
+  campos: readonly CampoSimulador[],
+  faixas: FaixaApi[],
+): Textos | undefined {
+  const { valores } = configuracao
+  if (configuracao.modalidade !== modalidade || configuracao.modo !== modo.nome || !valores) return
+
+  const novos = { ...INICIAL[modalidade] }
+  let quantidade = 0
+  for (const { id, parametro } of campos) {
+    if (id === 'intensidade1' || id === 'intensidade2') continue
+    const valor = valores[id]
+    const faixa = faixasDo(faixas, modo.faixasDe, parametro).aparelho
+    if (valor === undefined || !Number.isFinite(valor) || !faixa || limitarAoAparelho(valor, faixa) !== valor) return
+    novos[id] = String(valor)
+    quantidade += 1
+  }
+  if (Object.keys(valores).length === quantidade) return novos
+}
+
+export function SimuladorPage({ modalidadeDoModulo }: { modalidadeDoModulo?: Modalidade }) {
   const [params, setParams] = useSearchParams()
-  const modalidade: Modalidade = params.get('modalidade') === 'FES' ? 'FES' : 'TENS'
+  const navegar = useNavigate()
+  const localizacao = useLocation()
+  const configuracaoIa: ConfiguracaoIa | undefined = localizacao.state?.configuracaoIa
+  const tituloPulso = useRef<HTMLHeadingElement>(null)
+  const modalidade = modalidadeDoModulo ?? (params.get('modalidade') === 'FES' ? 'FES' : 'TENS')
+  const Titulo = modalidadeDoModulo ? 'h2' : 'h1'
   const [textos, setTextos] = useState<Textos>(() => INICIAL[modalidade])
   const [ajustes, setAjustes] = useState<Partial<Record<CampoId, Mensagem[]>>>({})
   const [anuncio, setAnuncio] = useState('')
+  const [origemIa, setOrigemIa] = useState<'aplicada' | 'editada' | 'incompativel'>()
   const confirmados = useRef<Textos>(textos)
   const { estado, atualizar } = useEstadoDoAparelho()
   const consulta = useFaixas(modalidade)
@@ -107,11 +129,13 @@ export function SimuladorPage() {
   const nomes = opcoes.map((m) => m.nome)
   const pedido = lerModoPedido(params.get('modo'))
   const ficha = FICHAS_CASOS.find((f) => f.id === params.get('protocolo') && f.versao === params.get('versao'))
-  const modo = nomes.includes(pedido) ? pedido : nomes.includes(MODO_PADRAO[modalidade]) ? MODO_PADRAO[modalidade] : (nomes[0] ?? '')
-  const atual = opcoes.find((m) => m.nome === modo)
+  const solicitado = opcoes.find((m) => m.nome === pedido)
+  const atual = solicitado ?? opcoes.find((m) => m.nome === MODO_PADRAO[modalidade]) ?? opcoes[0]
+  const modo = atual?.nome ?? ''
   const forma: Forma = atual?.forma ?? 'continuo'
   const faixasDoModo = atual?.faixasDe ?? modo
-  const modoIndisponivel = !consulta.isPending && pedido !== '' && !nomes.includes(pedido) && nomes.length > 0
+  const modoIndisponivel = !consulta.isPending && pedido !== '' && !solicitado && opcoes.length > 0
+  const campos = CAMPOS_SIMULADOR.filter((c) => (!('soFes' in c) || modalidade === 'FES') && !(c.id === 'frequencia' && forma === 'burst'))
 
   /** Frequência e largura no meio da faixa do modo (guia, seções 07 e 08), sempre dentro do que o aparelho aceita. */
   function valoresDoModo(m: ModoDoSimulador) {
@@ -122,9 +146,24 @@ export function SimuladorPage() {
 
   // Ao abrir por link num modo que não é o padrão, os valores de partida (do modo padrão) ficariam fora da faixa.
   const abriuNoModo = useRef(false)
+  const ultimaConfiguracaoIa = useRef<ConfiguracaoIa | undefined>(undefined)
   useEffect(() => {
-    if (abriuNoModo.current || !atual) return
+    const configuracaoNova = configuracaoIa && ultimaConfiguracaoIa.current !== configuracaoIa
+    if (!atual || (abriuNoModo.current && !configuracaoNova)) return
     abriuNoModo.current = true
+    if (configuracaoNova) {
+      ultimaConfiguracaoIa.current = configuracaoIa
+      const novos = textosDaConfiguracao(configuracaoIa, modalidade, atual, campos, faixas)
+      if (novos) {
+        confirmados.current = novos
+        setTextos(novos)
+        setOrigemIa('aplicada')
+        atualizar({ emExecucao: false })
+        tituloPulso.current?.focus()
+        return
+      }
+      setOrigemIa('incompativel')
+    }
     const preset = ficha?.simulador
     const faixaLargura = faixasDo(faixas, atual.faixasDe, 'Largura de pulso').aparelho
     const larguraDaFicha = preset?.modalidade === modalidade && preset.modo === atual.nome
@@ -139,15 +178,21 @@ export function SimuladorPage() {
     })
     // valoresDoModo depende de faixas, que chegam junto com atual.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [atual])
+  }, [atual, configuracaoIa])
 
   function escolherModalidade(nova: Modalidade) {
     if (nova === modalidade) return
+    if (modalidadeDoModulo) {
+      atualizar({ emExecucao: false })
+      void navegar(`/${nova.toLowerCase()}/simulador`)
+      return
+    }
     setParams({ modalidade: nova, modo: MODO_PADRAO[nova] }, { replace: true })
     setTextos(INICIAL[nova])
     confirmados.current = INICIAL[nova]
     setAjustes({})
     setAnuncio('')
+    setOrigemIa(undefined)
   }
 
   // Trocar de modo exige reiniciar a amplitude (guia, seção 13) e leva frequência e largura para a faixa do novo modo.
@@ -175,6 +220,7 @@ export function SimuladorPage() {
     confirmados.current = novos
     setAjustes({})
     setAnuncio(frases.join(' '))
+    setOrigemIa(undefined)
   }
 
   function alternarSimulacao() {
@@ -184,6 +230,7 @@ export function SimuladorPage() {
   }
 
   function mudar(id: CampoId, texto: string) {
+    if (origemIa === 'aplicada') setOrigemIa('editada')
     setTextos((atuais) => ({ ...atuais, [id]: texto }))
     setAjustes((atuais) => ({ ...atuais, [id]: undefined }))
   }
@@ -216,14 +263,17 @@ export function SimuladorPage() {
     }))
   }
 
-  const campos = CAMPOS.filter((c) => (!c.soFes || modalidade === 'FES') && !(c.id === 'frequencia' && forma === 'burst'))
-  const valores = Object.fromEntries(CAMPOS.map((c) => [c.id, ler(textos[c.id])])) as Record<CampoId, number | null>
+  const valores = Object.fromEntries(CAMPOS_SIMULADOR.map((c) => [c.id, ler(textos[c.id])])) as Record<CampoId, number | null>
   if (forma === 'burst') valores.frequencia = BURST.frequenciaInternaHz
   const rampas: Rampas | undefined =
     modalidade === 'FES' && [valores.subida, valores.plato, valores.descida, valores.repouso].every((v) => v !== null)
       ? { subida: valores.subida!, plato: valores.plato!, descida: valores.descida!, repouso: valores.repouso! }
       : undefined
   const intensidades: [number, number] = [valores.intensidade1 ?? 0, valores.intensidade2 ?? 0]
+  const faixaIntensidade = faixasDo(faixas, faixasDoModo, 'Intensidade').aparelho
+  const podeDemonstrarAmplitude = (origemIa === 'aplicada' || origemIa === 'editada')
+    && intensidades.every((valor) => valor === 0) && faixaIntensidade
+    && limitarAoAparelho(AMPLITUDE_DE_EXEMPLO, faixaIntensidade) === AMPLITUDE_DE_EXEMPLO
   const pulsoValido = (valores.frequencia ?? 0) > 0 && (valores.largura ?? 0) > 0 && (modalidade === 'TENS' || !!rampas)
   const fontes = [...new Set(faixas.filter((f) => f.modo === faixasDoModo).map((f) => f.fonte))]
 
@@ -236,10 +286,10 @@ export function SimuladorPage() {
   }, [atualizar, modalidade, modo, frequenciaHz, larguraUs, intensidades[0], intensidades[1]])
 
   return (
-    <div className="tf-pagina tf-pilha tf-simulador">
+    <div className={`${modalidadeDoModulo ? '' : 'tf-pagina '}tf-pilha tf-simulador`}>
       <header className="tf-pilha">
         <p className="tf-modulo__kicker">Modo explorar</p>
-        <h1 className="tf-titulo">Simulador</h1>
+        <Titulo className="tf-titulo">Simulador</Titulo>
         <p className="tf-sub">Mude um parâmetro por vez e veja o pulso mudar. A intensidade começa em zero.</p>
       </header>
 
@@ -247,6 +297,20 @@ export function SimuladorPage() {
       <output className="tf-sr-only" aria-label="Avisos do simulador">
         {anuncio}
       </output>
+
+      {origemIa === 'aplicada' && <Alerta titulo="Gerado por IA · Apenas para simulação educacional" />}
+      {origemIa === 'editada' && <Alerta titulo="Gerado por IA e ajustado manualmente · Apenas para simulação educacional" />}
+      {origemIa === 'incompativel' && <Alerta intencao="atencao" titulo="A configuração da IA não é compatível com as faixas atuais." />}
+
+      <fieldset className="tf-grupo-botoes">
+        <legend className="tf-sr-only">Modalidade</legend>
+        {(['TENS', 'FES'] as const).map((m) => (
+          <Botao key={m} variante="secundario" aria-pressed={modalidade === m} onClick={() => escolherModalidade(m)}>
+            {m}
+          </Botao>
+        ))}
+      </fieldset>
+      <SimularComIa modalidade={modalidade} destinoSimulador={localizacao.pathname} />
 
       {modoIndisponivel && (
         <Alerta titulo="Recurso não disponível neste modelo.">
@@ -267,20 +331,10 @@ export function SimuladorPage() {
       ) : (
         <div className="tf-simulador__corpo">
           <section className="tf-pilha tf-cartao" aria-labelledby="titulo-ajustes">
-            <h2 id="titulo-ajustes" className="tf-subtitulo">
+            <h2 id="titulo-ajustes" tabIndex={-1} className="tf-subtitulo">
               Ajustes
             </h2>
-            <fieldset className="tf-grupo-botoes">
-              <legend className="tf-sr-only">Modalidade</legend>
-              {(['TENS', 'FES'] as const).map((m) => (
-                <Botao key={m} variante="secundario" aria-pressed={modalidade === m} onClick={() => escolherModalidade(m)}>
-                  {m}
-                </Botao>
-              ))}
-            </fieldset>
-            <Botao variante="secundario" aria-pressed={estado.emExecucao} onClick={alternarSimulacao}>
-              {estado.emExecucao ? 'Pausar simulação' : 'Iniciar simulação'}
-            </Botao>
+            <a className="tf-link tf-simulador__atalho" href="#titulo-pulso">Ir para o gráfico</a>
             <CampoSelecao
               rotulo="Modo"
               opcoes={nomes.map((m) => ({ valor: m, rotulo: m }))}
@@ -292,6 +346,12 @@ export function SimuladorPage() {
                 Rajadas de 250 Hz, 2 por segundo, fixas neste aparelho (manual, cap. 8.2.4). Só a largura de pulso é
                 ajustável. O manual não diz quantos pulsos há em cada rajada: o desenho usa 7, como esquema.
               </p>
+            )}
+            {forma === 'reciproco' && rampas && repousoDoCanal(rampas, true) > rampas.repouso && (
+              <Alerta titulo="Repouso efetivo maior no modo recíproco">
+                Neste modelo didático, cada canal repousa pelo menos {numero.format(tempoOn(rampas))} s
+                enquanto o outro completa a subida, o platô e a descida.
+              </Alerta>
             )}
             <div className="tf-simulador__campos">
               {campos.map((c) => {
@@ -316,9 +376,25 @@ export function SimuladorPage() {
           </section>
 
           <section className="tf-pilha tf-cartao" aria-labelledby="titulo-pulso">
-            <h2 id="titulo-pulso" className="tf-subtitulo">
+            <h2 id="titulo-pulso" ref={tituloPulso} tabIndex={-1} className="tf-subtitulo">
               Pulso
             </h2>
+            <div className="tf-linha">
+              <Botao aria-pressed={estado.emExecucao} onClick={alternarSimulacao} disabled={!pulsoValido}>
+                {estado.emExecucao ? 'Pausar simulação' : 'Iniciar simulação'}
+              </Botao>
+              <a className="tf-link tf-simulador__atalho" href="#titulo-ajustes">Voltar aos ajustes</a>
+            </div>
+            {podeDemonstrarAmplitude && <Alerta
+              titulo="Os dois canais estão em 0 mA"
+              acao={<Botao variante="secundario" onClick={() => {
+                mudar('intensidade1', String(AMPLITUDE_DE_EXEMPLO))
+                mudar('intensidade2', String(AMPLITUDE_DE_EXEMPLO))
+                setAnuncio('Amplitude ilustrativa aplicada aos dois canais.')
+              }}>Usar amplitude de exemplo</Botao>}>
+              Com os canais zerados, o traçado fica plano. O botão preenche {AMPLITUDE_DE_EXEMPLO} mA em cada canal
+              apenas para visualizar a onda. Depois, clique em Iniciar simulação.
+            </Alerta>}
             {pulsoValido && (
               <GraficoPulso
                 frequenciaHz={valores.frequencia!}
@@ -335,7 +411,7 @@ export function SimuladorPage() {
                 : 'Ainda faltam dados para descrever o pulso.'}
             </p>
             {pulsoValido && (
-              <TabelaDoPulso frequenciaHz={valores.frequencia!} larguraUs={valores.largura!} intensidades={intensidades} rampas={rampas} />
+              <TabelaDoPulso frequenciaHz={valores.frequencia!} larguraUs={valores.largura!} intensidades={intensidades} rampas={rampas} alternado={forma === 'reciproco'} />
             )}
           </section>
         </div>
@@ -408,9 +484,9 @@ function CampoParametro({ id, rotulo, faixa, intensidade, texto, mensagens, aoMu
   )
 }
 
-type TabelaProps = { frequenciaHz: number; larguraUs: number; intensidades: [number, number]; rampas?: Rampas }
+type TabelaProps = { frequenciaHz: number; larguraUs: number; intensidades: [number, number]; rampas?: Rampas; alternado: boolean }
 
-function TabelaDoPulso({ frequenciaHz, larguraUs, intensidades, rampas }: TabelaProps) {
+function TabelaDoPulso({ frequenciaHz, larguraUs, intensidades, rampas, alternado }: TabelaProps) {
   const linhas: [string, string][] = [
     ['Duração de cada fase', `${numero.format(larguraUs)} µs`],
     ['Duração do pulso', `${numero.format(2 * larguraUs)} µs`],
@@ -423,10 +499,12 @@ function TabelaDoPulso({ frequenciaHz, larguraUs, intensidades, rampas }: Tabela
   ]
   if (rampas) {
     const on = tempoOn(rampas)
+    const repouso = repousoDoCanal(rampas, alternado)
     linhas.push(
       ['Estímulo (ON)', `${numero.format(on)} s`],
-      ['Ciclo', `${numero.format(ciclo(on, rampas.repouso))} s`],
-      ['Ciclo de trabalho', `${numero.format(cicloTrabalho(on, rampas.repouso))}%`],
+      ['Repouso por canal', `${numero.format(repouso)} s`],
+      ['Ciclo', `${numero.format(ciclo(on, repouso))} s`],
+      ['Ciclo de trabalho', `${numero.format(cicloTrabalho(on, repouso))}%`],
     )
   }
   return (

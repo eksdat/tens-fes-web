@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { render } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes } from 'react-router'
 import { ToastsProvider } from '@/shared/ui/Toasts'
 
-export function renderComRotas(rotas: ReactNode, rotaInicial: string) {
+export function renderComRotas(rotas: ReactNode, rotaInicial: NonNullable<ComponentProps<typeof MemoryRouter>['initialEntries']>[number]) {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <ToastsProvider>

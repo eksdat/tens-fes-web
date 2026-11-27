@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { expect, it, vi } from 'vitest'
 import { CasosClinicosPage } from '../../../src/features/casos/CasosClinicosPage'
 import { api } from '../../../src/shared/api/client'
@@ -16,7 +17,7 @@ it('envia o caso como multipart e abre a resposta educativa do próprio envio', 
     montagem: 'Montagem simulada', justificativa: 'Comparar modalidades', duvida: 'Quais critérios comparar?',
   }
   vi.mocked(api.get).mockImplementation(async (url) => ({
-    data: url.endsWith('/caso-1')
+    data: url.endsWith('/feedback-ia') ? '' : url.endsWith('/caso-1')
       ? { caso, anexos: [], origem: { liberada: false, blocos: [], referencias: [], dataRevisao: null } }
       : [{ id: 'caso-1', titulo: caso.titulo, criadoEm: '2026-11-25T12:00:00Z' }],
   }))
@@ -24,7 +25,7 @@ it('envia o caso como multipart e abre a resposta educativa do próprio envio', 
   const usuario = userEvent.setup()
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <CasosClinicosPage />
+      <MemoryRouter><CasosClinicosPage /></MemoryRouter>
     </QueryClientProvider>,
   )
 
@@ -57,4 +58,20 @@ it('envia o caso como multipart e abre a resposta educativa do próprio envio', 
   expect(JSON.parse(json)).toEqual(caso)
   expect(corpo.getAll('anexos')).toEqual([anexo])
   expect(api.get).toHaveBeenCalledWith('/casos-clinicos/caso-1')
+
+  const criterio = { estado: 'revisar', comentario: 'Explique como comparar os pulsos.' }
+  vi.mocked(api.post).mockResolvedValueOnce({ data: {
+    observacoes: { objetivo: criterio, cenario: criterio, parametros: criterio, montagem: criterio },
+    pergunta: 'O que você observaria no gráfico?',
+    referencias: [],
+    simulacao: { modalidade: 'TENS', modo: 'Convencional', valores: { frequencia: 80, largura: 120 } },
+  } })
+  await usuario.click(await screen.findByRole('button', { name: 'Pedir avaliação da IA' }))
+  expect(await screen.findByRole('heading', { name: 'Feedback educativo gerado por IA' })).toBeVisible()
+  expect(screen.getByText('Parâmetros e unidades · Revisar')).toBeVisible()
+  expect(screen.getByText('120 µs')).toBeVisible()
+  expect(screen.getByText('Canais 1 e 2 começam em 0 mA')).toBeVisible()
+  expect(screen.getByRole('link', { name: 'Aplicar no simulador' }))
+    .toHaveAttribute('href', '/simulador?modalidade=TENS&modo=Convencional')
+  expect(api.post).toHaveBeenLastCalledWith('/casos-clinicos/caso-1/feedback-ia', undefined)
 })

@@ -31,13 +31,21 @@ const SECOES: SecaoLegal[] = [
     ],
   },
   {
-    titulo: '5. Disponibilidade',
+    titulo: '5. Recursos de inteligência artificial',
+    paragrafos: [
+      'A inteligência artificial gera feedback e sugestões de configuração para explorar o gráfico de TENS e FES. As saídas identificadas como geradas por IA podem conter erros. Confira a modalidade, o modo, os valores e as unidades antes de aplicá-los no simulador.',
+      'Use as sugestões apenas em exercícios fictícios. Elas não são prescrições e não devem orientar atendimento ou ajustes em equipamentos reais.',
+      'Ao solicitar uma avaliação ou configuração, o Fisiotech envia o texto do exercício a um provedor de IA. Use somente informações inventadas e deixe de fora dados pessoais, informações de pacientes e prontuários. Os anexos não são enviados ao provedor.',
+    ],
+  },
+  {
+    titulo: '6. Disponibilidade',
     paragrafos: [
       'Mantemos o serviço com esforço razoável, sem garantia de funcionamento contínuo. A primeira resposta após um período sem uso pode demorar.',
     ],
   },
   {
-    titulo: '6. Mudanças e contato',
+    titulo: '7. Mudanças e contato',
     paragrafos: [
       'Podemos atualizar estes termos. Mudanças relevantes serão comunicadas por e-mail ou na plataforma.',
       'Dúvidas e pedidos: pelo e-mail de contato da equipe do projeto, informado na plataforma.',

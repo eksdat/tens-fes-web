@@ -3,25 +3,51 @@ import { Botao, BotaoLink } from '../../shared/ui/Botao'
 import type { Caso, ConteudoCasos } from '../casos/conteudoCasos'
 import { interpretarRelato } from '../casos/interpretarRelato'
 import { PaginaTecnica } from './PaginaTecnica'
+import { FeedbackCasoIa } from '../casos/FeedbackCasoIa'
+import { useUsuarioAtual } from '../usuario/useUsuarioAtual'
+import { CampoTextoLongo } from '../../shared/ui/CampoTextoLongo'
 
 export function PaginaCasos({ dados, simulador }: { dados: ConteudoCasos; simulador: string }) {
+  const profissional = useUsuarioAtual().data?.perfil === 'PROFISSIONAL'
+  const modalidade = new URLSearchParams(simulador.split('?')[1]).get('modalidade') ?? 'TENS'
   const [relato, setRelato] = useState('')
   const [resultado, setResultado] = useState<ReturnType<typeof interpretarRelato>>()
   const [confirmado, setConfirmado] = useState(false)
+  const fichas = dados.fichas ?? []
+
+  function atualizarRelato(texto: string) {
+    setRelato(texto)
+    setResultado(undefined)
+    setConfirmado(false)
+  }
+
   return (
     <PaginaTecnica titulo="Casos" fontes={dados.fontes}>
       <p className="tf-sub">{dados.introducao}</p>
       <div className="tf-linha">
         <BotaoLink to={simulador}>Testar no simulador</BotaoLink>
       </div>
-      {dados.fichas && <section className="tf-cartao tf-pilha" aria-labelledby="interpretar-relato">
+      {(fichas.length > 0 || profissional) && <section className="tf-cartao tf-pilha" aria-labelledby="interpretar-relato">
         <h2 id="interpretar-relato" className="tf-subtitulo">Relato fictício</h2>
-        <p className="tf-sub">Escreva em português. A leitura é determinística e educativa; não substitui avaliação nem gera prescrição.</p>
-        <label htmlFor="relato-caso">Relato</label>
-        <textarea id="relato-caso" value={relato} onChange={(e) => { setRelato(e.target.value); setResultado(undefined); setConfirmado(false) }} rows={4} />
-        <Botao variante="secundario" onClick={() => setResultado(interpretarRelato(relato, dados.fichas ?? []))}>Interpretar relato</Botao>
+        {fichas.length > 0 && <p className="tf-sub">
+          A busca compara o relato com as fichas de referência deste módulo. Carregue o exemplo e clique em <strong>Buscar ficha de referência</strong> para ver os critérios reconhecidos e os dados que ainda faltam.
+        </p>}
+        <CampoTextoLongo id="relato-caso" rotulo="Relato" value={relato} maxLength={2000} rows={4}
+          dica="Descreva a condição fictícia, a tarefa e o que acontece durante o movimento."
+          onChange={(evento) => atualizarRelato(evento.target.value)} />
+        {fichas.length > 0 && <div className="tf-linha">
+          {fichas.map((ficha) => <Botao key={ficha.id} variante="secundario" onClick={() => atualizarRelato(ficha.exemploRelato)}>
+            Carregar exemplo de {ficha.modalidade}
+          </Botao>)}
+          <Botao disabled={!relato.trim()} onClick={() => setResultado(interpretarRelato(relato, fichas))}>
+            Buscar ficha de referência
+          </Botao>
+        </div>}
         {resultado && <output className="tf-caso__resposta" aria-live="polite">
           <p className="tf-sub">{resultado.confirmacao}</p>
+          {!resultado.ficha && <p className="tf-sub">
+            Esta busca cobre apenas as fichas do módulo. Experimente o exemplo acima ou abra <strong>Testar no simulador</strong> e use <strong>Simular com IA</strong> para explorar outro relato fictício.
+          </p>}
           {resultado.ficha && <><h3 className="tf-subtitulo">{resultado.ficha.titulo} · v{resultado.ficha.versao}</h3>
             <p className="tf-sub"><strong>Contexto:</strong> {resultado.ficha.contexto}</p>
             <p className="tf-sub"><strong>Parâmetros reportados:</strong> {resultado.ficha.parametrosReportados.join('; ')}</p>
@@ -39,6 +65,8 @@ export function PaginaCasos({ dados, simulador }: { dados: ConteudoCasos; simula
             </>}
           </>}
         </output>}
+        {profissional && <FeedbackCasoIa key={`${modalidade}:${relato}`} rota="/simulacoes/ia/feedback"
+          rascunho={{ modalidade, relato }} />}
       </section>}
       <ul className="tf-casos">
         {dados.casos.map((caso) => (

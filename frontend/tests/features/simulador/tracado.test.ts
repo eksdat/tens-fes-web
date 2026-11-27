@@ -85,6 +85,16 @@ describe('modos com forma própria', () => {
     expect(instantesDosPulsos({ forma: 'continuo', frequenciaHz: 80, inicioMs: 0, janelaMs: 50 })).toEqual([0, 12.5, 25, 37.5])
   })
 
+  test('deveVariarAAmplitudeDeCadaPulsoComSeuInstanteNoCiclo', () => {
+    const tracado = caminhoDoTracado({
+      frequenciaHz: 4, larguraUs: 200, intensidadeMa: 100, inicioMs: 0, largura: 300, altura: 80,
+      nivelNoInstante: (ms) => ms < 500 ? 0 : ms < 750 ? 0.5 : 1,
+    })
+    expect(tracado).not.toContain('H50 V')
+    expect(tracado).toContain('H100 V22')
+    expect(tracado).toContain('H150 V4')
+  })
+
   test('deveUsarAJanelaDeDuasRajadasEmTempoRealNoBurst', () => {
     expect(escalaDeTempo(250, 'burst')).toEqual({ janelaMs: 1000, lentidao: 1 })
   })
@@ -97,6 +107,18 @@ describe('modos com forma própria', () => {
 
   test('deveManterOsCanaisJuntosNoFesSincrono', () => {
     expect(envelopeDoCanal(5, FES, 2, 'sincrono').fase).toBe('Platô')
+  })
+
+  test.each([[5, 18], [9, 18], [12, 21]])('deveAlternarSemSobreporEmCiclosComRepousoDe%sSegundos', (repouso, duracao) => {
+    const rampas = { subida: 2, plato: 5, descida: 2, repouso }
+    expect(envelopeDoCanal(0, rampas, 2, 'reciproco').fase).toBe('Repouso')
+    expect(envelopeDoCanal(9, rampas, 2, 'reciproco').fase).toBe('Subida')
+    expect(envelopeDoCanal(duracao, rampas, 1, 'reciproco').fase).toBe('Subida')
+    for (let t = 0; t < 2 * duracao; t += 0.25) {
+      const canal1 = envelopeDoCanal(t, rampas, 1, 'reciproco')
+      const canal2 = envelopeDoCanal(t, rampas, 2, 'reciproco')
+      expect(canal1.nivel * canal2.nivel).toBe(0)
+    }
   })
 })
 

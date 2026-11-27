@@ -26,7 +26,8 @@ const SECOES: SecaoLegal[] = [
   {
     titulo: '4. Com quem compartilhamos',
     paragrafos: [
-      'Apenas com os provedores que operam a plataforma: autenticação e banco de dados, hospedagem do servidor e hospedagem do site. Eles tratam os dados só para prestar esse serviço.',
+      'Usamos provedores para autenticação e banco de dados, hospedagem do servidor e hospedagem do site.',
+      'Quando você solicita uma devolutiva ou configuração para o simulador, enviamos o texto do exercício fictício ao Gemini. O Groq pode receber o mesmo texto quando o Gemini estiver temporariamente indisponível. Os anexos ficam fora desse envio.',
     ],
   },
   {

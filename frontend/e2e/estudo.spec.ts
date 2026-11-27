@@ -7,6 +7,13 @@ test.beforeEach(async ({ entrarComo }) => {
   await entrarComo(SININHO)
 })
 
+test('deveVoltarAoMenuAnteriorPeloCabecalhoDoModulo', async ({ page }) => {
+  const anterior = page.url()
+  await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'TENS' }).click()
+  await page.getByRole('link', { name: 'Voltar' }).click()
+  await expect(page).toHaveURL(anterior)
+})
+
 test('deveAvisarQueOConteudoAindaNaoFoiLiberado', async ({ page }) => {
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'TENS' }).click()
 
@@ -31,10 +38,14 @@ test('deveTerAsMesmasAbasNosDoisModulos', async ({ page }) => {
     await page.goto(`/${modulo.toLowerCase()}`)
     const secoes = page.getByRole('navigation', { name: `Seções de ${modulo}` })
 
-    for (const aba of ['Aparelho', 'Eletrodos', 'Parâmetros', 'Segurança', 'Casos', 'Visão geral']) {
+    for (const aba of ['Aparelho', 'Eletrodos', 'Parâmetros', 'Segurança', 'Casos', 'Simulador', 'Visão geral']) {
       await secoes.getByRole('link', { name: aba }).click()
       await expect(page.getByRole('heading', { name: aba, level: 2 })).toBeVisible()
       await expect(page).toHaveTitle(`${modulo} · ${aba} · Fisiotech`)
+      if (aba === 'Simulador') {
+        await expect(page.getByRole('button', { name: modulo, exact: true })).toHaveAttribute('aria-pressed', 'true')
+        await expect(secoes.getByRole('link', { name: 'Simulador' })).toHaveAttribute('aria-current', 'page')
+      }
     }
   }
 })
@@ -96,8 +107,9 @@ test('deveInterpretarCasoComConfirmacaoEFalhaSeguraNoFES', async ({ page, api })
   api.aprovarPagina('TENS', 'CASOS')
   await page.goto('/tens/casos')
   const relato = page.getByRole('textbox', { name: 'Relato' })
-  await relato.fill('Pessoa com fibromialgia relata dor ao caminhar.')
-  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('button', { name: 'Carregar exemplo de TENS' }).click()
+  await expect(relato).toHaveValue(/fibromialgia confirmada.*dor ao caminhar/)
+  await page.getByRole('button', { name: 'Buscar ficha de referência' }).click()
   await expect(page.getByText('Fonte:')).toBeVisible()
   await expect(page.getByRole('link', { name: /Huang|Dailey|fibromialgia/i })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
@@ -109,22 +121,26 @@ test('deveInterpretarCasoComConfirmacaoEFalhaSeguraNoFES', async ({ page, api })
 
   await page.goto('/fes/casos')
   await relato.fill('Pessoa teve AVC, mas a fase e a dorsiflexão são incertas.')
-  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('button', { name: 'Buscar ficha de referência' }).click()
   await expect(page.getByText(/Confirme\/complemente/)).toBeVisible()
   await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Carregar exemplo de FES' }).click()
+  await expect(relato).toHaveValue(/fase subaguda após AVC.*dorsiflexão.*acionamento contralateral/)
+  await page.getByRole('button', { name: 'Buscar ficha de referência' }).click()
+  await expect(page.getByText(/Critérios essenciais identificados/)).toBeVisible()
 })
 
 test('deve invalidar a confirmação quando o usuário muda o relato', async ({ page }) => {
   await page.goto('/tens/casos')
   const relato = page.getByRole('textbox', { name: 'Relato' })
   await relato.fill('Tenho diagnóstico de fibromialgia. Minha dor piora quando ando.')
-  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('button', { name: 'Buscar ficha de referência' }).click()
   await page.getByRole('checkbox', { name: /Confirmei os achados/ }).check()
   await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toBeVisible()
 
   await relato.fill('Não tenho fibromialgia. Sinto dor ao caminhar.')
   await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('button', { name: 'Buscar ficha de referência' }).click()
   await expect(page.getByText('Não identifiquei uma ficha com segurança.')).toBeVisible()
   await expect(page.getByRole('checkbox', { name: /Confirmei os achados/ })).toHaveCount(0)
 })
@@ -132,7 +148,7 @@ test('deve invalidar a confirmação quando o usuário muda o relato', async ({ 
 test('deve distinguir histórico familiar de diagnóstico do caso', async ({ page }) => {
   await page.goto('/tens/casos')
   await page.getByRole('textbox', { name: 'Relato' }).fill('Minha mãe tem fibromialgia. Eu sinto dor ao caminhar.')
-  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('button', { name: 'Buscar ficha de referência' }).click()
   await expect(page.getByText('Não identifiquei uma ficha com segurança.')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toHaveCount(0)
 })
@@ -140,7 +156,7 @@ test('deve distinguir histórico familiar de diagnóstico do caso', async ({ pag
 test('deve aceitar a tarefa antes da descrição da dor', async ({ page }) => {
   await page.goto('/tens/casos')
   await page.getByRole('textbox', { name: 'Relato' }).fill('Tenho fibromialgia. Ao subir escadas, sinto dor.')
-  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('button', { name: 'Buscar ficha de referência' }).click()
   await page.getByRole('checkbox', { name: /Confirmei os achados/ }).check()
   await expect(page.getByRole('link', { name: 'Abrir parâmetros representáveis' })).toBeVisible()
 })
@@ -148,7 +164,7 @@ test('deve aceitar a tarefa antes da descrição da dor', async ({ page }) => {
 test('deve tratar texto quebrado e negação em outro idioma', async ({ page }) => {
   await page.goto('/tens/casos')
   const relato = page.getByRole('textbox', { name: 'Relato' })
-  const interpretar = page.getByRole('button', { name: 'Interpretar relato' })
+  const interpretar = page.getByRole('button', { name: 'Buscar ficha de referência' })
   await relato.fill('No tengo fibromialgia.\nSinto dor ao caminhar.')
   await interpretar.click()
   await expect(page.getByText('Não identifiquei uma ficha com segurança.')).toBeVisible()

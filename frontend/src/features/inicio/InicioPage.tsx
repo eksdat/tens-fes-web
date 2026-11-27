@@ -74,9 +74,10 @@ export function InicioPage() {
               ? 'Acompanhe avaliações, sessões e a evolução de seus pacientes.'
               : 'Comece pelo objetivo e depois veja os ajustes.'}
           </p>
-          <BotaoLink to={TENS.base} variante="primario">
-            Começar pelo TENS
-          </BotaoLink>
+          <div className="tf-linha">
+            <BotaoLink to={TENS.base} variante="primario">Começar pelo TENS</BotaoLink>
+            <BotaoLink to={SIMULADOR.para} variante="secundario">Experimentar o simulador</BotaoLink>
+          </div>
         </div>
       </header>
 

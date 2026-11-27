@@ -8,6 +8,7 @@ import { SimuladorPage } from '@/features/simulador/SimuladorPage'
 import { renderComRotas } from '../../renderComRotas'
 import { EstadoDoAparelhoProvider } from '@/features/aparelho/EstadoDoAparelhoProvider'
 import { useEstadoDoAparelho } from '@/features/aparelho/useEstadoDoAparelho'
+import { api } from '@/shared/api/client'
 
 function faixa(modalidade: string, modo: string, parametro: string, unidade: string, extenso: string, origem: FaixaApi['origem'], minimo: number, maximo: number): FaixaApi {
   return { modalidade, modo, parametro, unidade, unidadeExtenso: extenso, origem, minimo, maximo, fonte: 'teste' }
@@ -44,7 +45,7 @@ beforeEach(() => {
   vi.spyOn(apiSimulador, 'buscarFaixas').mockImplementation(async (modalidade) => FAIXAS[modalidade])
 })
 
-function renderizar(rota = '/simulador') {
+function renderizar(rota: Parameters<typeof renderComRotas>[1] = '/simulador') {
   return renderComRotas(
     <Route
       path="/simulador"
@@ -57,6 +58,97 @@ function renderizar(rota = '/simulador') {
     rota,
   )
 }
+
+test('deveAplicarOsAjustesFesDaIaAoGraficoComOsCanaisZerados', async () => {
+  renderizar({
+    pathname: '/simulador',
+    search: '?modalidade=FES&modo=FES+rec%C3%ADproco',
+    state: { configuracaoIa: { modalidade: 'FES', modo: 'FES recíproco',
+      valores: { frequencia: 40, largura: 350, subida: 3, plato: 8, descida: 4, repouso: 5 } } },
+  })
+  expect(await screen.findByText('Gerado por IA · Apenas para simulação educacional')).toBeVisible()
+  expect(screen.getByRole('heading', { name: 'Pulso' })).toHaveFocus()
+  expect(within(screen.getByRole('region', { name: 'Pulso' })).getByRole('button', { name: 'Iniciar simulação' })).toBeVisible()
+  expect(screen.getByRole('combobox', { name: 'Modo' })).toHaveValue('FES recíproco')
+  expect(screen.getByRole('textbox', { name: 'Frequência' })).toHaveValue('40')
+  expect(screen.getByRole('textbox', { name: 'Largura de pulso' })).toHaveValue('350')
+  expect(screen.getByRole('textbox', { name: 'Rampa de subida' })).toHaveValue('3')
+  expect(screen.getByRole('textbox', { name: 'Platô' })).toHaveValue('8')
+  expect(screen.getByRole('textbox', { name: 'Rampa de descida' })).toHaveValue('4')
+  expect(screen.getByRole('textbox', { name: 'Repouso' })).toHaveValue('5')
+  expect(screen.getByText('Repouso efetivo maior no modo recíproco')).toBeVisible()
+  expect(screen.getByRole('row', { name: 'Repouso por canal 15 s' })).toBeVisible()
+  expect(screen.getByRole('row', { name: 'Ciclo 30 s' })).toBeVisible()
+  expect(screen.getByTestId('descricao-pulso')).toHaveTextContent('ciclo de 30 segundos')
+  expect(screen.getByRole('textbox', { name: 'Intensidade do canal 1' })).toHaveValue('0')
+  expect(screen.getByRole('textbox', { name: 'Intensidade do canal 2' })).toHaveValue('0')
+  expect(screen.getByRole('button', { name: 'Iniciar simulação' })).toBeVisible()
+  expect(screen.getByTestId('descricao-pulso')).toHaveTextContent('40 pulsos por segundo')
+  expect(screen.getByText('Os dois canais estão em 0 mA')).toBeVisible()
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Usar amplitude de exemplo' }))
+  expect(screen.queryByText('Os dois canais estão em 0 mA')).not.toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Intensidade do canal 1' })).toHaveValue('5')
+  expect(screen.getByRole('textbox', { name: 'Intensidade do canal 2' })).toHaveValue('5')
+  expect(screen.getByRole('button', { name: 'Iniciar simulação' })).toBeVisible()
+})
+
+test('deveDescartarConfiguracaoIaForaDaFaixaDoAparelho', async () => {
+  renderizar({
+    pathname: '/simulador',
+    search: '?modalidade=TENS&modo=Convencional',
+    state: { configuracaoIa: { modalidade: 'TENS', modo: 'Convencional', valores: { frequencia: 80, largura: 999 } } },
+  })
+  expect(await screen.findByText('A configuração da IA não é compatível com as faixas atuais.')).toBeVisible()
+  expect(screen.getByRole('textbox', { name: 'Largura de pulso' })).toHaveValue('100')
+})
+
+test('deveGerarEAplicarConfiguracaoSemSairDoSimulador', async () => {
+  const criterio = { estado: 'coerente', comentario: 'Compare o intervalo entre os pulsos.' }
+  const post = vi.spyOn(api, 'post').mockResolvedValueOnce({ data: {
+    observacoes: { objetivo: criterio, cenario: criterio, parametros: criterio, montagem: criterio },
+    pergunta: 'O que muda entre os pulsos?',
+    referencias: [],
+    simulacao: { modalidade: 'TENS', modo: 'Burst', valores: { largura: 180 } },
+  } })
+  renderizar()
+  const usuario = userEvent.setup()
+  await screen.findByRole('combobox', { name: 'Modo' })
+  await usuario.click(screen.getByText('Simular com IA', { selector: 'summary' }))
+  await usuario.type(screen.getByRole('textbox', { name: 'Caso fictício · TENS' }), 'Quero observar as rajadas no gráfico.')
+  await usuario.click(screen.getByRole('button', { name: 'Gerar configuração com IA' }))
+  expect(post).toHaveBeenCalledWith('/simulacoes/ia/feedback', {
+    modalidade: 'TENS', relato: 'Quero observar as rajadas no gráfico.',
+  })
+  await usuario.click(await screen.findByRole('link', { name: 'Aplicar no simulador' }))
+  expect(screen.getByRole('combobox', { name: 'Modo' })).toHaveValue('Burst')
+  expect(screen.getByRole('textbox', { name: 'Largura de pulso' })).toHaveValue('180')
+  expect(screen.queryByRole('textbox', { name: 'Frequência' })).not.toBeInTheDocument()
+  post.mockRestore()
+})
+
+test('deveManterORelatoEEnviarAModalidadeSelecionadaAoTrocarDeTensParaFes', async () => {
+  const post = vi.spyOn(api, 'post').mockRejectedValueOnce(new Error('Resposta simulada'))
+  renderizar()
+  const usuario = userEvent.setup()
+  await usuario.click(screen.getByText('Simular com IA', { selector: 'summary' }))
+  const relato = 'Quero observar os canais no gráfico.'
+  await usuario.type(screen.getByRole('textbox', { name: 'Caso fictício · TENS' }), relato)
+  await usuario.click(screen.getByRole('button', { name: 'FES' }))
+  expect(screen.getByRole('textbox', { name: 'Caso fictício · FES' })).toHaveValue(relato)
+  await usuario.click(screen.getByRole('button', { name: 'Gerar configuração com IA' }))
+  expect(post).toHaveBeenCalledWith('/simulacoes/ia/feedback', { modalidade: 'FES', relato })
+  post.mockRestore()
+})
+
+test('devePreencherUmExercicioDeAulaDaModalidadeSelecionada', async () => {
+  renderizar('/simulador?modalidade=FES')
+  const usuario = userEvent.setup()
+  await usuario.click(screen.getByText('Simular com IA', { selector: 'summary' }))
+  await usuario.click(screen.getByRole('button', { name: 'Carregar exemplo de FES' }))
+  expect((screen.getByRole('textbox', { name: 'Caso fictício · FES' }) as HTMLTextAreaElement).value)
+    .toContain('dificuldade para levantar a ponta do pé')
+  expect(screen.getByRole('button', { name: 'Gerar configuração com IA' })).toBeEnabled()
+})
 
 test('deveMostrarCadaControleComSuaUnidade', async () => {
   renderizar()

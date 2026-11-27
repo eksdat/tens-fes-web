@@ -68,6 +68,7 @@ test('deveOferecerUmaAcaoPrincipalNoDestaque', () => {
   renderizar()
 
   expect(screen.getByRole('link', { name: 'Começar pelo TENS' })).toHaveAttribute('href', '/tens')
+  expect(screen.getByRole('link', { name: 'Experimentar o simulador' })).toHaveAttribute('href', '/simulador')
 })
 
 test('naoDeveMostrarAVerificacaoEmDuasEtapasNoInicio', () => {

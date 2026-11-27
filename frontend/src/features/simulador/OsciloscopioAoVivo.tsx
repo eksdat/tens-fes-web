@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Botao } from '../../shared/ui/Botao'
-import type { Rampas } from './calculos'
+import { repousoDoCanal, tempoOn, type Rampas } from './calculos'
 import { caminhoDoTracado, envelopeDoCanal, escalaDeTempo, type Envelope, type Forma } from './tracado'
 
 const LARGURA = 300
@@ -47,24 +47,27 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
   const canais = [useRef<SVGPathElement>(null), useRef<SVGPathElement>(null)]
   const cursor = useRef<SVGLineElement>(null)
   const tempoSimulado = useRef(0)
-  const tempoReal = useRef(0)
-  const envelopes = (tS: number): [Envelope, Envelope] | undefined =>
-    rampas ? [envelopeDoCanal(tS, rampas, 1, forma), envelopeDoCanal(tS, rampas, 2, forma)] : undefined
+  const envelopes = (tMs: number): [Envelope, Envelope] | undefined =>
+    rampas ? [envelopeDoCanal(tMs / 1000, rampas, 1, forma), envelopeDoCanal(tMs / 1000, rampas, 2, forma)] : undefined
   const [envelope, setEnvelope] = useState(() => envelopes(0))
-  const { lentidao } = escalaDeTempo(frequenciaHz, forma)
+  const escala = escalaDeTempo(frequenciaHz, forma)
+  const lentidao = rampas ? 1 : escala.lentidao
 
   useEffect(() => {
     function desenhar() {
-      const atuais = envelopes(tempoReal.current / 1000)
+      const atuais = envelopes(tempoSimulado.current)
       canais.forEach((ref, i) => {
-        const nivel = atuais ? atuais[i].nivel : 1
+        const canal = i === 0 ? 1 : 2
         ref.current?.setAttribute(
           'd',
           caminhoDoTracado({
             frequenciaHz,
             larguraUs,
-            intensidadeMa: intensidades[i] * nivel,
-            inicioMs: tempoSimulado.current,
+            intensidadeMa: intensidades[i],
+            inicioMs: tempoSimulado.current - escala.janelaMs,
+            nivelNoInstante: rampas
+              ? (ms) => ms < 0 ? 0 : envelopeDoCanal(ms / 1000, rampas, canal, forma).nivel
+              : undefined,
             largura: LARGURA,
             altura: ALTURA,
             forma,
@@ -76,21 +79,23 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
         cursor.current.setAttribute('x1', x)
         cursor.current.setAttribute('x2', x)
       }
+      return atuais
     }
 
-    desenhar()
-    // Parado, o quadro não roda: sem isto, a fase do ciclo some ao voltar para o FES e fica velha ao editar a rampa.
-    setEnvelope(envelopes(tempoReal.current / 1000))
+    setEnvelope(desenhar())
     if (!animar) return
 
     let anterior: number | undefined
+    let ultimaLeitura = -Infinity
     let quadro = requestAnimationFrame(function passo(agora) {
       const dt = anterior === undefined ? 0 : Math.min(agora - anterior, 100)
       anterior = agora
-      tempoReal.current += dt
       tempoSimulado.current += dt / lentidao
-      desenhar()
-      if (rampas) setEnvelope(envelopes(tempoReal.current / 1000))
+      const atuais = desenhar()
+      if (atuais && agora - ultimaLeitura >= 100) {
+        setEnvelope(atuais)
+        ultimaLeitura = agora
+      }
       quadro = requestAnimationFrame(passo)
     })
     return () => cancelAnimationFrame(quadro)
@@ -109,6 +114,9 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
 
   return (
     <figure className="tf-grafico__item tf-osciloscopio">
+      <figcaption className="tf-grafico__legenda">
+        <strong>Osciloscópio ao vivo</strong> · Janela de {numero.format(escala.janelaMs)} ms
+      </figcaption>
       {[0, 1].map((i) => (
         <div key={i} className="tf-osciloscopio__canal" aria-hidden="true">
           <span className="tf-grafico__rotulo-canal">
@@ -122,13 +130,14 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
       ))}
 
       {rampas && envelope && (
-        <div className="tf-osciloscopio__canal" aria-hidden="true">
+        <div className="tf-osciloscopio__canal">
+          <strong>Ciclo dos canais FES (s)</strong>
           <span className="tf-grafico__rotulo-canal">
             {forma === 'reciproco'
               ? `Canal 1: ${faseDita(envelope[0])} · Canal 2: ${faseDita(envelope[1])}`
               : faseDita(envelope[0]).replace(' ', ': ')}
           </span>
-          <svg viewBox="0 0 300 70" className="tf-grafico__svg">
+          <svg viewBox="0 0 300 70" className="tf-grafico__svg" aria-hidden="true">
             <line x1="0" y1="60" x2="300" y2="60" className="tf-grafico__eixo" />
             <EnvoltoriaDoCiclo rampas={rampas} canal={1} forma={forma} />
             {forma === 'reciproco' && <EnvoltoriaDoCiclo rampas={rampas} canal={2} forma={forma} />}
@@ -137,16 +146,17 @@ export function OsciloscopioAoVivo({ frequenciaHz, larguraUs, intensidades, ramp
         </div>
       )}
 
-      <figcaption className="tf-grafico__legenda tf-pilha">
-        <span aria-hidden="true">{estado}</span>
-        {forma === 'burst' && <span>Cada bloco é uma rajada de 7 pulsos; o desenho de baixo mostra os pulsos de dentro.</span>}
+      <div className="tf-grafico__legenda tf-pilha">
+        <span>{estado}</span>
+        <span>Pulsos muito curtos são alargados no desenho para ficar visíveis.</span>
+        {forma === 'burst' && <span>Cada bloco representa uma rajada. A sequência abaixo mostra os pulsos de dentro.</span>}
         {semIntensidade && <span>Intensidade em zero: aumente a intensidade de um canal para ver os pulsos.</span>}
         {bloqueadoPeloMovimento && (
           <Botao variante="secundario" onClick={() => setAnimarMesmoAssim(true)}>
             Animar mesmo assim
           </Botao>
         )}
-      </figcaption>
+      </div>
     </figure>
   )
 }
@@ -155,7 +165,7 @@ const faseDita = (e: Envelope) => `${e.fase} ${numero.format(e.decorridoS)} s de
 
 /** Um ciclo inteiro do canal, amostrado: no recíproco o do canal 2 vem deslocado. */
 function EnvoltoriaDoCiclo({ rampas, canal, forma }: { rampas: Rampas; canal: 1 | 2; forma: Forma }) {
-  const total = rampas.subida + rampas.plato + rampas.descida + rampas.repouso
+  const total = tempoOn(rampas) + repousoDoCanal(rampas, forma === 'reciproco')
   const pontos = Array.from({ length: 141 }, (_, i) => {
     const t = (total * i) / 140
     const y = 60 - 48 * envelopeDoCanal(t, rampas, canal, forma).nivel

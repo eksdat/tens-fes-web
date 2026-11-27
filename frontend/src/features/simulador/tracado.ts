@@ -1,4 +1,4 @@
-import type { FaixasDoCampo, Rampas } from './calculos'
+import { repousoDoCanal, tempoOn, type FaixasDoCampo, type Rampas } from './calculos'
 
 /** Intensidade que enche a altura do traçado: o máximo do aparelho de referência (manual do Neurodyn, 0 a 100 mA). */
 export const INTENSIDADE_MAXIMA_MA = 100
@@ -43,12 +43,13 @@ export function envelopeEm(tS: number, r: Rampas): Envelope {
 }
 
 /**
- * No recíproco o canal 2 começa quando o estímulo (ON) do canal 1 termina: um contrai enquanto o outro descansa
- * (manual, cap. 8.2.5, modos FES Sinc e FES Rec). No síncrono os dois seguem o mesmo ciclo.
+ * No modelo didático recíproco, o canal 2 começa quando o canal 1 termina.
+ * O repouso efetivo impede que o canal 1 reinicie antes de o canal 2 terminar.
  */
 export function envelopeDoCanal(tS: number, r: Rampas, canal: 1 | 2, forma: Forma): Envelope {
-  const atraso = forma === 'reciproco' && canal === 2 ? r.subida + r.plato + r.descida : 0
-  return envelopeEm(tS - atraso, r)
+  const alternado = forma === 'reciproco'
+  const atraso = alternado && canal === 2 ? tempoOn(r) : 0
+  return envelopeEm(tS - atraso, { ...r, repouso: repousoDoCanal(r, alternado) })
 }
 
 /**
@@ -110,12 +111,13 @@ type Tracado = {
   largura: number
   altura: number
   forma?: Forma
+  nivelNoInstante?: (tempoMs: number) => number
 }
 
 const arredondar = (n: number) => Math.round(n * 10) / 10
 
 /** Pulso bifásico quadrático simétrico (manual, cap. 8.2.4): sobe, desce do mesmo tanto, volta à linha de base. */
-export function caminhoDoTracado({ frequenciaHz, larguraUs, intensidadeMa, inicioMs, largura, altura, forma = 'continuo' }: Tracado): string {
+export function caminhoDoTracado({ frequenciaHz, larguraUs, intensidadeMa, inicioMs, largura, altura, forma = 'continuo', nivelNoInstante }: Tracado): string {
   const meio = altura / 2
   const amplitude = (Math.min(intensidadeMa, INTENSIDADE_MAXIMA_MA) / INTENSIDADE_MAXIMA_MA) * (meio - 4)
   if (amplitude <= 0) return `M0 ${meio} H${largura}`
@@ -125,11 +127,12 @@ export function caminhoDoTracado({ frequenciaHz, larguraUs, intensidadeMa, inici
   const x = (ms: number) => arredondar(((ms - inicioMs) / janelaMs) * largura)
   // Mínimo de 1,5 unidade por fase: 100 µs num período de 12,5 ms some na tela.
   const larguraFase = Math.max(1.5, (faseMs / janelaMs) * largura)
-  const topo = arredondar(meio - amplitude)
-  const fundo = arredondar(meio + amplitude)
-
   const partes = [`M0 ${meio}`]
   for (const t of instantesDosPulsos({ forma, frequenciaHz, inicioMs, janelaMs })) {
+    const nivel = nivelNoInstante?.(t) ?? 1
+    if (nivel <= 0) continue
+    const topo = arredondar(meio - amplitude * nivel)
+    const fundo = arredondar(meio + amplitude * nivel)
     const x0 = x(t)
     partes.push(`H${x0}`, `V${topo}`, `H${arredondar(x0 + larguraFase)}`, `V${fundo}`, `H${arredondar(x0 + 2 * larguraFase)}`, `V${meio}`)
   }

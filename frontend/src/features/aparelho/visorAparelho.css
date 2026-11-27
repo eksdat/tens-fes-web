@@ -15,6 +15,7 @@
 .tf-visor-aparelho__acoes {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: .5rem;
   margin-block: .75rem;
 }

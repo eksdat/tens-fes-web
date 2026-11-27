@@ -48,8 +48,9 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, em
         forma={forma}
       />
 
-      <figure className="tf-grafico__item" aria-hidden="true">
-        <svg viewBox="0 0 300 120" className="tf-grafico__svg">
+      <figure className="tf-grafico__item">
+        <figcaption className="tf-grafico__legenda"><strong>Pulso individual (µs)</strong> · Duas fases iguais de polaridades opostas</figcaption>
+        <svg viewBox="0 0 300 120" className="tf-grafico__svg" aria-hidden="true">
           <line x1="0" y1="60" x2="300" y2="60" className="tf-grafico__eixo" />
           <path d="M10 60 H70 V20 H150 V60 V100 H230 V60 H290" className="tf-grafico__linha" />
           <text x="110" y="14" className="tf-grafico__rotulo" textAnchor="middle">
@@ -59,18 +60,17 @@ export function GraficoPulso({ frequenciaHz, larguraUs, rampas, intensidades, em
             fase {numero.format(larguraUs)} µs
           </text>
         </svg>
-        <figcaption className="tf-grafico__legenda">Um pulso: duas fases iguais, uma de cada lado</figcaption>
       </figure>
 
-      <figure className="tf-grafico__item" aria-hidden="true">
-        <svg viewBox="0 0 300 120" className="tf-grafico__svg">
+      <figure className="tf-grafico__item">
+        <figcaption className="tf-grafico__legenda"><strong>Sequência de pulsos (ms)</strong> · {forma === 'burst' ? 'Rajadas de 7 pulsos a 250 Hz, 2 rajadas por segundo (esquema)' : `${numero.format(frequenciaHz)} pulsos por segundo`}</figcaption>
+        <svg viewBox="0 0 300 120" className="tf-grafico__svg" aria-hidden="true">
           <line x1="0" y1="60" x2="300" y2="60" className="tf-grafico__eixo" />
           <path d={forma === 'burst' ? `M10 60 H290 ${rajadas}` : trem} className="tf-grafico__linha" />
           <text x="150" y="116" className="tf-grafico__rotulo" textAnchor="middle">
             {forma === 'burst' ? 'uma rajada a cada 500 ms' : `um pulso a cada ${numero.format(periodo)} ms`}
           </text>
         </svg>
-        <figcaption className="tf-grafico__legenda">{forma === 'burst' ? 'Rajadas: 7 pulsos a 250 Hz, 2 rajadas por segundo (esquema)' : `Trem de pulsos: ${numero.format(frequenciaHz)} por segundo`}</figcaption>
       </figure>
 
     </div>

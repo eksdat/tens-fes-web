@@ -14,3 +14,6 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+.tf-caso-campos input[type='file'] {
+  align-self: center;
+}

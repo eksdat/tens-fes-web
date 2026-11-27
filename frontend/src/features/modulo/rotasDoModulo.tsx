@@ -8,6 +8,7 @@ import { PaginaEletrodos } from './PaginaEletrodos'
 import { PaginaParametros } from './PaginaParametros'
 import { PaginaSeguranca } from './PaginaSeguranca'
 import { PaginaVisaoGeral } from './PaginaVisaoGeral'
+import { SimuladorPage } from '../simulador/SimuladorPage'
 import type { Modulo } from './tipos'
 
 export function rotasDoModulo(modulo: Modulo): RouteObject {
@@ -30,6 +31,8 @@ export function rotasDoModulo(modulo: Modulo): RouteObject {
           <PaginaEletrodos modulo={modulo} />
         ) : rotulo === 'Parâmetros' ? (
           <PaginaParametros dados={modulo.parametros} simulador={simulador} />
+        ) : rotulo === 'Simulador' ? (
+          <SimuladorPage key={modulo.sigla} modalidadeDoModulo={modulo.sigla} />
         ) : (
           <ConteudoPendente titulo={rotulo} />
         )

@@ -71,7 +71,7 @@ test('deveCadastrarPacienteAvaliarERegistrarSessao', async ({ page, entrarComo, 
   await page.getByLabel('Data e hora').fill('2026-10-02T14:30')
   await page.getByLabel('Objetivo desta sessão').fill('Analgesia antes do treino de escada.')
   await page.getByLabel('Relato do caso (opcional)').fill('Fibromialgia confirmada, dor ao caminhar durante a tarefa de movimento definida.')
-  await page.getByRole('button', { name: 'Interpretar relato' }).click()
+  await page.getByRole('button', { name: 'Buscar ficha de referência' }).click()
   await expect(page.getByText('Critérios pendentes: nenhum')).toBeVisible()
   await page.getByLabel(/Confirmei os critérios essenciais/).check()
   await page.getByRole('button', { name: 'Usar referência da ficha' }).click()

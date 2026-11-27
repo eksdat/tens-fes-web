@@ -27,6 +27,7 @@ export type FichaCaso = {
   titulo: string
   modalidade: 'TENS' | 'FES'
   contexto: string
+  exemploRelato: string
   criteriosEssenciais: string[]
   parametrosReportados: string[]
   valoresAusentes: string[]
@@ -39,6 +40,7 @@ export const FICHAS_CASOS: FichaCaso[] = [
   {
     id: 'fast-fibromialgia', versao: '1.0.0', titulo: 'FAST · fibromialgia e dor ao movimento', modalidade: 'TENS',
     contexto: 'Ensaio randomizado em mulheres com fibromialgia; TENS durante atividade para dor evocada pelo movimento.',
+    exemploRelato: 'Pessoa fictícia com fibromialgia confirmada sente dor ao caminhar.',
     criteriosEssenciais: ['fibromialgia confirmada', 'tarefa de movimento definida', 'dor durante a tarefa registrada'],
     parametrosReportados: ['onda bifásica assimétrica', 'frequência modulada de 2–125 Hz', 'largura de pulso de 200 µs', 'intensidade máxima tolerável', 'orientação de uso durante atividade por pelo menos 2 h/dia durante 4 semanas'],
     valoresAusentes: ['intensidade inicial ou final fixa em mA'],
@@ -49,6 +51,7 @@ export const FICHAS_CASOS: FichaCaso[] = [
   {
     id: 'pmc9773873-dorsiflexao', versao: '1.0.0', titulo: 'PMC9773873 · dorsiflexão após AVC subagudo', modalidade: 'FES',
     contexto: 'Ensaio randomizado de FES controlada contralateralmente versus NMES em pessoas com AVC subagudo, para função do membro inferior.',
+    exemploRelato: 'Pessoa fictícia em fase subaguda após AVC. A tarefa é praticar a dorsiflexão do pé. O acionamento contralateral está disponível.',
     criteriosEssenciais: ['fase pós-AVC subagudo confirmada', 'tarefa de dorsiflexão definida', 'controle/acionamento contralateral disponível'],
     parametrosReportados: ['equipamento DC-L-500', 'onda retangular bifásica, 35 pps e 200 µs', 'acionamento pela dorsiflexão de pelo menos 15° do lado não parético', '10 s de movimento sustentado e intervalo de 10 s', '20 min/sessão, 5 dias/semana, por 3 semanas'],
     valoresAusentes: ['intensidade individual em mA', 'faixa operacional do equipamento', 'tempos de rampa'],

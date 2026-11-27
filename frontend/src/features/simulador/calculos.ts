@@ -22,6 +22,10 @@ export const cargaFaseMicroC = (intensidadeMa: number, faseUs: number) => (inten
 /** No simulador, o ON inclui subida, platô e descida (guia, seção 12). */
 export const tempoOn = ({ subida, plato, descida }: Omit<Rampas, 'repouso'>) => subida + plato + descida
 
+/** No recíproco, cada canal aguarda pelo menos todo o estímulo do outro. */
+export const repousoDoCanal = (rampas: Rampas, alternado: boolean) =>
+  alternado ? Math.max(rampas.repouso, tempoOn(rampas)) : rampas.repouso
+
 export const ciclo = (onS: number, offS: number) => onS + offS
 
 export const cicloTrabalho = (onS: number, offS: number) => (onS / (onS + offS)) * 100
@@ -100,9 +104,10 @@ export function descreverPulso({ modalidade, modo, frequenciaHz, larguraUs, inte
   }
   if (rampas) {
     const on = tempoOn(rampas)
+    const repouso = repousoDoCanal(rampas, forma === 'reciproco')
     partes.push(
-      `Ciclo: subida de ${fmt(rampas.subida)} segundos, platô de ${fmt(rampas.plato)} segundos, descida de ${fmt(rampas.descida)} segundos e repouso de ${fmt(rampas.repouso)} segundos.`,
-      `Isso dá estímulo (ON) de ${fmt(on)} segundos, ciclo de ${fmt(ciclo(on, rampas.repouso))} segundos e ciclo de trabalho de ${fmt(cicloTrabalho(on, rampas.repouso))}%.`,
+      `Ciclo: subida de ${fmt(rampas.subida)} segundos, platô de ${fmt(rampas.plato)} segundos, descida de ${fmt(rampas.descida)} segundos e repouso de ${fmt(repouso)} segundos por canal.`,
+      `Isso dá estímulo (ON) de ${fmt(on)} segundos, ciclo de ${fmt(ciclo(on, repouso))} segundos e ciclo de trabalho de ${fmt(cicloTrabalho(on, repouso))}%.`,
     )
   }
   return partes.join(' ')

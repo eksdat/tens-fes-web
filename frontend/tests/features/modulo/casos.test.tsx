@@ -8,6 +8,7 @@ import { TENS } from '@/features/tens/conteudoTens'
 import type { Modulo } from '@/features/modulo/tipos'
 
 vi.mock('@/features/modulo/usePaginaTecnica', () => import('./paginaTecnicaFalsa'))
+vi.mock('@/features/usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ data: { perfil: 'ESTUDANTE' } }) }))
 
 function renderizar(modulo: Modulo, rota: string) {
   const roteador = createMemoryRouter([{ element: <main><Outlet /></main>, children: [rotasDoModulo(modulo)] }], {

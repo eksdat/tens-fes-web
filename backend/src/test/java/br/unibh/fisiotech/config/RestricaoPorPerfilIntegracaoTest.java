@@ -1,6 +1,10 @@
 package br.unibh.fisiotech.config;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -12,6 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
+import java.util.Map;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +35,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import br.unibh.fisiotech.TestcontainersConfiguration;
+import br.unibh.fisiotech.caso.AvaliacaoCasoIa;
 
 /**
  * Mesma regra com o fluxo real: o perfil vem da tabela usuario (PerfilJwtConverter), não do token.
@@ -52,6 +59,9 @@ class RestricaoPorPerfilIntegracaoTest {
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    @MockitoBean
+    private AvaliacaoCasoIa avaliador;
 
     private String sub;
 
@@ -94,6 +104,20 @@ class RestricaoPorPerfilIntegracaoTest {
     }
 
     @Test
+    void devePermitirAoEstudantePedirConfiguracaoDiretoNoSimulador() throws Exception {
+        cadastrar(ESTUDANTE);
+        var criterio = new AvaliacaoCasoIa.Criterio("revisar", "Inclua a unidade.");
+        when(avaliador.avaliar(any(), anyList(), anyList(), anyString(), anyMap())).thenReturn(new AvaliacaoCasoIa.Feedback(
+                Map.of("parametros", criterio), "O que observar?", List.of(), "3", "simulado", null));
+        mvc.perform(post("/api/v1/simulacoes/ia/feedback").header(HttpHeaders.AUTHORIZATION, bearer())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"modalidade":"FES","relato":"Quero observar como alternam os canais no gráfico."}
+                                """))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.observacoes.parametros.estado").value("revisar"));
+    }
+
+    @Test
     void deveDarAcessoAoCasoEAnexoSomenteAoEstudanteQueEnviou() throws Exception {
         cadastrar(ESTUDANTE);
         var caso = new MockMultipartFile("caso", "", "application/json", """
@@ -116,12 +140,26 @@ class RestricaoPorPerfilIntegracaoTest {
         String caminhoAnexo = caminho + "/anexos/" + JsonPath.read(detalhe, "$.anexos[0].id");
         mvc.perform(get(caminhoAnexo).header(HttpHeaders.AUTHORIZATION, bearer()))
                 .andExpect(status().isOk()).andExpect(content().bytes(pdf));
+        mvc.perform(get(caminho + "/feedback-ia").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk()).andExpect(content().string(""));
+        var criterio = new AvaliacaoCasoIa.Criterio("revisar", "Inclua a unidade.");
+        when(avaliador.avaliar(any(), anyList(), anyList(), anyString(), anyMap())).thenReturn(new AvaliacaoCasoIa.Feedback(
+                Map.of("parametros", criterio), "O que observar?", List.of(), "3", "simulado", null));
+        mvc.perform(post(caminho + "/feedback-ia").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.observacoes.parametros.estado").value("revisar"));
+        mvc.perform(post(caminho + "/feedback-ia").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.observacoes.parametros.estado").value("revisar"));
+        mvc.perform(get(caminho + "/feedback-ia").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.observacoes.parametros.comentario").value("Inclua a unidade."));
+        verify(avaliador).avaliar(any(), anyList(), anyList(), anyString(), anyMap());
 
         sub = UUID.randomUUID().toString();
         cadastrar(ESTUDANTE);
         mvc.perform(get(caminho).header(HttpHeaders.AUTHORIZATION, bearer()))
                 .andExpect(status().isNotFound());
         mvc.perform(get(caminhoAnexo).header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isNotFound());
+        mvc.perform(post(caminho + "/feedback-ia").header(HttpHeaders.AUTHORIZATION, bearer()))
                 .andExpect(status().isNotFound());
     }
 

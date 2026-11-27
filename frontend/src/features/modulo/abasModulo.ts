@@ -6,4 +6,5 @@ export const ABAS_MODULO = [
   { rotulo: 'Parâmetros', caminho: 'parametros' },
   { rotulo: 'Segurança', caminho: 'seguranca' },
   { rotulo: 'Casos', caminho: 'casos' },
+  { rotulo: 'Simulador', caminho: 'simulador' },
 ]

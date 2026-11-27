@@ -9,6 +9,7 @@ import { Campo } from '../../shared/ui/Campo'
 import { CampoSelecao } from '../../shared/ui/CampoSelecao'
 import { CampoTextoLongo } from '../../shared/ui/CampoTextoLongo'
 import { CorpoMarkdown } from '../modulo/CorpoMarkdown'
+import { FeedbackCasoIa } from './FeedbackCasoIa'
 import './casos-clinicos.css'
 
 const campos = [
@@ -162,6 +163,7 @@ export function CasosClinicosPage() {
             <Botao variante="secundario" key={anexo.id} onClick={() => void baixar(anexo)}>{anexo.nome}</Botao>
           ))}
           <RespostaEducativa detalhe={detalhe.data} />
+          <FeedbackCasoIa key={id} rota={`${rota}/${id}/feedback-ia`} />
         </section>
       )}
     </section>

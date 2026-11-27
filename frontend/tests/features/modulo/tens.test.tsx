@@ -5,15 +5,16 @@ import { rotasDoModulo } from '@/features/modulo/rotasDoModulo'
 import { TENS } from '@/features/tens/conteudoTens'
 
 vi.mock('@/features/modulo/usePaginaTecnica', () => import('./paginaTecnicaFalsa'))
+vi.mock('@/features/usuario/useUsuarioAtual', () => ({ useUsuarioAtual: () => ({ data: { perfil: 'ESTUDANTE' } }) }))
 
 function renderizar(rota: string) {
   const roteador = createMemoryRouter([{ element: <main><Outlet /></main>, children: [rotasDoModulo(TENS)] }], { initialEntries: [rota] })
   return render(<RouterProvider router={roteador} />)
 }
 
-const ABAS = ['Visão geral', 'Aparelho', 'Eletrodos', 'Parâmetros', 'Segurança', 'Casos']
+const ABAS = ['Visão geral', 'Aparelho', 'Eletrodos', 'Parâmetros', 'Segurança', 'Casos', 'Simulador']
 
-test('deveMostrarAsSeisAbasNaOrdemDoGuia', () => {
+test('deveMostrarAsAbasDoModuloESimulador', () => {
   renderizar('/tens')
 
   const abas = within(screen.getByRole('navigation', { name: 'Seções de TENS' })).getAllByRole('link')

@@ -133,7 +133,7 @@ export function AtlasEletrodos({ modalidade, base, compacto = false }: Props) {
       </div>
 
       <div className="tf-pilha">
-        <fieldset className="tf-regioes">
+        <fieldset className="tf-regioes tf-regioes--selecao">
           <legend className="tf-sr-only">Regiões</legend>
           {regioes.map((r) =>
             compacto ? (

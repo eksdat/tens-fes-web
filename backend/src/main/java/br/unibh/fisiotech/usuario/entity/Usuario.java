@@ -40,7 +40,7 @@ public class Usuario implements Persistable<UUID> {
      * Versão vigente dos Termos de uso e da Política de privacidade (data da publicação). Mudou o texto das páginas
      * /termos ou /privacidade: troque aqui. Quem aceitou outra versão precisa aceitar de novo no próximo acesso.
      */
-    public static final String VERSAO_TERMOS = "2026-10-16";
+    public static final String VERSAO_TERMOS = "2026-11-26";
 
     @Id
     private UUID id;
